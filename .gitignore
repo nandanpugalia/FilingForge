@@ -1,0 +1,38 @@
+# --- Secrets / env (NEVER commit) ---
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# --- Node / frontend ---
+node_modules/
+dist/
+.vite/
+
+# --- Tauri / Rust ---
+src-tauri/target/
+target/
+
+# --- Downloaded company data (user content, never committed) ---
+downloads/
+CompanyLibrary/
+*.pdf
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Spike (throwaway; stays local until GREEN) ---
+spike/.venv/
+spike/downloads/
