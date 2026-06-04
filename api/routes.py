@@ -1,10 +1,13 @@
 """HTTP routes. Thin: parse → call engine/jobs → shape response. Grown across Tasks 3–7."""
 from __future__ import annotations
+import json
+import anyio
 from fastapi import APIRouter, Request, HTTPException
+from fastapi.responses import StreamingResponse
 from engine import __version__ as engine_version
 from engine.bse_client import BSEClient
 from engine.resolver import resolve
-from .jobs import run_build
+from .jobs import run_build, JOB_DONE_SENTINEL
 from .schemas import ResolveRequest, CandidateOut, BuildRequest, JobCreated, JobStatusOut
 
 router = APIRouter()
@@ -43,3 +46,21 @@ def build_status(job_id: str, request: Request) -> dict:
         raise HTTPException(status_code=404, detail="unknown job")
     return JobStatusOut(job_id=job.id, status=job.status, progress=job.last_progress,
                         result=job.result, error=job.error).model_dump()
+
+
+@router.get("/build/{job_id}/events")
+def build_events(job_id: str, request: Request) -> StreamingResponse:
+    job = request.app.state.jobs.get(job_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail="unknown job")
+
+    async def stream():
+        while True:
+            ev = await anyio.to_thread.run_sync(job.events.get)   # blocking get off the loop
+            if ev is JOB_DONE_SENTINEL:
+                tail = {"status": job.status, "result": job.result, "error": job.error}
+                yield f"data: {json.dumps(tail)}\n\nevent: end\ndata: end\n\n"
+                return
+            yield f"data: {json.dumps(ev)}\n\n"
+
+    return StreamingResponse(stream(), media_type="text/event-stream")

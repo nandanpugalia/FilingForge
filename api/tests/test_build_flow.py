@@ -49,3 +49,32 @@ def test_build_rejects_unknown_kind(client):
     r = client.post("/build", json={"scrip_code": "1", "ticker": "T", "dest": "/tmp/x",
                                     "kinds": ["bogus"]})
     assert r.status_code == 422
+
+
+import json as _json
+
+
+def test_sse_streams_progress_then_end(client, monkeypatch):
+    _fake_work_factory(monkeypatch)
+    job_id = client.post("/build", json={"scrip_code": "532790", "ticker": "TANLA",
+                                         "dest": "/tmp/x"}).json()["job_id"]
+    with client.stream("GET", f"/build/{job_id}/events") as resp:
+        assert resp.status_code == 200
+        assert resp.headers["content-type"].startswith("text/event-stream")
+        payloads, ended = [], False
+        for line in resp.iter_lines():
+            if not line:
+                continue
+            if line.startswith("event: end"):
+                ended = True
+                break
+            if line.startswith("data: "):
+                payloads.append(_json.loads(line[len("data: "):]))
+    currents = [p["current"] for p in payloads if "current" in p]
+    assert currents == [1, 2]
+    assert ended
+
+
+def test_sse_unknown_job_is_404(client):
+    r = client.get("/build/nope/events")
+    assert r.status_code == 404
