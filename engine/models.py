@@ -7,10 +7,19 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 
+_WIN_RESERVED = {"con", "prn", "aux", "nul",
+                 *(f"com{i}" for i in range(1, 10)), *(f"lpt{i}" for i in range(1, 10))}
+
+
 def slug(text: str) -> str:
-    """'Company Update' -> 'company-update'. Used to folder arbitrary BSE categories."""
+    """'Company Update' -> 'company-update'. Used to folder arbitrary BSE categories.
+    Output is [a-z0-9-] only, never empty, never a Windows reserved device name."""
     s = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
-    return s or "other"
+    if not s:
+        return "other"
+    if s in _WIN_RESERVED:
+        return f"{s}-cat"
+    return s
 
 
 @dataclass(frozen=True)

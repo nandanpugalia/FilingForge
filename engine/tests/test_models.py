@@ -45,3 +45,10 @@ def test_candidate_has_optional_isin():
 def test_library_result_unchanged():
     r = LibraryResult(downloaded=["a"], skipped=[], failed=["b"])
     assert r.total_attempted == 2 and r.ok is True
+
+
+def test_slug_neutralizes_windows_reserved_names():
+    assert slug("CON") == "con-cat"
+    assert slug("LPT1") == "lpt1-cat"
+    assert slug("nul") == "nul-cat"
+    assert slug("Company Update") == "company-update"   # normal names unaffected

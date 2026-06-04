@@ -6,7 +6,6 @@ from pathlib import Path
 from .bse_client import BSEClient
 from .resolver import resolve
 from .library import build_library
-from .models import FilingType
 from .errors import FilingForgeError
 from .progress import ProgressEvent
 
@@ -31,7 +30,7 @@ def main() -> int:
         # "Tata Motors" both → "TATA"), so we suffix the scrip code to keep folders unique.
         ticker = f"{chosen.company.split()[0].upper()}-{chosen.scrip_code}"
         res = build_library(chosen.scrip_code, ticker, Path(args.dest),
-                            list(FilingType), args.years, client, on_progress=_bar)
+                            [], args.years, client, on_progress=_bar, everything=True)
         print(f"\nDone. {len(res.downloaded)} new, {len(res.skipped)} already had, "
               f"{len(res.failed)} skipped. Library: {Path(args.dest).resolve()}")
         return 0
