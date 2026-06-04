@@ -63,3 +63,15 @@ def build_master_index(root: Path) -> Path:
     path = root / "INDEX.md"
     path.write_text("\n".join(lines).rstrip() + "\n", encoding="utf-8")
     return path
+
+
+def read_library(root: Path) -> list[dict]:
+    """Machine-readable library listing for the app's Library view (one dict per company)."""
+    root = Path(root)
+    if not root.exists():
+        return []
+    out: list[dict] = []
+    for c in sorted(p for p in root.iterdir() if _is_company_dir(p)):
+        counts = _company_counts(c)
+        out.append({"ticker": c.name, "counts": counts, "total": sum(counts.values())})
+    return out

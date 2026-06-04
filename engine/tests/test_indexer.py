@@ -52,3 +52,23 @@ def test_master_index_ignores_non_company_files(tmp_path):
     save_filing(t, _f("ar-1", "2025-07-01", "AR", "annual-reports", "Annual Reports"), b"%PDF-x")
     text = build_master_index(tmp_path).read_text()
     assert "TANLA" in text and "notes" not in text
+
+
+from engine.indexer import read_library
+
+
+def test_read_library_returns_per_company_summaries(tmp_path):
+    t = company_dir(tmp_path, "TANLA")
+    save_filing(t, _f("ar-1", "2025-07-01", "AR", "annual-reports", "Annual Reports"), b"%PDF-x")
+    save_filing(t, _f("res-1", "2026-01-01", "Q3", "quarterly", "Financial Results"), b"%PDF-x")
+    build_index(t, "TANLA")
+    lib = read_library(tmp_path)
+    assert len(lib) == 1
+    row = lib[0]
+    assert row["ticker"] == "TANLA"
+    assert row["total"] == 2
+    assert row["counts"] == {"annual-reports": 1, "quarterly": 1}
+
+
+def test_read_library_empty_when_no_companies(tmp_path):
+    assert read_library(tmp_path) == []
