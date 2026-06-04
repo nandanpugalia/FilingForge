@@ -25,7 +25,7 @@ def _safe_name(filing: Filing) -> str:
 
 
 def save_filing(company: Path, filing: Filing, pdf_bytes: bytes) -> Path:
-    folder = company / filing.kind.folder
+    folder = company / filing.folder
     folder.mkdir(parents=True, exist_ok=True)
     path = folder / _safe_name(filing)
     path.write_bytes(pdf_bytes)

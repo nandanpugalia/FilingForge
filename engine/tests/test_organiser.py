@@ -2,12 +2,12 @@ from pathlib import Path
 from engine.organiser import (
     company_dir, save_filing, already_have, load_seen, record_seen,
 )
-from engine.models import Filing, FilingType
+from engine.models import Filing
 
 
 def _f(news_id="ar-1", att="ar1.pdf"):
     return Filing(news_id=news_id, date="2025-07-01", headline="Annual Report 2024-25",
-                  attachment=att, kind=FilingType.ANNUAL_REPORT)
+                  attachment=att, folder="annual-reports", category="Annual Reports")
 
 
 def test_company_dir_uses_clean_ticker(tmp_path):
