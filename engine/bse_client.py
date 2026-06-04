@@ -30,7 +30,7 @@ class BSEClient:
             r = self._client.get(url, params=params)
         except httpx.HTTPError as e:
             raise BSEUnavailableError(f"{type(e).__name__}: {e}") from e
-        if r.status_code >= 500 or r.status_code == 429:
+        if not r.is_success:
             raise BSEUnavailableError(f"HTTP {r.status_code} for {url}")
         self._sleep()
         try:
@@ -43,7 +43,7 @@ class BSEClient:
             r = self._client.get(url, params=params)
         except httpx.HTTPError as e:
             raise BSEUnavailableError(f"{type(e).__name__}: {e}") from e
-        if r.status_code >= 500 or r.status_code == 429:
+        if not r.is_success:
             raise BSEUnavailableError(f"HTTP {r.status_code} for {url}")
         self._sleep()
         return r.text
@@ -53,6 +53,8 @@ class BSEClient:
             r = self._client.get(url)
         except httpx.HTTPError as e:
             raise BSEUnavailableError(f"{type(e).__name__}: {e}") from e
+        if r.status_code >= 500 or r.status_code == 429:
+            raise BSEUnavailableError(f"HTTP {r.status_code} for {url}")
         self._sleep()
         return r.content if r.status_code == 200 else b""
 
