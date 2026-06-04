@@ -28,7 +28,7 @@ def build_index(company: Path, ticker: str) -> Path:
             # filename is "<date>_<headline>.pdf" → surface date + a readable title
             stem = pdf.stem
             date = stem[:10]
-            title = stem[11:].replace("_", " ").strip() or pdf.name
+            title = stem[11:].split("__")[0].replace("_", " ").strip() or pdf.name
             lines.append(f"- **{date}** — {title}  ·  [`{kind.folder}/{pdf.name}`]({kind.folder}/{pdf.name})")
         lines.append("")
     path = company / "INDEX.md"

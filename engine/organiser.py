@@ -16,9 +16,12 @@ def company_dir(root: Path, ticker: str) -> Path:
 
 def _safe_name(filing: Filing) -> str:
     # keep hyphens so "2024-25" survives the round-trip into INDEX.md (collapse only
-    # truly unsafe runs to "_"); the date prefix is fixed-width YYYY-MM-DD.
+    # truly unsafe runs to "_"); the date prefix is fixed-width YYYY-MM-DD. The
+    # "__<news_id>" suffix guarantees uniqueness so same date+headline filings with
+    # different NEWSIDs never overwrite each other (silent data loss).
     head = re.sub(r"[^A-Za-z0-9-]+", "_", filing.headline)[:60].strip("_")
-    return f"{filing.date}_{head or filing.news_id}.pdf"
+    nid = re.sub(r"[^A-Za-z0-9-]+", "", filing.news_id)
+    return f"{filing.date}_{head or nid}__{nid}.pdf"
 
 
 def save_filing(company: Path, filing: Filing, pdf_bytes: bytes) -> Path:

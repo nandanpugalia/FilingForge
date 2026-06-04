@@ -31,7 +31,7 @@ def _process(company: Path, scrip_code: str, ticker: str, kinds: list[FilingType
             pdf_path = save_filing(company, f, pdf)
             md_text = pdf_to_markdown(pdf_path, f)
             pdf_path.with_suffix(".md").write_text(md_text, encoding="utf-8")
-        except FilingForgeError:
+        except (FilingForgeError, OSError):
             res.failed.append(f.news_id)
             continue
         res.downloaded.append(f.news_id)

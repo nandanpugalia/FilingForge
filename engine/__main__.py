@@ -26,7 +26,11 @@ def main() -> int:
         candidates = resolve(args.company, client)
         chosen = next((c for c in candidates if c.is_primary), candidates[0])
         print(f"Using: {chosen.company} ({chosen.scrip_code})")
-        res = build_library(chosen.scrip_code, chosen.company.split()[0].upper(), Path(args.dest),
+        # Maintainer CLI only. The Plan-04 UI passes the user-chosen ticker directly; this naive
+        # name-based derivation would collide distinct companies (e.g. "Tata Consultancy" and
+        # "Tata Motors" both → "TATA"), so we suffix the scrip code to keep folders unique.
+        ticker = f"{chosen.company.split()[0].upper()}-{chosen.scrip_code}"
+        res = build_library(chosen.scrip_code, ticker, Path(args.dest),
                             list(FilingType), args.years, client, on_progress=_bar)
         print(f"\nDone. {len(res.downloaded)} new, {len(res.skipped)} already had, "
               f"{len(res.failed)} skipped. Library: {Path(args.dest).resolve()}")
