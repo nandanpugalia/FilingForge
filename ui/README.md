@@ -1,73 +1,58 @@
-# React + TypeScript + Vite
+# FilingForge UI
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The React front-end for FilingForge — turns any Indian company's BSE filings into a
+clean, AI-ready library. This app is a thin client over the FilingForge engine API.
 
-Currently, two official plugins are available:
+## Prerequisites
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Node 26+
+- The **v0.2 engine** running locally. The UI expects the v0.2 build, which provides
+  everything-mode, the `/library` endpoint, and the BSE `symbol` field on `/resolve`
+  candidates. An older engine will not satisfy these endpoints.
 
-## React Compiler
+## Running locally
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Start the engine API from the **repo root** (a separate terminal):
 
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+python -m api          # serves the FilingForge engine on http://127.0.0.1:8765
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then start the UI dev server (from `ui/`):
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install            # first time only
+npm run dev            # Vite dev server on http://localhost:5173
 ```
+
+The UI talks to the engine at `http://127.0.0.1:8765` by default. Override with the
+`VITE_API_BASE` env var if the engine runs elsewhere.
+
+## Tests
+
+```bash
+npm run test           # unit + component tests (Vitest, jsdom)
+npm run e2e            # end-to-end happy path (Playwright)
+```
+
+### Unit tests (`npm run test`)
+
+Vitest runs the suite under `src/__tests__/`. The Vitest config excludes `e2e/**`.
+
+### E2E (`npm run e2e`)
+
+Playwright drives the full search → configure → build → done flow. The REST endpoints
+are mocked via `page.route`, and a controllable fake `EventSource` is injected with
+`addInitScript` to deterministically drive the SSE build-progress stream (council R10 —
+routing live SSE through `page.route` is unreliable). No engine is required to run the
+E2E test; it is fully self-contained.
+
+Projects: `chromium` and `webkit` (the macOS WKWebView target the packaged app ships
+on). First run, install the browsers:
+
+```bash
+npx playwright install chromium webkit
+```
+
+Playwright auto-starts the dev server (`npm run dev`) and reuses an existing one on
+`:5173` if already running.
