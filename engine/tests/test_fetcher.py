@@ -50,3 +50,38 @@ def test_sends_confirmed_params():
     assert seen["strCat"] == "-1" and seen["subcategory"] == "-1"
     assert seen["strType"] == "C" and seen["strSearch"] == "P"
     assert len(seen["strPrevDate"]) == 8 and len(seen["strToDate"]) == 8
+
+
+from engine.fetcher import download_filing
+from engine.models import Filing
+
+
+def _f(att="ar1.pdf"):
+    return Filing(news_id="ar-1", date="2025-07-01", headline="Annual Report",
+                  attachment=att, kind=FilingType.ANNUAL_REPORT)
+
+
+def test_download_prefers_attachhis_pdf_bytes():
+    def handler(req):
+        if "AttachHis" in str(req.url):
+            return httpx.Response(200, content=b"%PDF-1.7 real")
+        return httpx.Response(200, content=b"<html>stale AttachLive</html>")
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    assert download_filing(_f(), client).startswith(b"%PDF-")
+
+
+def test_download_falls_back_to_attachlive_when_his_missing():
+    def handler(req):
+        if "AttachHis" in str(req.url):
+            return httpx.Response(404, content=b"nope")
+        return httpx.Response(200, content=b"%PDF-1.4 fallback")
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    assert download_filing(_f(), client).startswith(b"%PDF-")
+
+
+def test_download_raises_download_error_when_no_pdf_anywhere():
+    from engine.errors import DownloadError
+    handler = lambda req: httpx.Response(200, content=b"<html>not a pdf</html>")
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    with pytest.raises(DownloadError):
+        download_filing(_f(), client)

@@ -2,6 +2,7 @@
 from __future__ import annotations
 from datetime import date, timedelta
 from .bse_client import BSEClient
+from .errors import DownloadError
 from .models import Filing, FilingType
 
 ANN_URL = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
@@ -51,3 +52,13 @@ def list_filings(scrip_code: str, kinds: list[FilingType], years: int, client: B
         if len(rows) < 10:
             break
     return out
+
+
+def download_filing(filing: Filing, client: BSEClient) -> bytes:
+    """Return validated PDF bytes. Tries AttachHis then AttachLive; verifies the %PDF magic.
+    Raises DownloadError (friendly) if no base yields a real PDF."""
+    for base in _PDF_BASES:
+        content = client.get_bytes(base + filing.attachment)
+        if content[:5] == b"%PDF-":
+            return content
+    raise DownloadError(filing.headline or filing.attachment)
