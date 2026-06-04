@@ -1,4 +1,5 @@
 import json
+import os
 import httpx
 import pytest
 from engine.bse_client import BSEClient
@@ -57,3 +58,16 @@ def test_refresh_pulls_only_new(tmp_path):
     res2 = refresh_library(tmp_path / "TANLA", "532790", [FilingType.ANNUAL_REPORT],
                            years=5, client=_full_client(), on_progress=None)
     assert res2.downloaded == [] and len(res2.skipped) == 2   # idempotent: nothing new
+
+
+@pytest.mark.skipif(os.environ.get("FF_LIVE") != "1",
+                    reason="live BSE test; set FF_LIVE=1 to run")
+def test_live_tanla_smoke(tmp_path):
+    from engine.bse_client import BSEClient
+    client = BSEClient()
+    try:
+        res = build_library("532790", "TANLA", tmp_path, [FilingType.ANNUAL_REPORT],
+                            years=2, client=client, on_progress=None)
+    finally:
+        client.close()
+    assert res.ok and (tmp_path / "TANLA" / "INDEX.md").exists()
