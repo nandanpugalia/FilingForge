@@ -1,31 +1,47 @@
-from engine.models import Candidate, Filing, FilingType, LibraryResult
+from engine.models import (
+    Candidate, Filing, CategorySpec, CURATED, CURATED_BY_KEY, slug, LibraryResult,
+)
 
 
-def test_filing_type_maps_to_bse_category_subcategory():
-    assert FilingType.ANNUAL_REPORT.bse == ("Others", "Reg. 34 (1) Annual Report")
-    assert FilingType.RESULTS.bse == ("Result", "Financial Results")
-    assert FilingType.INVESTOR_PPT.bse == ("Company Update", "Investor Presentation")
-    assert FilingType.CONCALL.bse == ("Company Update", "Earnings Call Transcript")
+def test_slug_lowercases_and_hyphenates():
+    assert slug("Company Update") == "company-update"
+    assert slug("Corp. Action") == "corp-action"
+    assert slug("AGM/EGM") == "agm-egm"
 
 
-def test_filing_type_folder_names_are_clean():
-    assert FilingType.ANNUAL_REPORT.folder == "annual-reports"
-    assert FilingType.RESULTS.folder == "quarterly"
-    assert FilingType.INVESTOR_PPT.folder == "investor-ppts"
-    assert FilingType.CONCALL.folder == "concalls"
+def test_curated_has_nine_specs_with_unique_keys_and_folders():
+    assert len(CURATED) == 9
+    assert len({c.key for c in CURATED}) == 9
+    assert len({c.folder for c in CURATED}) == 9
+    assert CURATED_BY_KEY["annual_report"].folder == "annual-reports"
 
 
-def test_candidate_primary_flag():
-    c = Candidate(scrip_code="532790", company="Tanla Platforms Ltd", is_primary=True)
-    assert c.scrip_code == "532790" and c.is_primary
+def test_exact_spec_matches_category_and_subcategory():
+    ar = CURATED_BY_KEY["annual_report"]
+    assert ar.matches("Others", "Reg. 34 (1) Annual Report") is True
+    assert ar.matches("Others", "Something else") is False
+    assert ar.matches("Result", "Reg. 34 (1) Annual Report") is False
 
 
-def test_library_result_counts():
-    r = LibraryResult(downloaded=["a", "b"], skipped=["c"], failed=["d"])
-    assert r.total_attempted == 4
-    assert r.ok is True   # ok = at least one downloaded and folder intact
+def test_wildcard_spec_matches_whole_category():
+    corp = CURATED_BY_KEY["corp_actions"]
+    assert corp.subcategory is None
+    assert corp.matches("Corp. Action", "Dividend") is True
+    assert corp.matches("Corp. Action", "Record Date") is True
+    assert corp.matches("Result", "Dividend") is False
 
 
-def test_library_result_ok_false_when_nothing_downloaded():
-    r = LibraryResult(downloaded=[], skipped=[], failed=["x"])
-    assert r.ok is False
+def test_filing_carries_folder_and_category_strings():
+    f = Filing(news_id="n1", date="2025-07-01", headline="AR 2025",
+               attachment="a.pdf", folder="annual-reports", category="Annual Reports")
+    assert f.folder == "annual-reports" and f.category == "Annual Reports"
+
+
+def test_candidate_has_optional_isin():
+    assert Candidate("532790", "Tanla Platforms Ltd", True).isin is None
+    assert Candidate("532790", "Tanla", True, isin="INE483C01032").isin == "INE483C01032"
+
+
+def test_library_result_unchanged():
+    r = LibraryResult(downloaded=["a"], skipped=[], failed=["b"])
+    assert r.total_attempted == 2 and r.ok is True

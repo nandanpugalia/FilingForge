@@ -1,51 +1,70 @@
-"""Plain data the whole engine speaks in. No behaviour beyond trivial helpers."""
+"""Plain data the whole engine speaks in. CategorySpec replaces the old fixed FilingType enum:
+each spec is an exact (category, subcategory) pair OR a (category, *) wildcard, and carries its
+UI label, a stable key, and the on-disk folder it lands in."""
 from __future__ import annotations
+import re
 from dataclasses import dataclass, field
-from enum import Enum
+from typing import Optional
 
 
-class FilingType(Enum):
-    """The filing kinds v1 supports. `.bse` = the (CATEGORYNAME, SUBCATNAME) BSE filter
-    confirmed in the spike; `.folder` = the clean per-type subfolder the user sees."""
-    ANNUAL_REPORT = ("Others", "Reg. 34 (1) Annual Report", "annual-reports")
-    RESULTS = ("Result", "Financial Results", "quarterly")
-    INVESTOR_PPT = ("Company Update", "Investor Presentation", "investor-ppts")
-    CONCALL = ("Company Update", "Earnings Call Transcript", "concalls")
+def slug(text: str) -> str:
+    """'Company Update' -> 'company-update'. Used to folder arbitrary BSE categories."""
+    s = re.sub(r"[^a-z0-9]+", "-", text.lower()).strip("-")
+    return s or "other"
 
-    def __init__(self, category: str, subcategory: str, folder: str):
-        self._cat = category
-        self._sub = subcategory
-        self.folder = folder
 
-    @property
-    def bse(self) -> tuple[str, str]:
-        return (self._cat, self._sub)
+@dataclass(frozen=True)
+class CategorySpec:
+    """A filing category the user can pick. `subcategory=None` means 'whole category' (wildcard)."""
+    key: str
+    label: str
+    folder: str
+    category: str
+    subcategory: Optional[str] = None
+
+    def matches(self, cat: str, sub: str) -> bool:
+        if cat != self.category:
+            return False
+        return self.subcategory is None or sub == self.subcategory
+
+
+CURATED: list[CategorySpec] = [
+    CategorySpec("annual_report", "Annual Reports", "annual-reports", "Others", "Reg. 34 (1) Annual Report"),
+    CategorySpec("results", "Financial Results", "quarterly", "Result", "Financial Results"),
+    CategorySpec("investor_ppt", "Investor Presentations", "investor-ppts", "Company Update", "Investor Presentation"),
+    CategorySpec("concall", "Concall Transcripts", "concalls", "Company Update", "Earnings Call Transcript"),
+    CategorySpec("board_outcome", "Board-Meeting Outcomes", "board-meetings", "Board Meeting", "Outcome of Board Meeting"),
+    CategorySpec("press", "Press / Media Releases", "press", "Company Update", "Press Release / Media Release"),
+    CategorySpec("analyst_meet", "Analyst / Investor Meets", "analyst-meets", "Company Update", "Analyst / Investor Meet"),
+    CategorySpec("corp_actions", "Dividends & Corp Actions", "corp-actions", "Corp. Action", None),
+    CategorySpec("agm_egm", "AGM / EGM", "agm-egm", "AGM/EGM", None),
+]
+CURATED_BY_KEY: dict[str, CategorySpec] = {c.key: c for c in CURATED}
 
 
 @dataclass(frozen=True)
 class Candidate:
-    """A company match from the resolver. UI shows a pick-list; `is_primary` is pre-selected."""
     scrip_code: str
     company: str
     is_primary: bool = False
+    isin: Optional[str] = None
 
 
 @dataclass(frozen=True)
 class Filing:
-    """One downloadable filing. `news_id` (BSE NEWSID) is the stable dedup key."""
     news_id: str
-    date: str            # YYYY-MM-DD
+    date: str
     headline: str
-    attachment: str      # ATTACHMENTNAME, e.g. "<guid>.pdf"
-    kind: FilingType
+    attachment: str
+    folder: str
+    category: str
 
 
 @dataclass
 class LibraryResult:
-    """Outcome of a build/refresh. Partial success is normal; the folder is always valid."""
     downloaded: list[str] = field(default_factory=list)
-    skipped: list[str] = field(default_factory=list)   # already present (incremental dedup)
-    failed: list[str] = field(default_factory=list)     # download/convert failed, folder intact
+    skipped: list[str] = field(default_factory=list)
+    failed: list[str] = field(default_factory=list)
 
     @property
     def total_attempted(self) -> int:
