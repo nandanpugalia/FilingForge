@@ -64,16 +64,17 @@ class JobManager:
         threading.Thread(target=runner, name=f"build-{job.id}", daemon=True).start()
 
 
-def run_build(scrip_code: str, ticker: str, dest: str, kinds: list[str], years: int) -> WorkFn:
+def run_build(scrip_code: str, ticker: str, dest: str, everything: bool, categories: list[str],
+              years: int) -> WorkFn:
     """Return a WorkFn that performs the real engine build. Imported lazily so tests that
     monkeypatch this never construct a real BSEClient. The returned closure is what the
     JobManager runs in its thread."""
     from engine.bse_client import BSEClient
     from engine.library import build_library
-    from engine.models import FilingType
+    from engine.models import CURATED_BY_KEY
     from engine.progress import ProgressEvent
 
-    kind_enums = [FilingType[k.upper()] for k in kinds]
+    specs = [CURATED_BY_KEY[k] for k in categories]
 
     def work(on_progress: ProgressFn) -> dict:
         client = BSEClient()
@@ -81,8 +82,8 @@ def run_build(scrip_code: str, ticker: str, dest: str, kinds: list[str], years: 
             def bridge(ev: ProgressEvent) -> None:
                 on_progress({"stage": ev.stage, "current": ev.current, "total": ev.total,
                              "message": ev.message, "percent": ev.percent})
-            res = build_library(scrip_code, ticker, Path(dest), kind_enums, years, client,
-                                on_progress=bridge)
+            res = build_library(scrip_code, ticker, Path(dest), specs, years, client,
+                                on_progress=bridge, everything=everything)
             return {"downloaded": len(res.downloaded), "skipped": len(res.skipped),
                     "failed": len(res.failed)}
         finally:

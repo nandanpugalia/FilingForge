@@ -4,7 +4,7 @@ import time
 def _fake_work_factory(monkeypatch):
     """Replace api.routes.run_build with a fast fake that emits 2 events then returns counts."""
     import api.routes as routes
-    def fake_run_build(scrip_code, ticker, dest, kinds, years):
+    def fake_run_build(scrip_code, ticker, dest, everything, categories, years):
         def work(on_progress):
             on_progress({"stage": "download", "current": 1, "total": 2, "message": "a", "percent": 50})
             on_progress({"stage": "download", "current": 2, "total": 2, "message": "b", "percent": 100})
@@ -45,9 +45,9 @@ def test_status_unknown_job_is_404(client):
     assert "user_message" in r.json()
 
 
-def test_build_rejects_unknown_kind(client):
+def test_build_rejects_unknown_category(client):
     r = client.post("/build", json={"scrip_code": "1", "ticker": "T", "dest": "/tmp/x",
-                                    "kinds": ["bogus"]})
+                                    "everything": False, "categories": ["bogus"]})
     assert r.status_code == 422
 
 
