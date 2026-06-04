@@ -37,3 +37,6 @@ desktop.ini
 # --- Spike (throwaway; stays local until GREEN) ---
 spike/.venv/
 spike/downloads/
+
+# --- Throwaway design mockups (not part of the app) ---
+design-mockups/
