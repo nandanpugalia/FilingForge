@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from .bse_client import BSEClient
 from .errors import DownloadError
-from .models import Filing, FilingType
+from .models import Filing, CategorySpec, slug
 
 ANN_URL = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
 _PDF_BASES = [   # SPIKE FINDING: AttachHis serves real %PDF; AttachLive is stale (HTML). Try both.
@@ -13,41 +13,43 @@ _PDF_BASES = [   # SPIKE FINDING: AttachHis serves real %PDF; AttachLive is stal
 _MAX_PAGES = 50
 
 
-def _kind_for(row: dict, kinds: list[FilingType]) -> FilingType | None:
-    key = (row.get("CATEGORYNAME"), row.get("SUBCATNAME"))
-    for k in kinds:
-        if k.bse == key:
-            return k
+def _classify(row: dict, specs: list[CategorySpec], everything: bool):
+    """Return (folder, category_label) if this row should be kept, else None."""
+    cat = (row.get("CATEGORYNAME") or "").strip()
+    sub = (row.get("SUBCATNAME") or "").strip()
+    if everything:
+        return (slug(cat), cat or "Other")
+    for spec in specs:
+        if spec.matches(cat, sub):
+            return (spec.folder, spec.label)
     return None
 
 
-def list_filings(scrip_code: str, kinds: list[FilingType], years: int, client: BSEClient) -> list[Filing]:
+def list_filings(scrip_code: str, specs: list[CategorySpec], years: int, client: BSEClient,
+                 *, everything: bool = False) -> list[Filing]:
     end = date.today()
     start = end - timedelta(days=365 * years)
-    params_base = {
-        "strCat": "-1", "subcategory": "-1", "strSearch": "P", "strType": "C",
-        "strScrip": str(scrip_code),
-        "strPrevDate": start.strftime("%Y%m%d"), "strToDate": end.strftime("%Y%m%d"),
-    }
+    base = {"strCat": "-1", "subcategory": "-1", "strSearch": "P", "strType": "C",
+            "strScrip": str(scrip_code),
+            "strPrevDate": start.strftime("%Y%m%d"), "strToDate": end.strftime("%Y%m%d")}
     out: list[Filing] = []
     for pageno in range(1, _MAX_PAGES + 1):
-        data = client.get_json(ANN_URL, {**params_base, "pageno": str(pageno)})
-        rows = data.get("Table") or []
+        rows = client.get_json(ANN_URL, {**base, "pageno": str(pageno)}).get("Table") or []
         if not rows:
             break
         for row in rows:
-            kind = _kind_for(row, kinds)
-            if kind is None:
+            hit = _classify(row, specs, everything)
+            if hit is None:
                 continue
             att = (row.get("ATTACHMENTNAME") or "").strip()
             if not att:
                 continue
+            folder, category = hit
             out.append(Filing(
                 news_id=str(row.get("NEWSID") or att),
                 date=(row.get("DissemDT") or "")[:10],
                 headline=(row.get("HEADLINE") or row.get("NEWSSUB") or "").strip(),
-                attachment=att,
-                kind=kind,
+                attachment=att, folder=folder, category=category,
             ))
         if len(rows) < 10:
             break
