@@ -15,7 +15,9 @@ def company_dir(root: Path, ticker: str) -> Path:
 
 
 def _safe_name(filing: Filing) -> str:
-    head = re.sub(r"[^A-Za-z0-9]+", "_", filing.headline)[:60].strip("_")
+    # keep hyphens so "2024-25" survives the round-trip into INDEX.md (collapse only
+    # truly unsafe runs to "_"); the date prefix is fixed-width YYYY-MM-DD.
+    head = re.sub(r"[^A-Za-z0-9-]+", "_", filing.headline)[:60].strip("_")
     return f"{filing.date}_{head or filing.news_id}.pdf"
 
 
