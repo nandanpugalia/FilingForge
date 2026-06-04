@@ -21,5 +21,14 @@ def create_app() -> FastAPI:
     )
     app.state.jobs = JobManager()
     app.add_exception_handler(FilingForgeError, filingforge_exception_handler)
+
+    from starlette.exceptions import HTTPException as StarletteHTTPException
+    from fastapi.responses import JSONResponse
+
+    async def _http_friendly(request, exc: StarletteHTTPException):
+        return JSONResponse(status_code=exc.status_code,
+                            content={"user_message": str(exc.detail)})
+    app.add_exception_handler(StarletteHTTPException, _http_friendly)
+
     app.include_router(router)
     return app
