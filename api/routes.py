@@ -8,7 +8,8 @@ from engine import __version__ as engine_version
 from engine.bse_client import BSEClient
 from engine.resolver import resolve
 from .jobs import run_build, JOB_DONE_SENTINEL
-from .schemas import ResolveRequest, CandidateOut, BuildRequest, JobCreated, JobStatusOut
+from .osutil import open_folder
+from .schemas import ResolveRequest, CandidateOut, BuildRequest, JobCreated, JobStatusOut, OpenFolderRequest
 
 router = APIRouter()
 
@@ -64,3 +65,14 @@ def build_events(job_id: str, request: Request) -> StreamingResponse:
             yield f"data: {json.dumps(ev)}\n\n"
 
     return StreamingResponse(stream(), media_type="text/event-stream")
+
+
+@router.post("/open-folder")
+def open_result_folder(req: OpenFolderRequest) -> dict:
+    try:
+        open_folder(req.path)
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail="That folder doesn't exist.")
+    except NotADirectoryError:
+        raise HTTPException(status_code=400, detail="That path isn't a folder.")
+    return {"ok": True}
