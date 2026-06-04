@@ -27,6 +27,7 @@ target/
 downloads/
 CompanyLibrary/
 *.pdf
+!engine/tests/fixtures/*.pdf
 
 # --- OS junk ---
 .DS_Store
