@@ -14,7 +14,7 @@ dev = ["pytest==8.3.3", "fastapi==0.115.5", "uvicorn[standard]==0.32.1"]
 include = ["engine*", "api*"]
 
 [tool.pytest.ini_options]
-testpaths = ["engine/tests"]
+testpaths = ["engine/tests", "api/tests"]
 addopts = "-q"
 
 [build-system]

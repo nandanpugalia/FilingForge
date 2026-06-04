@@ -1,6 +1,7 @@
 """HTTP routes. Thin: parse → call engine/jobs → shape response. Grown across Tasks 3–7."""
 from __future__ import annotations
 import json
+import queue
 import anyio
 from fastapi import APIRouter, Request, HTTPException
 from fastapi.responses import StreamingResponse
@@ -57,7 +58,12 @@ def build_events(job_id: str, request: Request) -> StreamingResponse:
 
     async def stream():
         while True:
-            ev = await anyio.to_thread.run_sync(job.events.get)   # blocking get off the loop
+            if await request.is_disconnected():
+                return
+            try:
+                ev = await anyio.to_thread.run_sync(lambda: job.events.get(timeout=1.0))
+            except queue.Empty:
+                continue   # no event yet; loop back to re-check disconnect
             if ev is JOB_DONE_SENTINEL:
                 tail = {"status": job.status, "result": job.result, "error": job.error}
                 yield f"data: {json.dumps(tail)}\n\nevent: end\ndata: end\n\n"
