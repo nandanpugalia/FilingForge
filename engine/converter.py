@@ -23,7 +23,7 @@ def pdf_to_markdown(pdf_path: Path, filing: Filing) -> str:
         "---\n"
         f"headline: {filing.headline}\n"
         f"date: {filing.date}\n"
-        f"type: {filing.kind.name.lower()}\n"
+        f"category: {filing.category}\n"
         f"source_pdf: {filing.attachment}\n"
         f"news_id: {filing.news_id}\n"
         "---\n\n"
