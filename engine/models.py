@@ -57,6 +57,7 @@ class Candidate:
     company: str
     is_primary: bool = False
     isin: Optional[str] = None
+    symbol: Optional[str] = None
 
 
 @dataclass(frozen=True)

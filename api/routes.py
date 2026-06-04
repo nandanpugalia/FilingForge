@@ -30,7 +30,8 @@ def resolve_company(req: ResolveRequest) -> dict:
     finally:
         client.close()
     return {"candidates": [CandidateOut(scrip_code=c.scrip_code, company=c.company,
-                                        is_primary=c.is_primary, isin=c.isin).model_dump()
+                                        is_primary=c.is_primary, isin=c.isin,
+                                        symbol=c.symbol).model_dump()
                            for c in candidates]}
 
 

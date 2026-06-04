@@ -34,6 +34,12 @@ def test_candidate_out_includes_isin():
     assert c.model_dump()["isin"] == "INE483C01032"
 
 
+def test_candidate_out_includes_symbol():
+    c = CandidateOut(scrip_code="532790", company="Tanla Platforms Ltd", is_primary=True,
+                     isin="INE483C01032", symbol="TANLA")
+    assert c.model_dump()["symbol"] == "TANLA"
+
+
 def test_library_item_shape():
     it = LibraryItem(ticker="TANLA", total=2, counts={"annual-reports": 1, "quarterly": 1})
     assert it.total == 2 and it.counts["quarterly"] == 1

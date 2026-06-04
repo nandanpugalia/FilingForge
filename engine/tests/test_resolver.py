@@ -44,3 +44,15 @@ def test_resolve_isin_none_when_absent():
     html = (FIXTURES / "peersmartsearch_reliance.html").read_text()
     out = resolve("RELIANCE", _client_serving(html))
     assert out[0].isin is None
+
+
+def test_resolve_surfaces_symbol_when_present():
+    html = (FIXTURES / "peersmartsearch_tanla.html").read_text()
+    out = resolve("TANLA", _client_serving(html))
+    assert out[0].symbol == "TANLA"
+
+
+def test_resolve_symbol_none_when_absent():
+    html = (FIXTURES / "peersmartsearch_reliance.html").read_text()
+    out = resolve("RELIANCE", _client_serving(html))
+    assert out[0].symbol is None

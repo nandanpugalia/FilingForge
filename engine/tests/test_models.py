@@ -42,6 +42,11 @@ def test_candidate_has_optional_isin():
     assert Candidate("532790", "Tanla", True, isin="INE483C01032").isin == "INE483C01032"
 
 
+def test_candidate_has_optional_symbol():
+    assert Candidate("532790", "Tanla", True).symbol is None
+    assert Candidate("532790", "Tanla", True, isin="INE483C01032", symbol="TANLA").symbol == "TANLA"
+
+
 def test_library_result_unchanged():
     r = LibraryResult(downloaded=["a"], skipped=[], failed=["b"])
     assert r.total_attempted == 2 and r.ok is True

@@ -6,7 +6,7 @@ from engine.errors import CompanyNotFoundError, BSEUnavailableError
 def test_resolve_returns_candidate_list(client, monkeypatch):
     import api.routes as routes
     def fake_resolve(name, client_):
-        return [Candidate("500325", "Reliance Industries Ltd", True, isin="INE002A01018"),
+        return [Candidate("500325", "Reliance Industries Ltd", True, isin="INE002A01018", symbol="RELIANCE"),
                 Candidate("532712", "Reliance Communications Ltd", False)]
     monkeypatch.setattr(routes, "resolve", fake_resolve)
     r = client.post("/resolve", json={"company": "RELIANCE"})
@@ -17,6 +17,7 @@ def test_resolve_returns_candidate_list(client, monkeypatch):
     assert cands[0]["company"] == "Reliance Industries Ltd"
     assert cands[0]["is_primary"] is True
     assert r.json()["candidates"][0]["isin"] == "INE002A01018"
+    assert r.json()["candidates"][0]["symbol"] == "RELIANCE"
 
 
 def test_resolve_unknown_company_is_404_friendly(client, monkeypatch):

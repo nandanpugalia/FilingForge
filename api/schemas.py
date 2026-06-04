@@ -17,6 +17,7 @@ class CandidateOut(BaseModel):
     company: str
     is_primary: bool
     isin: Optional[str] = None
+    symbol: Optional[str] = None
 
 
 class BuildRequest(BaseModel):
