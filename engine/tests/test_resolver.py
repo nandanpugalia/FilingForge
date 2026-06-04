@@ -31,3 +31,16 @@ def test_multi_match_marks_only_quotemenuselect_primary():
 def test_no_match_raises_company_not_found():
     with pytest.raises(CompanyNotFoundError):
         resolve("ZЗ", _client_serving("<li>nothing here</li>"))
+
+
+def test_resolve_surfaces_isin_when_present():
+    html = (FIXTURES / "peersmartsearch_tanla.html").read_text()
+    out = resolve("TANLA", _client_serving(html))
+    assert out[0].isin == "INE483C01032"
+
+
+def test_resolve_isin_none_when_absent():
+    # the reliance fixture rows are stripped and carry no ISIN
+    html = (FIXTURES / "peersmartsearch_reliance.html").read_text()
+    out = resolve("RELIANCE", _client_serving(html))
+    assert out[0].isin is None
