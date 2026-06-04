@@ -1,12 +1,11 @@
-"""HTTP request/response models. Mirrors the engine's vocabulary; `kinds` are the string
-names the UI sends, validated against the engine's FilingType enum."""
+"""HTTP request/response models. Mirrors the engine's vocabulary; `categories` are the
+curated category keys the UI sends, validated against the engine's CURATED_BY_KEY map."""
 from __future__ import annotations
 from typing import Optional
 from pydantic import BaseModel, Field, field_validator
-from engine.models import FilingType
+from engine.models import CURATED_BY_KEY
 
-_VALID_KINDS = [t.name.lower() for t in FilingType]   # annual_report, results, investor_ppt, concall
-_DEFAULT_KINDS = list(_VALID_KINDS)
+_VALID_KEYS = set(CURATED_BY_KEY)
 
 
 class ResolveRequest(BaseModel):
@@ -17,22 +16,30 @@ class CandidateOut(BaseModel):
     scrip_code: str
     company: str
     is_primary: bool
+    isin: Optional[str] = None
 
 
 class BuildRequest(BaseModel):
     scrip_code: str = Field(min_length=1)
     ticker: str = Field(min_length=1)
     dest: str = Field(min_length=1)
-    years: int = Field(default=5, ge=1, le=25)
-    kinds: list[str] = Field(default_factory=lambda: list(_DEFAULT_KINDS))
+    years: int = Field(default=1, ge=1, le=25)
+    everything: bool = True
+    categories: list[str] = Field(default_factory=list)
 
-    @field_validator("kinds")
+    @field_validator("categories")
     @classmethod
-    def _validate_kinds(cls, v: list[str]) -> list[str]:
-        bad = [k for k in v if k not in _VALID_KINDS]
+    def _valid_keys(cls, v: list[str]) -> list[str]:
+        bad = [k for k in v if k not in _VALID_KEYS]
         if bad:
-            raise ValueError(f"unknown filing kinds: {bad}; valid = {_VALID_KINDS}")
+            raise ValueError(f"unknown category keys: {bad}; valid = {sorted(_VALID_KEYS)}")
         return v
+
+
+class LibraryItem(BaseModel):
+    ticker: str
+    total: int
+    counts: dict[str, int]
 
 
 class JobCreated(BaseModel):
