@@ -16,7 +16,7 @@ it("debounces, queries resolve, shows a dropdown, and picks by click", async () 
   vi.spyOn(api, "resolve").mockResolvedValue(cands);
   const onPick = vi.fn();
   render(<SearchField onPick={onPick} />);
-  await userEvent.type(screen.getByPlaceholderText(/search a company/i), "tan");
+  await userEvent.type(screen.getByPlaceholderText(/look up a company/i), "tan");
   await waitFor(() => expect(api.resolve).toHaveBeenCalledWith("tan"));
   await userEvent.click(await screen.findByText(/Tanla Platforms Ltd/));
   expect(onPick).toHaveBeenCalledWith(expect.objectContaining({ scrip_code: "532790" }));
@@ -26,7 +26,7 @@ it("keyboard: ArrowDown then Enter picks the highlighted row", async () => {
   vi.spyOn(api, "resolve").mockResolvedValue(cands);
   const onPick = vi.fn();
   render(<SearchField onPick={onPick} />);
-  const input = screen.getByPlaceholderText(/search a company/i);
+  const input = screen.getByPlaceholderText(/look up a company/i);
   await userEvent.type(input, "rel");
   await screen.findByText(/Reliance Industries Ltd/);
   await userEvent.keyboard("{ArrowDown}{ArrowDown}{Enter}");   // move to 2nd row, select
@@ -36,7 +36,7 @@ it("keyboard: ArrowDown then Enter picks the highlighted row", async () => {
 it("Escape clears the dropdown", async () => {
   vi.spyOn(api, "resolve").mockResolvedValue(cands);
   render(<SearchField onPick={() => {}} />);
-  const input = screen.getByPlaceholderText(/search a company/i);
+  const input = screen.getByPlaceholderText(/look up a company/i);
   await userEvent.type(input, "tan");
   await screen.findByText(/Tanla Platforms Ltd/);
   await userEvent.keyboard("{Escape}");
@@ -46,13 +46,13 @@ it("Escape clears the dropdown", async () => {
 it("shows 'no company found' on empty results", async () => {
   vi.spyOn(api, "resolve").mockResolvedValue([]);
   render(<SearchField onPick={() => {}} />);
-  await userEvent.type(screen.getByPlaceholderText(/search a company/i), "zzzqq");
+  await userEvent.type(screen.getByPlaceholderText(/look up a company/i), "zzzqq");
   expect(await screen.findByText(/no company found/i)).toBeInTheDocument();
 });
 
 it("shows the friendly error when resolve fails", async () => {
   vi.spyOn(api, "resolve").mockRejectedValue(new Error("BSE isn't responding right now."));
   render(<SearchField onPick={() => {}} />);
-  await userEvent.type(screen.getByPlaceholderText(/search a company/i), "tan");
+  await userEvent.type(screen.getByPlaceholderText(/look up a company/i), "tan");
   expect(await screen.findByText(/BSE isn't responding/)).toBeInTheDocument();
 });

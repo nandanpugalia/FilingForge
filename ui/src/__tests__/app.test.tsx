@@ -40,7 +40,7 @@ it("walks search → configure → building → done", async () => {
   const { container } = render(<App />);
   // search phase: the titlebar wordmark is hidden (only the big centre wordmark shows)
   expect(container.querySelector(".titlebar .wordmark")).toBeNull();
-  await userEvent.type(screen.getByPlaceholderText(/search a company/i), "tan");
+  await userEvent.type(screen.getByPlaceholderText(/look up a company/i), "tan");
   await userEvent.click(await screen.findByText(/Tanla Platforms Ltd/));
   // after picking a company (configure phase) the titlebar wordmark appears
   expect(container.querySelector(".titlebar .wordmark")).not.toBeNull();
@@ -54,7 +54,7 @@ it("shows a friendly error if startBuild fails, and Retry re-runs", async () => 
     { scrip_code: "532790", company: "Tanla Platforms Ltd", is_primary: true, symbol: "TANLA" }]);
   const sb = vi.spyOn(api, "startBuild").mockRejectedValueOnce(new Error("BSE isn't responding right now."));
   render(<App />);
-  await userEvent.type(screen.getByPlaceholderText(/search a company/i), "tan");
+  await userEvent.type(screen.getByPlaceholderText(/look up a company/i), "tan");
   await userEvent.click(await screen.findByText(/Tanla Platforms Ltd/));
   await userEvent.click(await screen.findByRole("button", { name: /Build library/i }));
   expect(await screen.findByText(/BSE isn't responding/)).toBeInTheDocument();

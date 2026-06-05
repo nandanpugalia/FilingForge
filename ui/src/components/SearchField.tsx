@@ -45,7 +45,7 @@ export function SearchField({ onPick }: { onPick: (c: Candidate) => void }) {
     <div className="search">
       <span className="prompt">&gt;</span>
       <input className="search-input" value={q} autoFocus
-        placeholder="Search a company"
+        placeholder="Look up a company"
         aria-activedescendant={items[active] ? `opt-${items[active].scrip_code}` : undefined}
         onChange={(e) => setQ(e.target.value)} onKeyDown={onKeyDown} />
       {err && <div className="error-inline">{err}</div>}
