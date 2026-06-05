@@ -4,17 +4,18 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-
-- _macOS build pending Apple notarization — landing shortly._
-
-## [0.1.4] — 2026-06-05
+## [0.1.5] — 2026-06-06
 
 ### Added
 - **macOS build** — Apple Silicon, Apple-notarized (opens with no Gatekeeper warning).
+- **"Check for updates" button in Settings**, alongside the automatic once-a-day check.
 - **"Report this" button on the crash screen**, so a bug can be filed even if the app
   has errored out and the normal report button is gone.
 - App **version is now shown in Settings**.
+
+### Changed
+- Automatic update checks are now **throttled to once per day** (previously on every
+  launch), so the update feed reflects roughly one ping per active install per day.
 
 ### Fixed
 - **Windows auto-update** no longer fails with *"Error opening file for writing…
