@@ -1,9 +1,12 @@
 import { useState } from "react";
-import { APP_VERSION, BUG_WORKER_URL } from "../config";
+import { APP_VERSION } from "../config";
 import { useEscapeClose } from "../lib/useEscapeClose";
+import { openExternal } from "../lib/openExternal";
+
+const REPO = "nandanpugalia/FilingForge";
 
 type ReportType = "bug" | "feature";
-type Status = "idle" | "sending" | "sent" | "queued" | "failed";
+type Status = "idle" | "sending" | "sent" | "failed";
 
 function detectOs(): string {
   const nav = typeof navigator !== "undefined" ? navigator : undefined;
@@ -23,27 +26,42 @@ export function ReportOverlay({ screen, onClose }: { screen: string; onClose: ()
 
   async function submit() {
     if (!canSubmit) return;
-    const payload = { type, name, email, comment: comment.trim(), screen, version: APP_VERSION, os };
-
-    // Feedback channel not deployed yet — accept gracefully, no network call.
-    if (!BUG_WORKER_URL) { setStatus("queued"); setTimeout(onClose, 1600); return; }
-
     setStatus("sending");
+
+    // Open a prefilled GitHub issue in the system browser. Trackable, no backend,
+    // and the repo's GitHub→Discord webhook notifies the maintainer automatically.
+    const kind = type === "bug" ? "Bug" : "Feature";
+    const label = type === "bug" ? "bug" : "enhancement";
+    const title = `[${kind}] ${comment.trim().slice(0, 60)}`;
+    const body = [
+      comment.trim(),
+      "",
+      "---",
+      `- **Type:** ${type}`,
+      `- **App version:** ${APP_VERSION}`,
+      `- **Screen:** ${screen}`,
+      `- **System:** ${os}`,
+      name ? `- **From:** ${name}` : "",
+      email ? `- **Contact:** ${email}` : "",
+    ].filter(Boolean).join("\n");
+    const url =
+      `https://github.com/${REPO}/issues/new` +
+      `?labels=${encodeURIComponent(label)}` +
+      `&title=${encodeURIComponent(title)}` +
+      `&body=${encodeURIComponent(body)}`;
+
     try {
-      const res = await fetch(BUG_WORKER_URL, {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) { setStatus("sent"); setTimeout(onClose, 1600); }
-      else setStatus("failed");
-    } catch { setStatus("failed"); }
+      await openExternal(url);
+      setStatus("sent");
+      setTimeout(onClose, 1800);
+    } catch {
+      setStatus("failed");
+    }
   }
 
   const message =
-    status === "queued" ? "Thanks! (feedback channel goes live at launch)" :
-    status === "sent" ? "Thanks — sent ✓" :
-    status === "failed" ? "Couldn't send right now, please try again." : null;
+    status === "sent" ? "Opening GitHub to post your report — thank you! 🙏" :
+    status === "failed" ? "Couldn't open the browser — please try again." : null;
 
   return (
     <div className="overlay" role="dialog" aria-label="Send feedback" onClick={onClose}>
@@ -82,7 +100,7 @@ export function ReportOverlay({ screen, onClose }: { screen: string; onClose: ()
         {message && <div className={`report-status ${status}`}>{message}</div>}
 
         <button className="primary" disabled={!canSubmit} onClick={submit}>
-          {status === "sending" ? "Sending…" : "Send"}
+          {status === "sending" ? "Opening…" : "Send"}
         </button>
       </div>
     </div>

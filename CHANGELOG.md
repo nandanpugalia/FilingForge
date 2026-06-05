@@ -8,7 +8,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - _macOS build pending Apple notarization — landing shortly._
 
-## [0.1.0] — 2026-06-05
+## [0.1.2] — 2026-06-05
+
+### Fixed
+- In-app **Report a bug / request a feature** now opens a prefilled GitHub issue in
+  your browser (previously a placeholder that accepted input but didn't deliver it).
+
+## [0.1.1] — 2026-06-05
 
 ### Added
 - Search any **BSE-listed** Indian company and download its official filings
