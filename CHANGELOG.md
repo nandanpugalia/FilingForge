@@ -8,6 +8,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - _macOS build pending Apple notarization — landing shortly._
 
+## [0.1.3] — 2026-06-05
+
+### Fixed
+- **Windows auto-update** no longer fails with *"Error opening file for writing…
+  filingforge-api.exe"*. The installer now stops the engine sidecar before replacing
+  files, so in-place updates complete cleanly.
+
 ## [0.1.2] — 2026-06-05
 
 ### Fixed
