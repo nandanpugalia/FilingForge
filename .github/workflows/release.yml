@@ -1,0 +1,118 @@
+name: Release (Mac + Windows installers)
+
+# Builds signed FilingForge installers for macOS and Windows in the cloud, so we never
+# have to hand-build the Windows .msi. Triggered by pushing a version tag (e.g. v0.1.1)
+# or manually. Publishes a (draft) GitHub Release with the installers + the updater
+# latest.json. While the repo is private, the Release is private too — download the
+# installers from the Releases page (any OS) and hand them to closed-beta testers.
+#
+# Required repo secrets:
+#   TAURI_SIGNING_PRIVATE_KEY           the updater private key STRING (from 1Password)
+#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password ("" if none)
+#
+# Apple notarization secrets (Mac DMG opens zero-click once these are set):
+#   APPLE_CERTIFICATE           base64 of the Developer ID Application .p12
+#   APPLE_CERTIFICATE_PASSWORD  the password you set when exporting the .p12
+#   APPLE_SIGNING_IDENTITY      "Developer ID Application: <Name> (<TEAMID>)"
+#   APPLE_ID                    your developer Apple ID email
+#   APPLE_PASSWORD              an app-specific password (appleid.apple.com)
+#   APPLE_TEAM_ID               your 10-char Team ID
+# When these are absent, tauri-action just skips notarization (ad-hoc signed, as before).
+
+on:
+  push:
+    tags: ["v*"]          # CI only runs when we intentionally cut a release (tag v…)
+  workflow_dispatch:
+
+jobs:
+  build:
+    permissions:
+      contents: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest      # Apple Silicon (arm64) .dmg + updater .app.tar.gz
+            triple: aarch64-apple-darwin
+          - platform: windows-latest     # x64 NSIS .exe + updater .nsis.zip
+            triple: x86_64-pc-windows-msvc
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.triple }}
+
+      # Cache compiled Rust dependencies so future builds recompile only changed code
+      # (~15 min cold compile → ~3-7 min warm). Output is identical; only speed changes.
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ui/src-tauri
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Build the engine sidecar (PyInstaller)
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[api]" pyinstaller
+          python sidecar/build_sidecar.py
+
+      - name: Install UI deps
+        working-directory: ui
+        run: npm ci
+
+      - name: Build + publish (tauri-action)
+        id: tauri
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          # Apple Developer ID notarization — empty until secrets are set, then auto-notarizes the .dmg
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        with:
+          projectPath: ui
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'app-v__VERSION__' }}
+          releaseName: "FilingForge v__VERSION__"
+          releaseBody: "See the assets below to download. Auto-update metadata: latest.json."
+          releaseDraft: true
+          includeUpdaterJson: true
+
+      # The website's download buttons point at releases/latest/download/FilingForge.dmg
+      # (and FilingForge-Setup.exe) so they always serve the newest release. tauri names
+      # the installers with the version baked in, so we upload a stable-named COPY here.
+      # The updater bundles (.app.tar.gz / .nsis.zip) keep their versioned names — untouched.
+      - name: Upload stable-named installer for the website
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -e
+          TAG="${{ github.ref_name }}"
+          PATHS=$(printf '%s' '${{ steps.tauri.outputs.artifactPaths }}' | tr '\\' '/' | tr ',' '\n' | tr -d '[]" ')
+          echo "Built artifacts:"; echo "$PATHS"
+          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
+            SRC=$(echo "$PATHS" | grep -E '\.dmg$' | head -1); DEST="$(dirname "$SRC")/FilingForge.dmg"
+          else
+            SRC=$(echo "$PATHS" | grep -E 'setup\.exe$' | head -1); DEST="$(dirname "$SRC")/FilingForge-Setup.exe"
+          fi
+          if [ -z "$SRC" ] || [ ! -f "$SRC" ]; then echo "No installer found to rename; skipping."; exit 0; fi
+          cp "$SRC" "$DEST"
+          echo "Uploading stable name: $(basename "$DEST")"
+          gh release upload "$TAG" "$DEST" --clobber --repo "$GITHUB_REPOSITORY"

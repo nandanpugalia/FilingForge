@@ -1,0 +1,44 @@
+name: CI
+
+# Runs the test suites on every branch push and pull request, so a change can't
+# merge with failing tests. The release workflow (release.yml) is separate and
+# only fires on version tags. Tag pushes don't match `branches` below, so a
+# release tag doesn't double-run CI.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  python:
+    name: Python (engine + API) tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install engine + API
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[api,dev]"
+      - name: Run pytest
+        run: pytest -q
+
+  ui:
+    name: UI tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Install UI deps
+        working-directory: ui
+        run: npm ci
+      - name: Typecheck + build UI
+        working-directory: ui
+        run: npm run build
+      - name: Run vitest
+        working-directory: ui
+        run: npm test

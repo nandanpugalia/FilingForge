@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions & ideas
+    url: https://github.com/nandanpugalia/FilingForge/discussions
+    about: For usage questions, ideas, and general discussion, please use Discussions.
+  - name: Security vulnerability
+    url: https://github.com/nandanpugalia/FilingForge/security/advisories/new
+    about: Found a security issue? Report it privately here — please do NOT open a public issue.

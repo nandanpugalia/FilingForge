@@ -1,0 +1,32 @@
+[package]
+name = "filingforge"
+version = "0.1.1"
+description = "FilingForge desktop app"
+authors = ["FilingForge"]
+edition = "2021"
+rust-version = "1.77.2"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[lib]
+# The `_lib` suffix may seem redundant but it is necessary
+# to make the lib name unique and wouldn't conflict with the bin name.
+name = "filingforge_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = [] }
+tauri-plugin-shell = "2"
+tauri-plugin-dialog = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[target."cfg(not(any(target_os = \"android\", target_os = \"ios\")))".dependencies]
+tauri-plugin-updater = "2"
+tauri-plugin-process = "2"
+# Single-instance: a 2nd launch hands its args to the running app and exits, so we
+# never spawn a 2nd engine sidecar fighting over 127.0.0.1:8765.
+tauri-plugin-single-instance = "2"

@@ -1,0 +1,73 @@
+# --- Secrets / env (NEVER commit) ---
+.env
+.env.*
+*.key
+*.pem
+secrets/
+
+# --- Python ---
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+
+# --- Node / frontend ---
+node_modules/
+dist/
+.vite/
+
+# --- Tauri / Rust ---
+src-tauri/target/
+target/
+ui/src-tauri/target/
+ui/src-tauri/gen/
+
+# --- PyInstaller sidecar (build artifacts; rebuilt from source via sidecar/build.sh) ---
+build/
+dist/
+*.spec
+sidecar/__pycache__/
+# Final sidecar binary is large (~18MB) and is a build output — rebuild via sidecar/build.sh.
+# See ui/src-tauri/binaries/README.md. The README itself IS tracked.
+ui/src-tauri/binaries/*
+!ui/src-tauri/binaries/README.md
+
+# --- Downloaded company data (user content, never committed) ---
+downloads/
+CompanyLibrary/
+*.pdf
+!engine/tests/fixtures/*.pdf
+
+# --- OS junk ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Spike (throwaway; stays local until GREEN) ---
+spike/.venv/
+spike/downloads/
+
+# --- Throwaway design mockups (not part of the app) ---
+design-mockups/
+
+# --- Release / updater (never commit signing keys or built feed artifacts) ---
+release/feed/
+*.key
+*.key.pub
+
+# --- Claude Code session state (local only) ---
+.claude/
+
+# --- Local agent / audit scratch (never commit) ---
+.kimchi/
+
+# --- Playwright MCP scratch (screenshots/snapshots) ---
+.playwright-mcp/
+
+# internal maintainer-only (not for public repo)
+docs/RELEASING.md
+metrics/
+release/README.md

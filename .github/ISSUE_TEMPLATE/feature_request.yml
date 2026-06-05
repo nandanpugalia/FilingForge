@@ -1,0 +1,33 @@
+name: Feature request
+description: Suggest an improvement or a new capability
+labels: ["enhancement"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the idea! FilingForge stays deliberately focused (clean filings →
+        AI-ready library, local-first). Tell us the problem you're trying to solve and
+        we'll figure out whether it fits.
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem are you trying to solve?
+      description: The need behind the request — not the solution yet.
+      placeholder: "When my library gets large, I can't tell which companies are stale…"
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: Proposed solution
+      description: What would you like FilingForge to do?
+      placeholder: "Show a 'last refreshed' date per company in the library view…"
+    validations:
+      required: true
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Other approaches or workarounds you've thought about.
+    validations:
+      required: false

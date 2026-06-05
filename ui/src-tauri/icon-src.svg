@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <!-- FilingForge app icon — warm-black field, ember open book / stacked paper.
+       Bold, legible at small sizes (no thin strokes that vanish at 32px). -->
+  <rect width="1024" height="1024" rx="208" fill="#0e0c0a"/>
+
+  <!-- subtle inset frame -->
+  <rect x="64" y="64" width="896" height="896" rx="160" fill="none"
+        stroke="#26211c" stroke-width="8"/>
+
+  <!-- open book: a solid ember spread, two pages with a center spine.
+       Drawn as two filled page shapes so it stays bold when scaled down. -->
+  <g fill="#ff6a3d">
+    <!-- left page -->
+    <path d="M512 320
+             C 432 270, 320 250, 232 262
+             C 214 264, 200 280, 200 298
+             L 200 712
+             C 200 732, 218 747, 238 744
+             C 322 732, 430 752, 504 800
+             C 509 803, 512 800, 512 794
+             Z"/>
+    <!-- right page -->
+    <path d="M512 320
+             C 592 270, 704 250, 792 262
+             C 810 264, 824 280, 824 298
+             L 824 712
+             C 824 732, 806 747, 786 744
+             C 702 732, 594 752, 520 800
+             C 515 803, 512 800, 512 794
+             Z"/>
+  </g>
+
+  <!-- center spine + page lines drawn in warm-black to read as text/binding -->
+  <g stroke="#0e0c0a" stroke-width="20" stroke-linecap="round" fill="none">
+    <!-- spine -->
+    <line x1="512" y1="332" x2="512" y2="788"/>
+  </g>
+  <g stroke="#0e0c0a" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.85">
+    <!-- left page text lines -->
+    <line x1="276" y1="372" x2="452" y2="402"/>
+    <line x1="262" y1="446" x2="452" y2="470"/>
+    <line x1="262" y1="520" x2="452" y2="538"/>
+    <line x1="262" y1="594" x2="452" y2="606"/>
+    <!-- right page text lines -->
+    <line x1="572" y1="402" x2="748" y2="372"/>
+    <line x1="572" y1="470" x2="762" y2="446"/>
+    <line x1="572" y1="538" x2="762" y2="520"/>
+    <line x1="572" y1="606" x2="762" y2="594"/>
+  </g>
+</svg>

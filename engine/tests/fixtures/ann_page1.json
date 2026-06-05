@@ -1,0 +1,8 @@
+{"Table": [
+  {"NEWSID": "ar-1", "DissemDT": "2025-07-01T10:00:00", "HEADLINE": "Annual Report 2024-25",
+   "ATTACHMENTNAME": "ar1.pdf", "CATEGORYNAME": "Others", "SUBCATNAME": "Reg. 34 (1) Annual Report"},
+  {"NEWSID": "res-1", "DissemDT": "2026-04-24T18:00:00", "HEADLINE": "Q4 Results",
+   "ATTACHMENTNAME": "res1.pdf", "CATEGORYNAME": "Result", "SUBCATNAME": "Financial Results"},
+  {"NEWSID": "noise-1", "DissemDT": "2026-01-01T09:00:00", "HEADLINE": "Trading Window",
+   "ATTACHMENTNAME": "n1.pdf", "CATEGORYNAME": "Insider Trading / SAST", "SUBCATNAME": "Closure of Trading Window"}
+]}

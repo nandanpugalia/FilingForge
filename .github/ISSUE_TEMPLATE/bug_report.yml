@@ -1,0 +1,70 @@
+name: Bug report
+description: Something in FilingForge isn't working the way it should
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. The more concrete detail you give,
+        the faster it gets fixed. FilingForge runs entirely on your machine, so please
+        include your OS and the app version.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you see, and what did you expect instead?
+      placeholder: "I searched for a company and the build stopped at 40% with no error…"
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: A numbered list we can follow to see it ourselves.
+      placeholder: |
+        1. Open FilingForge
+        2. Search for "…"
+        3. Click Build (everything)
+        4. …
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - macOS
+        - Windows
+    validations:
+      required: true
+  - type: input
+    id: os-version
+    attributes:
+      label: OS version
+      placeholder: "macOS 14.5 / Windows 11 23H2"
+    validations:
+      required: true
+  - type: input
+    id: app-version
+    attributes:
+      label: FilingForge version
+      description: Shown in Settings, or the version you downloaded.
+      placeholder: "v0.1.0"
+    validations:
+      required: true
+  - type: input
+    id: library-size
+    attributes:
+      label: Library size (roughly)
+      description: How many companies / how big is your library? Helps reproduce indexing issues.
+      placeholder: "~12 companies"
+    validations:
+      required: false
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or screenshots
+      description: Any error text, a screenshot, or console output. Drag images right in.
+      placeholder: "Paste any error message here…"
+    validations:
+      required: false

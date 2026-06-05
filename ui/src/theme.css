@@ -1,0 +1,1823 @@
+/* ============================================================
+   FilingForge — Forge Terminal theme (LOCKED)
+   Ported from design-mockups/app.html. Tokens are LOCKED — do
+   not change the values below.
+
+   Cross-webview-safe (council R9): NO backdrop-filter, NO
+   mix-blend-mode (both diverge / are absent in WKWebView). The
+   film-grain, scanline and ember-glow effects are reproduced with
+   plain opacity + pseudo-element overlays + box-shadow / text-shadow.
+
+   Fonts are SELF-HOSTED from /public/fonts (council R9) so a
+   packaged offline app still renders correctly. Do NOT swap these
+   for a runtime Google-Fonts @import.
+   ============================================================ */
+
+/* ── self-hosted fonts (latin + latin-ext subsets) ──────────── */
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/fraunces-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/fraunces-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/fraunces-600-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "Fraunces";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/fraunces-600-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-400-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-400-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-500-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-500-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-600-latin.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA,
+    U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193,
+    U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("/fonts/ibm-plex-mono-600-latin-ext.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7,
+    U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF,
+    U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* ── LOCKED Forge Terminal tokens (exact values from app.html) ── */
+:root {
+  --bg: #0e0c0a;
+  --panel: #110e0c;
+  --panel-soft: #15110e;
+  --ink: #f2ece1;
+  --dim: #a39b8d;
+  --dimmer: #6f685d;
+  --ember: #ff6a3d;
+  --ember-deep: #c2410c;
+  --ember-soft: rgba(255, 106, 61, 0.12);
+  --grid: #26211c;
+  --grid-soft: #1d1916;
+  --good: #7fae6d;
+  --bad: #d96c5f;
+  --radius: 4px;
+
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+}
+
+/* ── base resets ────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+}
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+body {
+  background:
+    radial-gradient(1200px 700px at 50% -10%, #17120f 0%, rgba(23, 18, 15, 0) 60%),
+    radial-gradient(900px 600px at 85% 110%, #16100c 0%, rgba(22, 16, 12, 0) 55%),
+    var(--bg);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+}
+
+h1,
+h2,
+h3,
+.wordmark {
+  font-family: var(--font-display);
+}
+
+::selection {
+  background: rgba(255, 106, 61, 0.28);
+  color: #fff;
+}
+
+/* ── faint warm CRT scanlines ───────────────────────────────── *
+   Cross-webview-safe: the original used mix-blend-mode:overlay.
+   We drop the blend mode and use a low, fixed opacity so it reads
+   identically in WKWebView and Chromium without the blend op.      */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.5;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255, 170, 130, 0.012) 0px,
+    rgba(255, 170, 130, 0.012) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+}
+
+/* ── film grain + warm vignette ─────────────────────────────── *
+   Original used mix-blend-mode:overlay; replaced with plain low
+   opacity (no blend mode) for WKWebView parity.                    */
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0.045;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ── auto-update banner (top of window) ─────────────────────── */
+.update-banner {
+  position: relative;
+  z-index: 120;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 9px 18px;
+  background: var(--ember-soft);
+  border-bottom: 1px solid rgba(255, 106, 61, 0.32);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.update-banner .ub-msg { display: inline-flex; align-items: center; gap: 9px; letter-spacing: 0.01em; }
+.update-banner .ub-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--ember); box-shadow: 0 0 7px 1px rgba(255, 106, 61, 0.7);
+}
+.update-banner .ub-actions { display: inline-flex; align-items: center; gap: 10px; }
+.ub-install {
+  font-family: var(--font-mono); font-size: 12px; font-weight: 600;
+  letter-spacing: 0.04em; color: var(--bg); background: var(--ember);
+  border: 1px solid var(--ember); border-radius: var(--radius);
+  padding: 5px 14px; cursor: pointer;
+}
+.ub-install:hover { background: var(--ember-deep); border-color: var(--ember-deep); }
+.ub-later {
+  font-family: var(--font-mono); font-size: 12px; color: var(--dim);
+  background: transparent; border: 1px solid var(--grid); border-radius: var(--radius);
+  padding: 5px 14px; cursor: pointer;
+}
+.ub-later:hover { color: var(--ink); border-color: var(--dim); }
+
+/* ── app shell ──────────────────────────────────────────────── */
+.app {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 28px 18px 60px;
+}
+
+/* ── ember glow helpers (box-shadow / text-shadow only) ─────── */
+.glow-ember {
+  box-shadow:
+    0 0 0 1px rgba(255, 106, 61, 0.3),
+    0 10px 30px -10px rgba(255, 106, 61, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+}
+.text-glow-ember {
+  text-shadow:
+    0 0 10px rgba(255, 106, 61, 0.5),
+    0 0 22px rgba(255, 106, 61, 0.25);
+}
+
+/* ── ReadyGate splash (desktop sidecar warm-up) ─────────────── */
+.splash {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background:
+    radial-gradient(120% 80% at 50% 62%, var(--ember-soft), transparent 60%),
+    var(--bg);
+  color: var(--ink);
+  z-index: 9999;
+}
+.splash-mark {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(28px, 6vw, 46px);
+  letter-spacing: 0.5px;
+  color: var(--ink);
+  text-shadow:
+    0 0 12px rgba(255, 106, 61, 0.35),
+    0 0 26px rgba(255, 106, 61, 0.18);
+}
+.splash-ember {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--ember);
+  box-shadow:
+    0 0 10px 2px rgba(255, 106, 61, 0.7),
+    0 0 22px 6px rgba(255, 106, 61, 0.35);
+  animation: splash-pulse 1.4s ease-in-out infinite;
+}
+@keyframes splash-pulse {
+  0%, 100% { transform: scale(0.75); opacity: 0.55; }
+  50%      { transform: scale(1.25); opacity: 1; }
+}
+.splash-msg {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--dim);
+  letter-spacing: 0.3px;
+}
+/* rotating boot line — soft fade-in each time the text changes (key swap) */
+.splash-msg-rotate {
+  min-height: 1.2em;
+  color: var(--dimmer);
+  animation: splash-line-in 0.45s ease both;
+}
+@keyframes splash-line-in {
+  from { opacity: 0; transform: translateY(3px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ============================================================
+   COMPONENT STYLING — ported from design-mockups/app.html onto
+   the real React class names. The React markup is flatter than
+   the mockup (a single .app "window" with a .titlebar and a centred
+   .stage) so the mockup's .window / .screen visuals are mapped onto
+   .app / .stage here. Cross-webview-safe: no backdrop-filter, no
+   mix-blend-mode — only opacity, box-shadow and text-shadow.
+   ============================================================ */
+
+/* ── app = the Forge Terminal window, centred in a column ───── */
+.app {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 860px;
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+/* push the window down from the very top + give it a frame */
+.app > .titlebar { margin-top: 40px; }
+.app {
+  /* the window body uses a hairline frame + warm gradient */
+}
+.app > .titlebar,
+.app > .stage {
+  border-left: 1px solid var(--grid);
+  border-right: 1px solid var(--grid);
+}
+
+/* ── title bar ──────────────────────────────────────────────── */
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 13px 20px;
+  border-top: 1px solid var(--grid);
+  border-bottom: 1px solid var(--grid);
+  background: linear-gradient(180deg, #181412, #141110);
+  border-radius: var(--radius) var(--radius) 0 0;
+  user-select: none;
+  /* stack the titlebar (and its hover tooltips) ABOVE the .stage content below,
+     otherwise the tooltip's lower half is painted over by the stage. */
+  position: relative;
+  z-index: 100;
+}
+.titlebar .wordmark {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1;
+}
+/* invisible placeholder that keeps the action row right-aligned when the
+   wordmark is hidden (search phase) */
+.titlebar .wordmark-spacer { display: block; }
+
+/* right-side actions — one tidy, evenly-spaced, vertically-centred icon row */
+.titlebar .actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* icon-only title-bar buttons (Library / Skills / Settings / Report a bug) —
+   comfortable ~32px hit area, ~20px glyph, quiet dim → ember on hover, with a
+   pure-CSS tooltip below (cross-webview-safe: no backdrop-filter). */
+.tb-icon {
+  appearance: none;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  cursor: pointer;
+  color: var(--dim);
+  padding: 0;
+  transition: color 0.12s, border-color 0.12s, background 0.12s, transform 0.08s;
+}
+.tb-icon svg { display: block; width: 24px; height: 24px; }
+.tb-icon:hover {
+  color: var(--ember);
+  border-color: rgba(255, 106, 61, 0.4);
+  background: var(--ember-soft);
+  transform: translateY(-1px);
+}
+.tb-icon:active { transform: translateY(0); }
+.tb-icon:focus-visible {
+  outline: none;
+  border-color: rgba(255, 106, 61, 0.6);
+  color: var(--ember);
+}
+
+/* tooltip: hidden by default, revealed on hover/focus below the icon */
+.tb-icon .tb-tip {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 50%;
+  transform: translateX(-50%) translateY(2px);
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 60;
+  background: linear-gradient(180deg, #1b1613, #141110);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.03em;
+  padding: 6px 11px;
+  line-height: 1;
+  box-shadow: 0 8px 20px -8px rgba(0, 0, 0, 0.8);
+  transition: opacity 0.12s, transform 0.12s;
+}
+.tb-icon:hover .tb-tip,
+.tb-icon:focus-visible .tb-tip {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── stage = the screen body, generous padding, centred flow ── */
+.stage {
+  position: relative;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 40px 40px 36px;
+  background: linear-gradient(180deg, #131010 0%, #110e0c 100%);
+}
+
+/* ── shared link / button primitives ────────────────────────── */
+a { color: var(--dim); text-decoration: none; }
+
+.link {
+  appearance: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--dim);
+  text-decoration: none;
+  letter-spacing: 0.02em;
+  border-bottom: 1px solid transparent;
+  padding: 0;
+  transition: color 0.12s, border-color 0.12s;
+}
+.link:hover { color: var(--ember); border-bottom-color: rgba(255, 106, 61, 0.4); }
+
+/* themed "‹ Back" affordance — dim → ember, never underlined, top-left feel */
+.back {
+  appearance: none;
+  align-self: flex-start;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--dim);
+  letter-spacing: 0.03em;
+  padding: 0;
+  margin-bottom: 2px;
+  transition: color 0.12s;
+}
+.back:hover { color: var(--ember); }
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(255, 106, 61, 0.35);
+  color: var(--ember);
+  background: var(--ember-soft);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  text-decoration: none;
+  transition: border-color 0.12s, background 0.12s, transform 0.08s;
+}
+.btn:hover { border-color: var(--ember); background: rgba(255, 106, 61, 0.18); }
+.btn:active { transform: translateY(1px); }
+
+/* primary action — ember fill */
+.primary {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  align-self: flex-start;
+  color: #1a0c06;
+  background: linear-gradient(180deg, #ff7a4f, #e2520f);
+  border: 1px solid var(--ember);
+  font: inherit;
+  font-weight: 600;
+  font-size: 13.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 12px 22px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  box-shadow:
+    0 0 0 1px rgba(255, 106, 61, 0.3),
+    0 10px 30px -10px rgba(255, 106, 61, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.22);
+  transition: transform 0.08s, box-shadow 0.15s, filter 0.12s;
+}
+.primary:hover {
+  filter: brightness(1.06);
+  box-shadow:
+    0 0 0 1px rgba(255, 106, 61, 0.4),
+    0 14px 38px -10px rgba(255, 106, 61, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+.primary:active { transform: translateY(1px); }
+.primary:disabled { filter: grayscale(0.4) brightness(0.85); cursor: default; }
+.primary .helper {
+  color: rgba(26, 12, 6, 0.7);
+  font-weight: 500;
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+  text-transform: none;
+}
+
+/* ── PHASE 1 · SEARCH ───────────────────────────────────────── *
+   Centred vertical hierarchy on a single axis: wordmark (Fraunces,
+   prominent) → tagline (one line, dim, smaller) → search field,
+   with balanced, intentional spacing.                              */
+.tagline {
+  color: var(--dim);
+  font-size: 13.5px;
+  line-height: 1.55;
+  letter-spacing: 0.01em;
+  text-align: center;
+  max-width: 440px;
+  margin: 0 auto 26px;
+}
+/* the Fraunces wordmark above the tagline (search phase) */
+.search-wordmark {
+  display: block;
+  text-align: center;
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
+  font-size: 44px;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  line-height: 1.05;
+  color: var(--ink);
+  margin: 0 auto 14px;
+}
+/* the trailing fullstop, rendered as a deliberate ember brand mark */
+.wm-dot { color: var(--ember); }
+
+.search {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  border: 1px solid var(--grid);
+  background: var(--panel);
+  border-radius: var(--radius);
+  padding: 13px 16px;
+  cursor: text;
+  box-shadow:
+    0 0 0 3px rgba(255, 106, 61, 0.07),
+    0 0 26px -6px rgba(255, 106, 61, 0.18);
+  border-color: rgba(255, 106, 61, 0.5);
+}
+.search .prompt {
+  flex: 0 0 auto;
+  color: var(--ember);
+  font-weight: 600;
+  font-size: 16px;
+  line-height: 1;
+}
+.search-input {
+  flex: 1 1 0;
+  min-width: 0;
+  appearance: none;
+  background: transparent;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 15px;
+  letter-spacing: 0.03em;
+  padding: 0;
+  caret-color: var(--ember);
+}
+.search-input::placeholder { color: var(--dimmer); letter-spacing: 0.03em; }
+
+.error-inline,
+.no-match {
+  flex: 0 0 100%;
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  text-align: left;
+}
+.no-match { color: var(--dimmer); }
+.error-inline { color: var(--bad); }
+
+/* autocomplete dropdown */
+.dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--grid);
+  background: linear-gradient(180deg, #141110, #110e0c);
+  border-radius: var(--radius);
+  box-shadow: 0 18px 44px -16px rgba(0, 0, 0, 0.9), 0 0 0 1px #000;
+  overflow: hidden auto;
+  max-height: 340px;
+  z-index: 40;
+}
+.dropdown-row {
+  display: grid;
+  grid-template-columns: 84px 1fr auto;
+  align-items: center;
+  gap: 4px 14px;
+  padding: 11px 16px;
+  border-left: 3px solid transparent;
+  border-bottom: 1px solid var(--grid-soft);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.dropdown-row:last-child { border-bottom: 0; }
+.dropdown-row:hover {
+  background: var(--panel-soft);
+  border-left-color: var(--ember);
+}
+/* keyboard selection — unmistakable so ↑↓ is obviously working */
+.dropdown-row.active {
+  background: rgba(255, 106, 61, 0.14);
+  border-left-color: var(--ember);
+  border-left-width: 3px;
+  box-shadow: inset 0 0 0 1px rgba(255, 106, 61, 0.22);
+}
+.dropdown-row.active .name { color: #fff; }
+.dropdown-row .code {
+  grid-column: 1;
+  color: var(--dim);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dropdown-row.active .code { color: var(--ember); }
+.dropdown-row .name {
+  grid-column: 2;
+  grid-row: 1;
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dropdown-row .isin {
+  grid-column: 2;
+  grid-row: 2;
+  color: var(--dimmer);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+}
+.dropdown-row .primary {
+  /* dropdown badge variant — override the .primary button styles */
+  grid-column: 3;
+  grid-row: 1 / span 2;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  align-self: center;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  padding: 0;
+  color: var(--ember);
+  font-size: 10.5px;
+  font-weight: 400;
+  letter-spacing: 0.1em;
+  text-transform: lowercase;
+  white-space: nowrap;
+  filter: none;
+}
+
+/* ── PHASE 2 · CONFIGURE ────────────────────────────────────── */
+.config {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+.company-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 16px;
+  border: 1px solid var(--grid);
+  border-left: 3px solid var(--ember);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #1d1511, #181210);
+}
+.company-header .name {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 500;
+}
+.company-header .code { color: var(--ember); font-size: 13px; }
+.company-header .link { margin-left: auto; font-size: 12px; color: var(--dim); }
+
+/* generic config label */
+.config > label {
+  display: block;
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+  font-size: 10.5px;
+  color: var(--dim);
+}
+
+/* years stepper */
+.years {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.years button {
+  appearance: none;
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  color: var(--dim);
+  font: inherit;
+  font-size: 16px;
+  width: 38px;
+  height: 34px;
+  cursor: pointer;
+  border-radius: var(--radius);
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.years button:hover { color: var(--ember); background: var(--panel-soft); border-color: rgba(255, 106, 61, 0.4); }
+.years-val {
+  min-width: 40px;
+  text-align: center;
+  color: var(--ink);
+  font-size: 16px;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* Everything toggle */
+.everything-toggle {
+  display: flex !important;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 106, 61, 0.45);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #1d1511, #181210);
+  box-shadow: inset 0 0 0 1px rgba(255, 106, 61, 0.06);
+  cursor: pointer;
+  user-select: none;
+  color: var(--ember);
+  font-size: 15px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  text-transform: none;
+}
+.everything-toggle input[type="checkbox"] { accent-color: var(--ember); width: 16px; height: 16px; cursor: pointer; }
+
+/* curated checklist */
+.checklist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 26px;
+}
+.checklist li { min-width: 0; }
+.checklist label {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 4px 12px;
+  cursor: pointer;
+  user-select: none;
+  color: var(--ink);
+  font-size: 14px;
+  padding: 4px 0;
+}
+.checklist input[type="checkbox"] {
+  grid-row: 1 / span 2;
+  accent-color: var(--ember);
+  width: 14px;
+  height: 14px;
+  margin-top: 2px;
+  cursor: pointer;
+}
+.cat-label { letter-spacing: 0.02em; line-height: 1.3; }
+.cat-sub {
+  display: block;
+  color: var(--dimmer);
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  margin-top: 3px;
+}
+
+/* destination row */
+.dest-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--ink);
+  font-size: 13.5px;
+  text-transform: none;
+  letter-spacing: 0.01em;
+}
+.dest-row input {
+  flex: 1 1 auto;
+  min-width: 0;
+  appearance: none;
+  background: var(--panel);
+  border: 1px dashed var(--grid);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 10px 14px;
+  outline: 0;
+  caret-color: var(--ember);
+}
+.dest-row input:focus { border-color: rgba(255, 106, 61, 0.5); border-style: solid; }
+.browse {
+  flex: 0 0 auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ember);
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  cursor: pointer;
+  transition: border-color 0.12s, background 0.12s;
+}
+.browse:hover { border-color: var(--ember); background: var(--panel-soft); }
+
+.scope-line {
+  color: var(--dim);
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  text-transform: none;
+}
+
+/* ── PHASE 3 · BUILDING ─────────────────────────────────────── */
+.building {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+/* stage eyebrow — friendly phase copy, centred above the big % */
+.prog-stage {
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--dim);
+  text-align: center;
+  margin-bottom: 10px;
+}
+/* the focal point: a big, centred % done */
+.prog-pct {
+  font-family: var(--font-display);
+  font-size: 76px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ember);
+  text-align: center;
+}
+.prog-milestone {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+  text-align: center;
+  margin: 6px 0 22px;
+  transition: color 0.3s ease;
+}
+.prog-milestone.done { color: var(--good); }
+/* (FIX 3) No blinking type-cursor on the building/progress view — the rogue
+   `.building .current::after` blink glyph was removed. The progress bar + log
+   feed remain the only live elements. */
+
+/* segmented ember progress bar with glow */
+.bar {
+  height: 14px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    to right,
+    var(--grid) 0,
+    var(--grid) 10px,
+    transparent 10px,
+    transparent 14px
+  );
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+.bar .fill {
+  height: 100%;
+  background: repeating-linear-gradient(
+    to right,
+    var(--ember) 0,
+    var(--ember) 10px,
+    transparent 10px,
+    transparent 14px
+  );
+  box-shadow:
+    0 0 10px rgba(255, 106, 61, 0.55),
+    0 0 22px rgba(255, 106, 61, 0.3);
+  transition: width 0.3s ease;
+}
+/* current item line under the bar: filing name left, count right */
+.prog-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 14px;
+  margin-top: 10px;
+  font-size: 13px;
+}
+.pi-name {
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.pi-count {
+  color: var(--dim);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+/* mono log feed */
+.log {
+  list-style: none;
+  margin: 22px 0 18px;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  background: #100d0b;
+  padding: 16px 18px;
+  height: 190px;
+  overflow: hidden;
+  font-size: 13px;
+  line-height: 1.85;
+}
+.log li { white-space: pre-wrap; color: var(--dim); }
+.log li:last-child { color: var(--ink); }
+
+/* ── PHASE 4 · DONE ─────────────────────────────────────────── */
+.done {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+.done .ready {
+  font-family: var(--font-display);
+  font-size: 30px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin: 0;
+  line-height: 1.15;
+}
+.done .summary { color: var(--ink); font-size: 14px; letter-spacing: 0.01em; }
+/* "What you got" category breakdown (Done screen) */
+.done .breakdown {
+  width: 100%;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  background: #100d0b;
+  padding: 14px 18px;
+}
+.done .breakdown-head {
+  color: var(--dim);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.done .breakdown-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.done .breakdown-list li {
+  display: grid;
+  grid-template-columns: 44px 1fr;
+  align-items: baseline;
+  gap: 12px;
+}
+.done .breakdown-list .bd-count {
+  font-family: var(--font-mono);
+  font-weight: 600;
+  color: var(--ember);
+  text-align: right;
+  font-size: 13px;
+}
+.done .breakdown-list .bd-label {
+  color: var(--dim);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+
+.done .ai-hook {
+  border-left: 3px solid var(--ember);
+  padding: 14px 18px;
+  background: linear-gradient(180deg, #1d1511, #181210);
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.55;
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* copy-paste prompt block for Claude / ChatGPT / Codex */
+.done .ai-prompt {
+  width: 100%;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  background: #100d0b;
+  overflow: hidden;
+}
+.done .ai-prompt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 14px;
+  border-bottom: 1px solid var(--grid-soft);
+  background: #15110e;
+}
+.done .ai-prompt-label {
+  color: var(--dim);
+  font-size: 10.5px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.done .ai-prompt-copy {
+  appearance: none;
+  cursor: pointer;
+  flex: 0 0 auto;
+  background: var(--ember-soft);
+  border: 1px solid rgba(255, 106, 61, 0.4);
+  border-radius: var(--radius);
+  color: var(--ember);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  line-height: 1;
+  transition: border-color 0.12s, background 0.12s, color 0.12s;
+}
+.done .ai-prompt-copy:hover {
+  border-color: var(--ember);
+  background: rgba(255, 106, 61, 0.18);
+}
+.done .ai-prompt-body {
+  margin: 0;
+  padding: 14px 16px;
+  color: var(--dim);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+
+/* ── ERROR view ─────────────────────────────────────────────── */
+.error-view {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+.error-view .msg {
+  width: 100%;
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  border: 1px solid var(--grid);
+  border-left: 3px solid var(--bad);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 20px 22px;
+  background: #160f0c;
+}
+
+/* a small row holding primary + link in done/error */
+.done .link,
+.error-view .link { margin-top: 4px; }
+
+/* ── OVERLAYS (settings + library) ──────────────────────────── *
+   z-index 500 puts every overlay ABOVE the titlebar (z-index 100) so
+   an open overlay's dim backdrop fully covers — and disables — the
+   titlebar icons. The QR zoom (.qr-zoom, z-index 600) sits above the
+   overlay. Cross-webview-safe entrance: opacity + translate only, no
+   backdrop-filter / no blend modes.                                  */
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 24px;
+  background: rgba(6, 4, 3, 0.78);
+  animation: overlay-fade 0.16s ease both;
+}
+@keyframes overlay-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+.overlay .panel {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 460px;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  background: linear-gradient(180deg, #161210, #110e0c);
+  box-shadow: 0 28px 70px -20px rgba(0, 0, 0, 0.9), 0 0 0 1px #000;
+  max-height: 100%;
+  overflow: auto;
+  padding: 26px 26px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  animation: panel-rise 0.2s cubic-bezier(0.2, 0.7, 0.3, 1) both;
+}
+@keyframes panel-rise {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+/* polished title row: title left, ✕ right, hairline rule beneath */
+.overlay .panel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-bottom: 16px;
+  margin-bottom: 2px;
+  border-bottom: 1px solid var(--grid);
+}
+.overlay .panel-head h3 { padding-right: 0; margin: 0; }
+.overlay .panel-head .head-titles { display: flex; flex-direction: column; gap: 5px; }
+/* a quiet one-line sub-caption under an overlay title */
+.overlay .panel-sub {
+  color: var(--dimmer);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  margin: 0;
+}
+/* the close ✕ when it lives inside the flex head row (not absolutely placed) */
+.overlay .panel-head .close { position: static; flex: 0 0 auto; }
+
+.overlay .close {
+  position: absolute;
+  top: 15px;
+  right: 16px;
+  appearance: none;
+  cursor: pointer;
+  width: 26px;
+  height: 26px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  background: var(--panel);
+  color: var(--dim);
+  font-size: 13px;
+  line-height: 1;
+  padding: 0;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.overlay .close:hover { color: var(--ember); border-color: rgba(255, 106, 61, 0.5); background: var(--panel-soft); }
+.overlay h3 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0 0 4px;
+  padding-right: 30px;
+}
+.overlay h4 {
+  font-family: var(--font-mono);
+  color: var(--dim);
+  font-size: 10.5px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  margin: 0;
+}
+.overlay label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--dim);
+  font-size: 12.5px;
+  letter-spacing: 0.02em;
+}
+.overlay label input[type="text"],
+.overlay label input[type="number"],
+.overlay label input:not([type]) {
+  appearance: none;
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  padding: 9px 12px;
+  outline: 0;
+  caret-color: var(--ember);
+}
+.overlay label input:focus { border-color: rgba(255, 106, 61, 0.5); }
+.overlay label input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--ember);
+}
+/* checkbox label is a row, not a column */
+.overlay label:has(> input[type="checkbox"]) {
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  color: var(--ink);
+  font-size: 13px;
+}
+
+/* ── Settings: tidy field group + aligned rows ──────────────── */
+.settings-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+/* the open-when-done toggle reads as a labelled row, value on the right */
+.settings-fields .toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 2px 0;
+}
+.settings-fields .toggle-row .toggle-label {
+  color: var(--ink);
+  font-size: 13px;
+  letter-spacing: 0.01em;
+}
+.settings-fields .toggle-row input[type="checkbox"] {
+  width: 16px; height: 16px; accent-color: var(--ember); cursor: pointer; flex: 0 0 auto;
+}
+/* a narrow years field — doesn't need full panel width */
+.overlay label.field-years input { max-width: 120px; }
+/* save sits a touch apart from the fields above it */
+.overlay .panel > .primary.settings-save { align-self: flex-start; margin-top: 2px; }
+
+/* support section */
+.support {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  border-top: 1px solid var(--grid);
+  padding-top: 18px;
+  margin-top: 2px;
+}
+.support .warm {
+  color: var(--dimmer);
+  font-size: 11.5px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  margin: 0;
+}
+.support .qr {
+  align-self: center;
+  width: 180px;
+  height: 180px;
+  border-radius: 4px;
+  background: #f2ece1;
+  padding: 8px;
+  border: 1px solid var(--grid);
+  cursor: zoom-in;
+}
+.support .qr:hover { border-color: var(--ember); }
+.qr-zoom {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.72);
+  cursor: zoom-out;
+}
+.qr-zoom img {
+  width: min(360px, 80vw);
+  height: auto;
+  background: #f2ece1;
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid var(--grid);
+}
+.support .qr-note {
+  text-align: center;
+  color: var(--dim);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.support .upi-id {
+  align-self: center;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  padding: 7px 12px;
+}
+.support .upi-copy {
+  align-self: center;
+  justify-content: center;
+  min-width: 130px;
+}
+
+/* ── Report (bug / feature) overlay ─────────────────────────── */
+.report-type {
+  display: flex;
+  gap: 8px;
+}
+.report-type .seg {
+  appearance: none;
+  flex: 1 1 0;
+  cursor: pointer;
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  color: var(--dim);
+  font-family: inherit;
+  font-size: 12.5px;
+  letter-spacing: 0.03em;
+  padding: 9px 10px;
+  transition: color 0.12s, border-color 0.12s, background 0.12s;
+}
+.report-type .seg:hover { color: var(--ink); border-color: rgba(255, 106, 61, 0.4); }
+.report-type .seg.on {
+  color: var(--ember);
+  border-color: var(--ember);
+  background: var(--ember-soft);
+}
+.overlay label textarea.report-comment {
+  appearance: none;
+  background: var(--panel);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.5;
+  padding: 9px 12px;
+  outline: 0;
+  resize: vertical;
+  caret-color: var(--ember);
+}
+.overlay label textarea.report-comment:focus { border-color: rgba(255, 106, 61, 0.5); }
+.report-context {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  border-top: 1px solid var(--grid-soft);
+  padding-top: 12px;
+  color: var(--dimmer);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  letter-spacing: 0.04em;
+}
+.report-status {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.report-status.failed { color: var(--ember); }
+.report-status.sent, .report-status.queued { color: var(--ember); }
+
+/* ── Skills (coming soon) teaser overlay ───────────────────── */
+.badge-soon {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ember);
+  background: var(--ember-soft);
+  border: 1px solid rgba(255, 106, 61, 0.45);
+  border-radius: 999px;
+  padding: 6px 14px;
+}
+/* skills: a small "store" — pitch + a list of packs, each with a price + Get */
+.skills-pitch {
+  color: var(--ink);
+  font-size: 13.5px;
+  line-height: 1.6;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+.skill-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.skill-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;            /* vertically center the price+action against the text block */
+  column-gap: 18px;
+  row-gap: 8px;
+  padding: 16px 2px;
+  border-top: 1px solid var(--grid-soft);
+}
+.skill-row:first-child { border-top: 0; }
+.skill-row.soon { opacity: 0.55; }
+.pr-head { display: flex; align-items: baseline; gap: 10px; }
+.pr-name {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15.5px;
+  font-weight: 500;
+}
+.pr-soon {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+  border: 1px solid var(--grid);
+  border-radius: 999px;
+  padding: 2px 8px;
+}
+.pr-desc {
+  color: var(--dim);
+  font-size: 12px;
+  line-height: 1.5;
+  margin: 5px 0 0;
+}
+/* price + Get cluster, right-aligned; min-width keeps the column consistent across rows */
+.pr-buy { display: flex; flex-direction: column; align-items: flex-end; gap: 9px; min-width: 96px; }
+.pr-price {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.pr-price.free { color: var(--good); }
+.pr-price.premium { color: var(--ember); }
+.pr-comingsoon {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--dimmer);
+  white-space: nowrap;
+}
+.pr-get {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--ember);
+  border: 1px solid var(--ember);
+  border-radius: var(--radius);
+  padding: 6px 18px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pr-get:hover { background: var(--ember-deep); border-color: var(--ember-deep); }
+.pr-get:disabled {
+  color: var(--dimmer);
+  background: transparent;
+  border-color: var(--grid);
+  cursor: default;
+}
+.pr-got-note {
+  grid-column: 1 / -1;
+  color: var(--good);
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin: 2px 0 0;
+}
+.pr-empty-note {
+  grid-column: 1 / -1;
+  color: var(--dim);
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin: 2px 0 0;
+}
+/* company picker: appears under a Skill's row when Get is pressed */
+.pr-pick {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 12px 14px;
+  background: var(--panel-soft, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--grid-soft);
+  border-radius: var(--radius);
+}
+.pr-pick-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.pr-pick-search {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+  outline: none;
+}
+.pr-pick-search:focus { border-color: var(--ember); }
+/* wrap many tickers; cap the height so 100s scroll instead of pushing the panel */
+.pr-pick-list { display: flex; flex-wrap: wrap; gap: 8px; max-height: 168px; overflow-y: auto; }
+.pr-pick-co {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  padding: 6px 14px;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pr-pick-co:hover { border-color: var(--ember); color: var(--ember); }
+.pr-pick-empty { color: var(--dim); font-size: 11.5px; }
+/* import row at the foot of the Skills panel */
+.skills-import {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--grid-soft);
+}
+.skills-import .link {
+  align-self: flex-start;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--ember);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+}
+.skills-import .link:hover { color: var(--ember-deep); text-decoration: underline; }
+.skills-import-hint { color: var(--dimmer); font-size: 11px; line-height: 1.5; }
+.skills-foot {
+  color: var(--dimmer);
+  font-size: 11.5px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  margin: 0;
+  padding-top: 14px;
+  border-top: 1px solid var(--grid-soft);
+}
+
+/* library search — appears once the library grows past a screenful */
+.lib-search {
+  width: 100%;
+  margin: 2px 0 4px;
+  padding: 9px 12px;
+  background: var(--panel-soft);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+.lib-search::placeholder { color: var(--dimmer); }
+.lib-search:focus {
+  outline: none;
+  border-color: var(--ember);
+  box-shadow: 0 0 0 1px rgba(255, 106, 61, 0.3);
+}
+.lib-empty { padding: 14px 2px; }
+
+/* library overlay list */
+.lib-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lib-list li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: baseline;
+  gap: 9px 14px;
+  padding: 14px 2px;
+  border-bottom: 1px solid var(--grid-soft);
+}
+.lib-list li:last-child { border-bottom: 0; }
+.lib-list .t {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 15px;
+  font-weight: 500;
+}
+.lib-list .n { color: var(--dimmer); font-size: 11.5px; letter-spacing: 0.02em; }
+.lib-list .link { font-size: 11.5px; white-space: nowrap; }
+/* per-company actions (Refresh ↻ · open folder ▸) sit together at the row end */
+.lib-actions { display: inline-flex; align-items: baseline; gap: 14px; white-space: nowrap; }
+/* "+ Add company" — a clear themed action under the list */
+.lib-add { align-self: flex-start; justify-content: center; }
+
+.overlay .dim {
+  color: var(--dimmer);
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── responsive ─────────────────────────────────────────────── */
+@media (max-width: 680px) {
+  .stage { padding: 28px 22px; }
+  .checklist { grid-template-columns: 1fr; }
+  .search-wordmark { font-size: 34px; }
+}
+
+/* Done: which folder it saved to (the ticker) */
+.saved-as { color: var(--dimmer); font-size: 12px; margin-top: 2px; }
+.saved-as code { color: var(--dim); font-family: var(--font-mono); }
+
+/* ── Top-level crash fallback (ErrorBoundary) — never let a render crash white-screen ── */
+.crash {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 0 40px;
+  text-align: center;
+  -webkit-app-region: drag;            /* still draggable if the titlebar is gone */
+}
+.crash-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--ink);
+  margin: 0;
+}
+.crash-body {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--dim);
+  max-width: 420px;
+  margin: 0;
+}
+.crash-reload {
+  -webkit-app-region: no-drag;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--bg);
+  background: var(--ember);
+  border: 1px solid var(--ember);
+  border-radius: var(--radius);
+  padding: 9px 22px;
+  cursor: pointer;
+}
+.crash-reload:hover { background: var(--ember-deep); border-color: var(--ember-deep); }
+
+/* ── First-run setup (one-time: choose the library folder) ───── */
+.firstrun {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 0 24px;
+}
+.firstrun-card {
+  width: 100%;
+  max-width: 440px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+}
+.firstrun-card .wordmark { font-size: 22px; }
+.firstrun-card h2 { font-size: 24px; margin: 18px 0 8px; }
+.firstrun-sub {
+  color: var(--dim);
+  font-size: 13.5px;
+  line-height: 1.6;
+  margin: 0 0 24px;
+}
+.firstrun-field {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 7px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 20px;
+}
+.firstrun-field .dest-row { display: flex; width: 100%; gap: 8px; }
+.firstrun-field input { flex: 1; }
+.firstrun-card .primary { width: 100%; justify-content: center; }
