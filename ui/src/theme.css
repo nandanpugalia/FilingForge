@@ -1797,13 +1797,25 @@ a { color: var(--dim); text-decoration: none; }
 }
 .crash-report:hover { background: rgba(255, 106, 61, 0.10); }
 .settings-version {
-  text-align: center;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--dim);
-  opacity: 0.7;
-  margin: 14px 0 0;
+  display: flex; flex-direction: column; align-items: center; gap: 8px;
+  font-family: var(--font-mono); font-size: 11px; color: var(--dim);
+  margin: 16px 0 2px;
 }
+.settings-version .sv-name { opacity: 0.7; }
+.sv-check {
+  font-family: var(--font-mono); font-size: 11px; color: var(--ember);
+  background: transparent; border: 1px solid rgba(255, 106, 61, 0.4); border-radius: 7px;
+  padding: 5px 12px; cursor: pointer;
+}
+.sv-check:hover:not(:disabled) { background: rgba(255, 106, 61, 0.08); }
+.sv-check:disabled { opacity: 0.5; cursor: default; }
+.sv-note { color: var(--dim); }
+.sv-install {
+  font-family: var(--font-mono); font-size: 11px; font-weight: 600; color: var(--bg);
+  background: var(--ember); border: 1px solid var(--ember); border-radius: 7px;
+  padding: 6px 14px; cursor: pointer;
+}
+.sv-install:hover { background: var(--ember-deep); }
 
 /* ── First-run setup (one-time: choose the library folder) ───── */
 .firstrun {

@@ -8,8 +8,25 @@ import { DEFAULT_SETTINGS } from "../settings";
 import { DONATE } from "../config";
 import * as api from "../api";
 import * as picker from "../lib/pickSkillFile";
+import type { UpdateController } from "../lib/useUpdate";
 
 beforeEach(() => vi.restoreAllMocks());
+
+it("SettingsOverlay 'Check for updates' calls checkNow and surfaces status", async () => {
+  const checkNow = vi.fn();
+  const ctl = (state: UpdateController["state"]): UpdateController =>
+    ({ state, install: vi.fn(), dismiss: vi.fn(), checkNow });
+  const { rerender } = render(
+    <SettingsOverlay settings={DEFAULT_SETTINGS} onSave={() => {}} onClose={() => {}} updater={ctl({ phase: "idle" })} />,
+  );
+  await userEvent.click(screen.getByRole("button", { name: /check for updates/i }));
+  expect(checkNow).toHaveBeenCalledTimes(1);
+  // up-to-date result is surfaced in Settings (not the banner)
+  rerender(
+    <SettingsOverlay settings={DEFAULT_SETTINGS} onSave={() => {}} onClose={() => {}} updater={ctl({ phase: "uptodate" })} />,
+  );
+  expect(screen.getByText(/on the latest version/i)).toBeInTheDocument();
+});
 
 it("SettingsOverlay shows UPI-only support (QR + id, no BMC/Sponsors) + closes", async () => {
   const onClose = vi.fn();

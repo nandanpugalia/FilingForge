@@ -1,10 +1,17 @@
-import { useUpdate } from "../lib/useUpdate";
+import type { UpdateState } from "../lib/useUpdate";
 
 // A slim banner at the top of the window when a signed update is available.
-// "Install & restart" downloads + verifies + installs, then relaunches.
-export function UpdateBanner() {
-  const { state, install, dismiss } = useUpdate();
-  if (state.phase === "idle") return null;
+// "Install & restart" downloads + verifies + installs, then relaunches. The update
+// state is owned by App (so the banner and the Settings "Check for updates" button
+// share one source of truth); this component is purely presentational.
+export function UpdateBanner({ state, install, dismiss }: {
+  state: UpdateState;
+  install: () => Promise<void>;
+  dismiss: () => void;
+}) {
+  // idle / checking / uptodate have nothing to show in the banner (checking + uptodate
+  // are surfaced in Settings instead).
+  if (!state || state.phase === "idle" || state.phase === "checking" || state.phase === "uptodate") return null;
   return (
     <div className="update-banner" role="status">
       {state.phase === "available" && (

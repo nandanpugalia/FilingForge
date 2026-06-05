@@ -4,8 +4,10 @@ import { DONATE, APP_VERSION } from "../config";
 import { pickFolder } from "../lib/pickFolder";
 import { isTauri } from "./ReadyGate";
 import { useEscapeClose } from "../lib/useEscapeClose";
-export function SettingsOverlay({ settings, onSave, onClose }: {
+import type { UpdateController } from "../lib/useUpdate";
+export function SettingsOverlay({ settings, onSave, onClose, updater }: {
   settings: Settings; onSave: (s: Settings) => void; onClose: () => void;
+  updater?: UpdateController;
 }) {
   const [s, setS] = useState(settings);
   const [copied, setCopied] = useState(false);
@@ -61,7 +63,23 @@ export function SettingsOverlay({ settings, onSave, onClose }: {
             {copied ? "Copied ✓" : "Copy UPI ID"}
           </button>
         </section>
-        <p className="settings-version">FilingForge v{APP_VERSION}</p>
+        <div className="settings-version">
+          <span className="sv-name">FilingForge v{APP_VERSION}</span>
+          {updater && (
+            <button type="button" className="sv-check"
+              disabled={updater.state.phase === "checking"}
+              onClick={updater.checkNow}>
+              {updater.state.phase === "checking" ? "Checking…" : "Check for updates"}
+            </button>
+          )}
+          {updater?.state.phase === "uptodate" && <span className="sv-note">You're on the latest version ✓</span>}
+          {updater?.state.phase === "error" && <span className="sv-note">Couldn't check — try again.</span>}
+          {updater?.state.phase === "available" && (
+            <button type="button" className="sv-install" onClick={updater.install}>
+              Update to {updater.state.version} &amp; restart
+            </button>
+          )}
+        </div>
         {zoomed && (
           <div className="qr-zoom" role="dialog" aria-label="UPI QR enlarged" onClick={() => setZoomed(false)}>
             <img src="/upi.png" alt="UPI QR — scan to support" />

@@ -17,6 +17,7 @@ import { ReportOverlay } from "./components/ReportOverlay";
 import { SkillsOverlay } from "./components/SkillsOverlay";
 import { FirstRunOverlay } from "./components/FirstRunOverlay";
 import { UpdateBanner } from "./components/UpdateBanner";
+import { useUpdate } from "./lib/useUpdate";
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -26,6 +27,8 @@ export default function App() {
   // and its backdrop (z-index 500) covers the titlebar so its icons are
   // not clickable through an open overlay.
   const [overlay, setOverlay] = useState<null | "settings" | "library" | "report" | "skills">(null);
+  // One update controller, shared by the top banner and the Settings "Check for updates" button.
+  const updater = useUpdate();
   const [hasLibrary, setHasLibrary] = useState(false);
   const [starting, setStarting] = useState(false);
   const [breakdown, setBreakdown] = useState<Record<string, number> | undefined>(undefined);
@@ -86,7 +89,7 @@ export default function App() {
           setSettings(next); saveSettings(next); setNeedsSetup(false);
         }} />
       )}
-      <UpdateBanner />
+      <UpdateBanner state={updater.state} install={updater.install} dismiss={updater.dismiss} />
       <TitleBar showLibrary={hasLibrary} showWordmark={state.phase !== "search"}
         onSettings={() => setOverlay("settings")} onLibrary={() => setOverlay("library")}
         onSkills={() => setOverlay("skills")} onReport={() => setOverlay("report")} />
@@ -119,7 +122,7 @@ export default function App() {
             onReport={() => setOverlay("report")} />
         )}
       </main>
-      {overlay === "settings" && <SettingsOverlay settings={settings}
+      {overlay === "settings" && <SettingsOverlay settings={settings} updater={updater}
         onSave={(s) => { setSettings(s); saveSettings(s); }} onClose={() => setOverlay(null)} />}
       {overlay === "library" && <LibraryOverlay root={settings.dest}
         onOpen={(t) => openFolder(`${settings.dest}/${t}`).catch(() => {})} onClose={() => setOverlay(null)}
