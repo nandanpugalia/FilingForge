@@ -1,23 +1,37 @@
 name: Release (Mac + Windows installers)
 
 # Builds signed FilingForge installers for macOS and Windows in the cloud, so we never
-# have to hand-build the Windows .msi. Triggered by pushing a version tag (e.g. v0.1.1)
-# or manually. Publishes a (draft) GitHub Release with the installers + the updater
-# latest.json. While the repo is private, the Release is private too — download the
-# installers from the Releases page (any OS) and hand them to closed-beta testers.
+# have to hand-build the Windows .exe. Triggered by pushing a version tag (e.g. v0.1.1)
+# or manually. Publishes a GitHub Release with the installers + the updater latest.json.
+#
+# ── Async notarization (why this workflow has 3 jobs) ────────────────────────────────
+# tauri-action notarizes the Mac app SYNCHRONOUSLY (`notarytool submit --wait`), which
+# pins the macOS runner for the full ~2-3.5h Apple queue. On 2026-06-05 a 1-second
+# network hiccup on the runner at the 1h52m mark ("Resolved 0 endpoints… No network
+# route") killed a 2-hour build with a misleading "Internet connection appears to be
+# offline" — taking the WHOLE combined release (Windows included) down with it.
+# So we decouple:
+#   build      — codesign + build installers; mac SUBMITS notarization without waiting
+#                (fast, ~8min, blip-proof) and stashes the submission id.
+#   publish    — flips the release live as soon as both installers exist (Windows is
+#                ready immediately; the Mac DMG is codesigned + notarization-pending).
+#   staple-mac — polls Apple with retries (a blip just re-polls), staples the ticket
+#                into the DMG when Accepted, and re-uploads. If it times out, the
+#                release is ALREADY published — notarization can never block a launch.
+# Gatekeeper note: once Apple Accepts the submission, online first-launch passes even
+# before stapling; stapling only closes the OFFLINE first-launch gap.
 #
 # Required repo secrets:
 #   TAURI_SIGNING_PRIVATE_KEY           the updater private key STRING (from 1Password)
 #   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  its password ("" if none)
-#
-# Apple notarization secrets (Mac DMG opens zero-click once these are set):
+# Apple codesigning + notarization secrets:
 #   APPLE_CERTIFICATE           base64 of the Developer ID Application .p12
 #   APPLE_CERTIFICATE_PASSWORD  the password you set when exporting the .p12
 #   APPLE_SIGNING_IDENTITY      "Developer ID Application: <Name> (<TEAMID>)"
 #   APPLE_ID                    your developer Apple ID email
 #   APPLE_PASSWORD              an app-specific password (appleid.apple.com)
 #   APPLE_TEAM_ID               your 10-char Team ID
-# When these are absent, tauri-action just skips notarization (ad-hoc signed, as before).
+# When the cert secrets are absent, tauri-action just skips signing (ad-hoc, as before).
 
 on:
   push:
@@ -72,6 +86,10 @@ jobs:
         working-directory: ui
         run: npm ci
 
+      # NOTE: APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID are deliberately NOT passed here.
+      # Their presence is what makes tauri's bundler notarize synchronously (the blocking
+      # `--wait` that blipped). With only the certificate vars, the app is CODESIGNED but
+      # not notarized; the "Submit macOS app…" step below kicks off notarization async.
       - name: Build + publish (tauri-action)
         id: tauri
         uses: tauri-apps/tauri-action@v0
@@ -79,13 +97,9 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Apple Developer ID notarization — empty until secrets are set, then auto-notarizes the .dmg
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
           projectPath: ui
           tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'app-v__VERSION__' }}
@@ -116,3 +130,118 @@ jobs:
           cp "$SRC" "$DEST"
           echo "Uploading stable name: $(basename "$DEST")"
           gh release upload "$TAG" "$DEST" --clobber --repo "$GITHUB_REPOSITORY"
+
+      # macOS only: submit the DMG to Apple WITHOUT waiting. Returns in seconds with a
+      # submission id; the staple-mac job polls for the verdict. This is the line that
+      # makes a network blip a non-event — we never hold the runner on Apple's queue.
+      - name: Submit macOS app for async notarization
+        if: matrix.platform == 'macos-latest'
+        shell: bash
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          set -e
+          if [ -z "${APPLE_ID:-}" ]; then echo "No Apple notarization creds; skipping (ad-hoc build)."; echo "" > notarization-id.txt; exit 0; fi
+          PATHS=$(printf '%s' '${{ steps.tauri.outputs.artifactPaths }}' | tr '\\' '/' | tr ',' '\n' | tr -d '[]" ')
+          DMG=$(echo "$PATHS" | grep -E '\.dmg$' | head -1)
+          test -f "$DMG"
+          ID=$(xcrun notarytool submit "$DMG" \
+                 --apple-id "$APPLE_ID" --team-id "$APPLE_TEAM_ID" --password "$APPLE_PASSWORD" \
+                 --no-wait --output-format json | python3 -c 'import sys,json;print(json.load(sys.stdin)["id"])')
+          echo "$ID" > notarization-id.txt
+          echo "Submitted DMG for async notarization: $ID"
+
+      - name: Stash notarization id for the staple job
+        if: matrix.platform == 'macos-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: notarization-id
+          path: notarization-id.txt
+          if-no-files-found: ignore
+
+  # Flip the draft release live as soon as BOTH installers exist. Windows is fully ready;
+  # the Mac DMG is codesigned and notarizing in the background (staple-mac finishes it).
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Publish the release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ github.ref_name }}"
+          gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY" \
+            && echo "Published $TAG" || echo "Release already published or not a draft — nothing to do."
+
+      - name: Notify Discord — release published
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
+          TAG="${{ github.ref_name }}"
+          MSG="✅ **FilingForge ${TAG} published** — Windows installer is live now. macOS DMG is codesigned and notarizing in the background (you'll get a second ping when it's stapled & fully ready)."
+          curl -fsS -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
+
+  # Poll Apple (blip-tolerant), staple the ticket into the DMG once Accepted, re-upload.
+  # Runs in parallel with publish; a timeout/failure here does NOT unpublish the release.
+  staple-mac:
+    needs: build
+    runs-on: macos-latest
+    timeout-minutes: 260
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4        # for scripts/notarize_watch.sh
+      - uses: actions/download-artifact@v4
+        with:
+          name: notarization-id
+      - name: Poll Apple, staple, and re-upload the DMG
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+        run: |
+          set -e
+          TAG="${{ github.ref_name }}"
+          ID="$(cat notarization-id.txt | tr -d '[:space:]')"
+          if [ -z "$ID" ]; then echo "No submission id (ad-hoc build) — nothing to staple."; exit 0; fi
+          mkdir -p dl
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern '*.dmg' --dir dl --clobber
+          bash scripts/notarize_watch.sh "$ID" dl/*.dmg
+          for f in dl/*.dmg; do
+            echo "Re-uploading stapled $(basename "$f")"
+            gh release upload "$TAG" "$f" --clobber --repo "$GITHUB_REPOSITORY"
+          done
+
+      - name: Notify Discord — macOS stapled & live
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
+          TAG="${{ github.ref_name }}"
+          MSG="🍎 **FilingForge ${TAG} — macOS notarized + stapled & live.** The DMG now opens zero-click (online *and* offline). Safe to flip the site's macOS button to live. 👉 next steps."
+          curl -fsS -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
+
+      - name: Notify Discord — macOS notarization needs attention
+        if: ${{ failure() }}
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
+          TAG="${{ github.ref_name }}"
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MSG="⚠️ **FilingForge ${TAG} — macOS notarization didn't finish cleanly** (rejected or timed out). The release is still published & Windows is unaffected. Re-run the staple-mac job: ${RUN}"
+          curl -fsS -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
