@@ -18,7 +18,7 @@ it("renders the form, gates Send on Comment, and files a prefilled GitHub issue 
 
   // auto-captured context shown
   expect(screen.getByText(/screen · search/i)).toBeInTheDocument();
-  expect(screen.getByText(/version · 0\.1\.3/i)).toBeInTheDocument();
+  expect(screen.getByText(/version · 0\.1\.4/i)).toBeInTheDocument();
 
   // Send disabled until Comment is non-empty
   const submit = screen.getByRole("button", { name: /^Send$/i });
@@ -33,6 +33,6 @@ it("renders the form, gates Send on Comment, and files a prefilled GitHub issue 
   expect(url).toContain("github.com/nandanpugalia/FilingForge/issues/new");
   const decoded = decodeURIComponent(url);
   expect(decoded).toContain("It crashed on search");
-  expect(decoded).toContain("0.1.3"); // app version captured in the issue body
+  expect(decoded).toContain("0.1.4"); // app version captured in the issue body
   expect(await screen.findByText(/Opening GitHub/i)).toBeInTheDocument();
 });

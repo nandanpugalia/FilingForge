@@ -1779,6 +1779,31 @@ a { color: var(--dim); text-decoration: none; }
   cursor: pointer;
 }
 .crash-reload:hover { background: var(--ember-deep); border-color: var(--ember-deep); }
+.crash-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
+.crash-report {
+  -webkit-app-region: no-drag;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ember);
+  background: transparent;
+  border: 1px solid var(--ember);
+  border-radius: var(--radius);
+  padding: 9px 22px;
+  cursor: pointer;
+}
+.crash-report:hover { background: rgba(255, 106, 61, 0.10); }
+.settings-version {
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--dim);
+  opacity: 0.7;
+  margin: 14px 0 0;
+}
 
 /* ── First-run setup (one-time: choose the library folder) ───── */
 .firstrun {

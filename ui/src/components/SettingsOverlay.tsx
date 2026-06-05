@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { Settings } from "../types";
-import { DONATE } from "../config";
+import { DONATE, APP_VERSION } from "../config";
 import { pickFolder } from "../lib/pickFolder";
 import { isTauri } from "./ReadyGate";
 import { useEscapeClose } from "../lib/useEscapeClose";
@@ -61,6 +61,7 @@ export function SettingsOverlay({ settings, onSave, onClose }: {
             {copied ? "Copied ✓" : "Copy UPI ID"}
           </button>
         </section>
+        <p className="settings-version">FilingForge v{APP_VERSION}</p>
         {zoomed && (
           <div className="qr-zoom" role="dialog" aria-label="UPI QR enlarged" onClick={() => setZoomed(false)}>
             <img src="/upi.png" alt="UPI QR — scan to support" />

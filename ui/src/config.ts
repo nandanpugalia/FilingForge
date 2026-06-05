@@ -1,6 +1,6 @@
 export const API_BASE = import.meta.env.VITE_API_BASE ?? "http://127.0.0.1:8765";
 export const SEARCH_DEBOUNCE_MS = 250;
-export const APP_VERSION = "0.1.3";
+export const APP_VERSION = "0.1.4";
 export const ISSUES_URL = "https://github.com/nandanpugalia/FilingForge/issues/new";
 // Worker endpoint that receives bug/feature reports. Empty until deployed —
 // when empty the report form degrades gracefully (no network, friendly thanks).

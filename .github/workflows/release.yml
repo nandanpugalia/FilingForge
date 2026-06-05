@@ -32,12 +32,8 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS TEMPORARILY DISABLED until Apple notarization account is warmed
-          # (first-ever submission sits in Apple's queue for hours/days). Re-enable
-          # the two lines below once any notary submission shows Accepted — after
-          # warming, releases produce the notarized .dmg in ~2 min.
-          # - platform: macos-latest      # Apple Silicon (arm64) .dmg + updater .app.tar.gz
-          #   triple: aarch64-apple-darwin
+          - platform: macos-latest      # Apple Silicon (arm64) .dmg + updater .app.tar.gz
+            triple: aarch64-apple-darwin
           - platform: windows-latest     # x64 NSIS .exe + updater .nsis.zip
             triple: x86_64-pc-windows-msvc
     runs-on: ${{ matrix.platform }}

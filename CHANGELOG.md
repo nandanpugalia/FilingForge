@@ -8,7 +8,13 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - _macOS build pending Apple notarization — landing shortly._
 
-## [0.1.3] — 2026-06-05
+## [0.1.4] — 2026-06-05
+
+### Added
+- **macOS build** — Apple Silicon, Apple-notarized (opens with no Gatekeeper warning).
+- **"Report this" button on the crash screen**, so a bug can be filed even if the app
+  has errored out and the normal report button is gone.
+- App **version is now shown in Settings**.
 
 ### Fixed
 - **Windows auto-update** no longer fails with *"Error opening file for writing…

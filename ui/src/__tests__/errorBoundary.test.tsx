@@ -30,4 +30,6 @@ it("renders a recoverable fallback (message + Reload) when a child throws", () =
   // The whole app must NOT white-screen: a themed message + a way out is shown.
   expect(screen.getByText(/something broke/i)).toBeInTheDocument();
   expect(screen.getByRole("button", { name: /reload/i })).toBeInTheDocument();
+  // and a way to report it, since the in-app report button is gone after a crash
+  expect(screen.getByRole("button", { name: /report this/i })).toBeInTheDocument();
 });
