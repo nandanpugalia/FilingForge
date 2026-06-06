@@ -82,7 +82,8 @@ export function SettingsOverlay({ settings, onSave, onClose, updater }: {
           {updater?.state.phase === "uptodate" && <span className="sv-note">You're on the latest version ✓</span>}
           {updater?.state.phase === "error" && <span className="sv-note">Couldn't check — try again.</span>}
           {updater?.state.phase === "available" && (
-            <button type="button" className="sv-install" onClick={updater.install}>
+            <button type="button" className="sv-install"
+              onClick={() => { void updater.install(); onClose(); }}>
               Update to {updater.state.version} &amp; restart
             </button>
           )}
