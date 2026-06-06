@@ -901,6 +901,13 @@ a { color: var(--dim); text-decoration: none; }
   text-transform: none;
 }
 
+.cat-reco {
+  display: inline-block; margin-left: 8px; padding: 1px 7px;
+  font-family: var(--mono, ui-monospace, monospace); font-size: 9px;
+  letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle;
+  color: var(--good, #7fae6d); border: 1px solid var(--good, #7fae6d); border-radius: 3px;
+}
+
 /* ── Preview / approve (before download starts) ─────────────── */
 .preview-confirm { align-items: stretch; }
 .preview-head {

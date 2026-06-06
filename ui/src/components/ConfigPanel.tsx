@@ -96,7 +96,9 @@ export function ConfigPanel({ company, settings, starting, onChangeCompany, onBu
             <li key={c.key}>
               <label>
                 <input type="checkbox" checked={picked.includes(c.key)} onChange={() => toggle(c.key)} />
-                <span className="cat-label">{c.label}</span>
+                <span className="cat-label">{c.label}
+                  {DEFAULT_CURATED.includes(c.key) && <span className="cat-reco">Recommended</span>}
+                </span>
                 <span className="cat-sub">{c.sublabel}</span>
               </label>
             </li>

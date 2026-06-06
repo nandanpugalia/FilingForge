@@ -106,7 +106,15 @@ export default function App() {
         )}
         {state.phase === "configure" && state.company && (
           <ConfigPanel company={state.company} settings={settings} starting={starting}
-            onChangeCompany={() => dispatch({ type: "CHANGE_COMPANY" })} onBuild={build} />
+            onChangeCompany={() => dispatch({ type: "CHANGE_COMPANY" })}
+            onBuild={(scope) => {
+              // remember this scope as next time's default (keep prior category picks when
+              // the user chose "All filings", so toggling it on doesn't wipe their selection)
+              const next: Settings = { ...settings, years: scope.years, everything: scope.everything,
+                categories: scope.everything ? settings.categories : scope.categories };
+              setSettings(next); saveSettings(next);
+              build(scope);
+            }} />
         )}
         {state.phase === "building" && (
           <ProgressView progress={state.progress} log={state.progressLog} stopping={stopping}

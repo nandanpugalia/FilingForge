@@ -13,9 +13,10 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **A Stop button** during a download. It finishes the file in flight, keeps everything
   already saved (fully indexed), and never leaves your library half-written.
 - **Smarter defaults.** New libraries pull the high-signal filings by default (annual reports,
-  results, investor presentations, concall transcripts) instead of every routine notice and
-  postal ballot. Tick **All filings** to pull everything. Refreshing an existing library keeps
-  whatever categories you originally chose.
+  results, investor presentations, concall transcripts — now tagged *Recommended*) over
+  **2 years** of history, instead of every routine notice and postal ballot. Tick **All
+  filings** to pull everything. The app **remembers the scope you last chose** as your next
+  default, and refreshing an existing library keeps whatever categories you originally chose.
 
 ### Fixed
 - **Your library can no longer be corrupted by an interrupted download.** Every file is now

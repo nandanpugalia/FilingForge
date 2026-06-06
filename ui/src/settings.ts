@@ -2,7 +2,8 @@ import type { Settings } from "./types";
 const KEY = "filingforge.settings";
 export const DEFAULT_SETTINGS: Settings = {
   // Default to the 4 high-signal types; "All filings" is an opt-in in Configure.
-  dest: "~/Documents/FilingForgeLibrary", years: 1, everything: false,
+  // 2 years gives a trend (1 is too thin for analysis); the preview shows the count first.
+  dest: "~/Documents/FilingForgeLibrary", years: 2, everything: false,
   categories: ["annual_report", "results", "investor_ppt", "concall"], openWhenDone: true,
 };
 export function loadSettings(): Settings {
