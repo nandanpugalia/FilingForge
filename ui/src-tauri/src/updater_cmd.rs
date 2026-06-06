@@ -44,17 +44,21 @@ pub async fn install_update(app: tauri::AppHandle, beta: bool) -> Result<(), Str
         .ok_or_else(|| "no update available".to_string())?;
     let downloaded = Arc::new(AtomicUsize::new(0));
     let d = downloaded.clone();
-    let app2 = app.clone();
+    let app_progress = app.clone();
+    let app_done = app.clone();
     update
         .download_and_install(
             move |chunk: usize, total: Option<u64>| {
                 let n = d.fetch_add(chunk, Ordering::Relaxed) + chunk;
                 let pct = total.map(|t| (n as f64 / t as f64 * 100.0) as u32).unwrap_or(0);
-                let _ = app2.emit(EVT_PROGRESS, pct);
+                let _ = app_progress.emit(EVT_PROGRESS, pct);
             },
-            move || { let _ = app.emit(EVT_DONE, ()); },
+            move || { let _ = app_done.emit(EVT_DONE, ()); },
         )
         .await
         .map_err(|e| format!("install: {e}"))?;
-    Ok(())
+    // The new version is now on disk; relaunch into it. Without this the UI sits forever on
+    // "restarting…" and the user must quit + reopen manually. restart() never returns (-> !),
+    // so it is the function's tail — nothing after it runs.
+    app.restart()
 }
