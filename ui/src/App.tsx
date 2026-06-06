@@ -1,7 +1,7 @@
 import { useReducer, useState, useEffect, useRef } from "react";
 import "./theme.css";
 import { reducer, initialState } from "./flow";
-import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, resolve, cancelBuild } from "./api";
+import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, resolve, cancelBuild, reportUrl, engineInfo } from "./api";
 import { loadSettings, saveSettings, isFirstRun } from "./settings";
 import { tickerFor } from "./lib/ticker";
 import type { BuildScope, BuildResult, Settings } from "./types";
@@ -84,6 +84,19 @@ export default function App() {
     } catch (e) { inFlight.current = false; setStarting(false); dispatch({ type: "FAIL", message: (e as Error).message }); }
   }
 
+  // Open a generated report over http in the default browser (Safari-safe citations).
+  const openReport = async (reportRel: string) => {
+    try {
+      const { port } = await engineInfo();
+      await fetch(`http://127.0.0.1:${port}/health`);   // wake/confirm the sidecar
+    } catch { /* sidecar still starting; the open below may still work shortly */ }
+    try {
+      const url = await reportUrl(reportRel);
+      const { open } = await import("@tauri-apps/plugin-shell");
+      await open(url);
+    } catch (e) { console.error("open report failed", e); }
+  };
+
   return (
     <div className="app">
       {needsSetup && (
@@ -138,6 +151,7 @@ export default function App() {
         onSave={(s) => { setSettings(s); saveSettings(s); }} onClose={() => setOverlay(null)} />}
       {overlay === "library" && <LibraryOverlay root={settings.dest}
         onOpen={(t) => openFolder(`${settings.dest}/${t}`).catch(() => {})} onClose={() => setOverlay(null)}
+        onOpenReport={openReport}
         onAddCompany={() => { setOverlay(null); dispatch({ type: "RESET" }); }}
         onRefresh={async (ticker) => {
           setOverlay(null);

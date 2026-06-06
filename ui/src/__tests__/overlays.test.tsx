@@ -64,6 +64,19 @@ it("LibraryOverlay lists companies from the API (ticker + total only)", async ()
   expect(screen.getByText(/42/)).toBeInTheDocument();
 });
 
+it("LibraryOverlay: 'open report' renders when hasReport and calls onOpenReport with the reportRel", async () => {
+  vi.spyOn(api, "getLibrary").mockResolvedValue([
+    { ticker: "ACME", total: 5, counts: {}, hasReport: true, reportRel: "ACME/research_report/business_model.html" },
+    { ticker: "NOPE", total: 3, counts: {}, hasReport: false, reportRel: null },
+  ]);
+  const onOpenReport = vi.fn();
+  render(<LibraryOverlay root="/root" onOpen={() => {}} onRefresh={() => {}} onAddCompany={() => {}} onOpenReport={onOpenReport} onClose={() => {}} />);
+  const buttons = await screen.findAllByRole("button", { name: /open report/i });
+  expect(buttons.length).toBe(1);   // only the company that has a report
+  await userEvent.click(buttons[0]);
+  expect(onOpenReport).toHaveBeenCalledWith("ACME/research_report/business_model.html");
+});
+
 it("LibraryOverlay: Refresh + Add company are wired", async () => {
   vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TANLA", total: 42, counts: { "annual-reports": 1 } }]);
   const onRefresh = vi.fn();

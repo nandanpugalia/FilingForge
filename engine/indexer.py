@@ -88,6 +88,22 @@ def build_master_index(root: Path) -> Path:
     return path
 
 
+def _find_report(company: Path, root: Path) -> str | None:
+    """The company's generated research report, if any. Scans only
+    company/research_report/*.html (non-recursive — no deep crawl). Prefers
+    business_model.html, else the first html alphabetically. Returns the path
+    relative to the library root as posix, or None."""
+    rr = company / "research_report"
+    if not rr.is_dir():
+        return None
+    htmls = sorted(rr.glob("*.html"), key=lambda p: p.name)
+    if not htmls:
+        return None
+    preferred = rr / "business_model.html"
+    chosen = preferred if preferred in htmls else htmls[0]
+    return chosen.relative_to(root).as_posix()
+
+
 def read_library(root: Path) -> list[dict]:
     """Machine-readable library listing for the app's Library view (one dict per company)."""
     root = Path(root).expanduser()
@@ -96,5 +112,7 @@ def read_library(root: Path) -> list[dict]:
     out: list[dict] = []
     for c in sorted(p for p in root.iterdir() if _is_company_dir(p)):
         counts = _company_counts(c)
-        out.append({"ticker": c.name, "counts": counts, "total": sum(counts.values())})
+        report_rel = _find_report(c, root)
+        out.append({"ticker": c.name, "counts": counts, "total": sum(counts.values()),
+                    "hasReport": report_rel is not None, "reportRel": report_rel})
     return out

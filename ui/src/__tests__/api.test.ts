@@ -48,3 +48,24 @@ describe("startBuild / getStatus / getLibrary / openFolder", () => {
     expect(f).toHaveBeenCalledWith(expect.stringContaining("/open-folder"), expect.anything());
   });
 });
+
+describe("apiBase uses the runtime engine port", () => {
+  beforeEach(() => { vi.resetModules(); });
+  afterEach(() => {
+    vi.doUnmock("../components/ReadyGate");
+    vi.doUnmock("@tauri-apps/api/core");
+    vi.unstubAllGlobals();
+    vi.resetModules();
+  });
+  it("routes calls to the port engine_info reports (8766), not hardcoded 8765", async () => {
+    vi.doMock("../components/ReadyGate", () => ({ isTauri: () => true }));
+    vi.doMock("@tauri-apps/api/core", () => ({ invoke: vi.fn().mockResolvedValue({ port: 8766, token: "tok" }) }));
+    const freshApi = await import("../api");
+    const f = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ companies: [] }) } as Response);
+    vi.stubGlobal("fetch", f);
+    await freshApi.getLibrary("/root");
+    expect(f.mock.calls[0][0] as string).toContain("127.0.0.1:8766");
+    const url = await freshApi.reportUrl("ACME/research_report/business_model.html");
+    expect(url).toBe("http://127.0.0.1:8766/lib/ACME/research_report/business_model.html?token=tok");
+  });
+});

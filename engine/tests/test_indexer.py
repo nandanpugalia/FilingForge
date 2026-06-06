@@ -118,6 +118,43 @@ def test_read_library_empty_when_no_companies(tmp_path):
     assert read_library(tmp_path) == []
 
 
+def test_read_library_detects_research_report(tmp_path):
+    t = company_dir(tmp_path, "ACME")
+    save_filing(t, _f("ar-1", "2025-07-01", "AR", "annual-reports", "Annual Reports"), b"%PDF-x")
+    rr = t / "research_report"
+    rr.mkdir(parents=True)
+    (rr / "business_model.html").write_text("<html></html>")
+    (rr / "concall_analysis.html").write_text("<html></html>")
+    build_index(t, "ACME")
+    row = read_library(tmp_path)[0]
+    assert row["hasReport"] is True
+    # prefers business_model.html and reports a root-relative posix path
+    assert row["reportRel"] == "ACME/research_report/business_model.html"
+
+
+def test_read_library_prefers_first_html_when_no_business_model(tmp_path):
+    t = company_dir(tmp_path, "ACME")
+    save_filing(t, _f("ar-1", "2025-07-01", "AR", "annual-reports", "Annual Reports"), b"%PDF-x")
+    rr = t / "research_report"
+    rr.mkdir(parents=True)
+    (rr / "zeta.html").write_text("<html></html>")
+    (rr / "alpha.html").write_text("<html></html>")
+    build_index(t, "ACME")
+    row = read_library(tmp_path)[0]
+    assert row["hasReport"] is True
+    # first alphabetically when no business_model.html
+    assert row["reportRel"] == "ACME/research_report/alpha.html"
+
+
+def test_read_library_no_report_when_absent(tmp_path):
+    t = company_dir(tmp_path, "ACME")
+    save_filing(t, _f("ar-1", "2025-07-01", "AR", "annual-reports", "Annual Reports"), b"%PDF-x")
+    build_index(t, "ACME")
+    row = read_library(tmp_path)[0]
+    assert row["hasReport"] is False
+    assert row["reportRel"] is None
+
+
 def test_read_library_counts_year_nested_pdfs(tmp_path):
     # year-nested layout from save_filing across two years in one category
     t = company_dir(tmp_path, "SBIN")

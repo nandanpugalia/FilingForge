@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { getLibrary } from "../api";
 import type { LibraryItem } from "../types";
 import { useEscapeClose } from "../lib/useEscapeClose";
-export function LibraryOverlay({ root, onOpen, onRefresh, onAddCompany, onClose }: {
+export function LibraryOverlay({ root, onOpen, onRefresh, onAddCompany, onOpenReport, onClose }: {
   root: string; onOpen: (ticker: string) => void; onRefresh: (ticker: string) => void;
-  onAddCompany: () => void; onClose: () => void;
+  onAddCompany: () => void; onOpenReport?: (reportRel: string) => void; onClose: () => void;
 }) {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -35,6 +35,9 @@ export function LibraryOverlay({ root, onOpen, onRefresh, onAddCompany, onClose 
               <span className="n">{it.total} docs</span>
               <span className="lib-actions">
                 <button className="link" onClick={() => onRefresh(it.ticker)} title="Pull new filings">Refresh ↻</button>
+                {it.hasReport && it.reportRel && onOpenReport && (
+                  <button className="link" onClick={() => onOpenReport(it.reportRel!)}>open report ▸</button>
+                )}
                 <button className="link" onClick={() => onOpen(it.ticker)}>open folder ▸</button>
               </span>
             </li>
