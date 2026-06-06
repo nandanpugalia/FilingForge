@@ -58,7 +58,7 @@ it("Copy UPI ID writes to the clipboard and flips to Copied", async () => {
 });
 
 it("LibraryOverlay lists companies from the API (ticker + total only)", async () => {
-  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TANLA", total: 42, counts: { "annual-reports": 1 } }]);
+  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TANLA", total: 42, counts: { "annual-reports": 1 }, hasReport: false, reportRel: null }]);
   render(<LibraryOverlay root="/root" onOpen={() => {}} onRefresh={() => {}} onAddCompany={() => {}} onClose={() => {}} />);
   expect(await screen.findByText(/TANLA/)).toBeInTheDocument();
   expect(screen.getByText(/42/)).toBeInTheDocument();
@@ -78,7 +78,7 @@ it("LibraryOverlay: 'open report' renders when hasReport and calls onOpenReport 
 });
 
 it("LibraryOverlay: Refresh + Add company are wired", async () => {
-  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TANLA", total: 42, counts: { "annual-reports": 1 } }]);
+  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TANLA", total: 42, counts: { "annual-reports": 1 }, hasReport: false, reportRel: null }]);
   const onRefresh = vi.fn();
   const onAddCompany = vi.fn();
   render(<LibraryOverlay root="/root" onOpen={() => {}} onRefresh={onRefresh} onAddCompany={onAddCompany} onClose={() => {}} />);
@@ -103,8 +103,8 @@ it("SkillsOverlay: Use asks which company, then copies a prompt with THAT compan
   Object.assign(navigator, { clipboard: { writeText } });
   vi.spyOn(api, "getSkills").mockResolvedValue([]);
   vi.spyOn(api, "getLibrary").mockResolvedValue([
-    { ticker: "TANLA", total: 42, counts: {} },
-    { ticker: "TITAN", total: 10, counts: {} },
+    { ticker: "TANLA", total: 42, counts: {}, hasReport: false, reportRel: null },
+    { ticker: "TITAN", total: 10, counts: {}, hasReport: false, reportRel: null },
   ]);
   render(<SkillsOverlay root="/Users/np/Filings" onClose={() => {}} />);
   // "Use" opens a company picker rather than copying a generic prompt immediately
@@ -135,7 +135,7 @@ it("SkillsOverlay: Use with an empty library asks the user to download a company
 it("SkillsOverlay: an imported skill from the engine appears and runs the same company-picker flow", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.assign(navigator, { clipboard: { writeText } });
-  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TITAN", total: 10, counts: {} }]);
+  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TITAN", total: 10, counts: {}, hasReport: false, reportRel: null }]);
   vi.spyOn(api, "getSkills").mockResolvedValue([
     { id: "forensic", name: "Forensic DD", tier: "Premium", desc: "Deep dive.", prompt: "FORENSIC SKILL BODY", imported: true },
   ]);
@@ -156,7 +156,7 @@ it("SkillsOverlay: with a large library the picker is searchable, and a pick aut
   Object.assign(navigator, { clipboard: { writeText } });
   vi.spyOn(api, "getSkills").mockResolvedValue([]);
   const many = Array.from({ length: 40 }, (_, i) => ({
-    ticker: i === 7 ? "TITAN" : `CO${i}`, total: i + 1, counts: {} }));
+    ticker: i === 7 ? "TITAN" : `CO${i}`, total: i + 1, counts: {}, hasReport: false, reportRel: null }));
   vi.spyOn(api, "getLibrary").mockResolvedValue(many);
   render(<SkillsOverlay root="/lib" onClose={() => {}} />);
   await userEvent.click(screen.getAllByRole("button", { name: /^Use$/i })[0]);
@@ -170,7 +170,7 @@ it("SkillsOverlay: with a large library the picker is searchable, and a pick aut
 });
 
 it("SkillsOverlay: 'Import a skill' picks a .md, imports it, and the new skill appears", async () => {
-  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TITAN", total: 10, counts: {} }]);
+  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TITAN", total: 10, counts: {}, hasReport: false, reportRel: null }]);
   const getSkills = vi.spyOn(api, "getSkills")
     .mockResolvedValueOnce([])                              // nothing imported yet
     .mockResolvedValue([{ id: "bought", name: "Bought Pack", tier: "Premium", desc: "", prompt: "x", imported: true }]);
@@ -187,7 +187,7 @@ it("SkillsOverlay: 'Import a skill' picks a .md, imports it, and the new skill a
 
 it("LibraryOverlay: search box appears past 8 companies and filters by ticker", async () => {
   const many = Array.from({ length: 12 }, (_, i) => ({
-    ticker: i === 0 ? "TANLA" : `CO${i}`, total: i + 1, counts: {} }));
+    ticker: i === 0 ? "TANLA" : `CO${i}`, total: i + 1, counts: {}, hasReport: false, reportRel: null }));
   vi.spyOn(api, "getLibrary").mockResolvedValue(many);
   render(<LibraryOverlay root="/root" onOpen={() => {}} onRefresh={() => {}} onAddCompany={() => {}} onClose={() => {}} />);
   const box = await screen.findByLabelText(/Search your library/i);
@@ -200,7 +200,7 @@ it("LibraryOverlay: search box appears past 8 companies and filters by ticker", 
 });
 
 it("LibraryOverlay: no search box for a small library", async () => {
-  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TANLA", total: 42, counts: {} }]);
+  vi.spyOn(api, "getLibrary").mockResolvedValue([{ ticker: "TANLA", total: 42, counts: {}, hasReport: false, reportRel: null }]);
   render(<LibraryOverlay root="/root" onOpen={() => {}} onRefresh={() => {}} onAddCompany={() => {}} onClose={() => {}} />);
   expect(await screen.findByText("TANLA")).toBeInTheDocument();
   expect(screen.queryByLabelText(/Search your library/i)).not.toBeInTheDocument();
