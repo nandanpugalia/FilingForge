@@ -4,7 +4,7 @@ export const DEFAULT_SETTINGS: Settings = {
   // Default to the 4 high-signal types; "All filings" is an opt-in in Configure.
   // 2 years gives a trend (1 is too thin for analysis); the preview shows the count first.
   dest: "~/Documents/FilingForgeLibrary", years: 2, everything: false,
-  categories: ["annual_report", "results", "investor_ppt", "concall"], openWhenDone: true,
+  categories: ["annual_report", "results", "investor_ppt", "concall"], openWhenDone: true, beta: false,
 };
 export function loadSettings(): Settings {
   try { return { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem(KEY) || "{}") }; }

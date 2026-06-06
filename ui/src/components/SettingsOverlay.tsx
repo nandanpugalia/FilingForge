@@ -49,6 +49,13 @@ export function SettingsOverlay({ settings, onSave, onClose, updater }: {
             <input type="checkbox" checked={s.openWhenDone}
               onChange={(e) => setS({ ...s, openWhenDone: e.target.checked })} />
           </label>
+          <label className="toggle-row">
+            <span className="toggle-label">Get pre-release updates
+              <span className="cat-sub">Be first to try new versions before they roll out to everyone.</span>
+            </span>
+            <input type="checkbox" checked={s.beta}
+              onChange={(e) => setS({ ...s, beta: e.target.checked })} />
+          </label>
         </div>
         <button className="primary settings-save" onClick={() => { onSave(s); onClose(); }}>Save</button>
         <section className="support">

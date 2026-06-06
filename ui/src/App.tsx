@@ -28,7 +28,7 @@ export default function App() {
   // not clickable through an open overlay.
   const [overlay, setOverlay] = useState<null | "settings" | "library" | "report" | "skills">(null);
   // One update controller, shared by the top banner and the Settings "Check for updates" button.
-  const updater = useUpdate();
+  const updater = useUpdate(settings.beta);
   const [hasLibrary, setHasLibrary] = useState(false);
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
