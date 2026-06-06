@@ -4,6 +4,24 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.9] — 2026-06-07
+
+### Added
+- **Beautiful reports that open everywhere.** Generated reports now open through the app over a
+  secure local connection, so citations open the source filings correctly in **Safari** (and every
+  browser) — previously some citation clicks did nothing. Each company in *Your library* gains an
+  *"open report ▸"* action when a report exists.
+- **A redesigned report look (Report v2).** The house-style template the app maintains gains a
+  refined dark masthead, a provenance line (which filings were cited, and the years covered), a
+  sticky context bar, clearer fact-vs-analysis styling, and an inline revenue/margin chart — drawn
+  only when the filings support it (never an empty chart). The Business Model Brief skill now fills
+  these in.
+
+### Changed
+- The app now talks to its engine on a dynamically chosen local port (and a per-session token),
+  so it keeps working even if the default port is busy — and serves your library files safely
+  (token-gated, no directory listing, no path escapes).
+
 ## [0.1.8] — 2026-06-07
 
 ### Added

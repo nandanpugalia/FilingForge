@@ -1,6 +1,6 @@
 [package]
 name = "filingforge"
-version = "0.1.8"
+version = "0.1.9"
 description = "FilingForge desktop app"
 authors = ["FilingForge"]
 edition = "2021"
