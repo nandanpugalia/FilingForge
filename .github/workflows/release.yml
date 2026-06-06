@@ -192,7 +192,14 @@ jobs:
         run: |
           [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
           TAG="${{ github.ref_name }}"
-          MSG="✅ **FilingForge ${TAG} published** — Windows installer is live now. macOS DMG is codesigned and notarizing in the background (you'll get a second ping when it's stapled & fully ready)."
+          # A hyphenated tag (v0.1.9-beta) is a pre-release: it reaches opt-in testers via the
+          # beta channel only; the website + stable OTA (releases/latest) keep serving the
+          # current stable, so there is NOTHING to flip on the site.
+          if [[ "$TAG" == *-* ]]; then
+            MSG="🧪 **FilingForge ${TAG} (beta) published** — to the pre-release channel only. Opt-in testers (Settings → \"Get pre-release updates\") get it; stable users and the website are unaffected. macOS DMG is notarizing in the background."
+          else
+            MSG="✅ **FilingForge ${TAG} published** — Windows installer is live now. macOS DMG is codesigned and notarizing in the background (you'll get a second ping when it's stapled). The website + stable OTA serve it automatically — no action needed."
+          fi
           curl -fsS -H "Content-Type: application/json" \
             -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
 
@@ -292,7 +299,14 @@ jobs:
         run: |
           [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
           TAG="${{ github.ref_name }}"
-          MSG="🍎 **FilingForge ${TAG} — macOS notarized + stapled & live.** The DMG now opens zero-click (online *and* offline). Safe to flip the site's macOS download button to live."
+          # The website's macOS button auto-serves releases/latest (stable, excludes pre-releases),
+          # so there is no manual "flip" — it just works once a STABLE release notarizes. For a
+          # beta this DMG is for testers; the site keeps serving stable.
+          if [[ "$TAG" == *-* ]]; then
+            MSG="🍎 **FilingForge ${TAG} (beta) — macOS notarized + stapled.** The beta DMG opens zero-click for testers. The website still serves the current stable (un-mark this release as pre-release to promote it)."
+          else
+            MSG="🍎 **FilingForge ${TAG} — macOS notarized + stapled & live.** The DMG opens zero-click (online *and* offline). The website + stable OTA now serve it automatically — no action needed."
+          fi
           curl -fsS -H "Content-Type: application/json" \
             -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
 
