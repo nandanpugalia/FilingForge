@@ -1,0 +1,23 @@
+{
+  "version": "0.1.8",
+  "notes": "See the assets below to download. Auto-update metadata: latest.json.",
+  "pub_date": "2026-06-06T20:45:22.225Z",
+  "platforms": {
+    "darwin-aarch64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2x3L0pDRlRub2pDK1FpZ1NJTlFqbTdOUk1BQkFiNER6aUZzNlhDenN2OHRlRWVMazZqU3pzT1VaOHRVd2x5bEV4T1Vva1ZOT2ZnMWNXLy81YjFmYmdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNzc4NDc5CWZpbGU6RmlsaW5nRm9yZ2UuYXBwLnRhci5negpLMWVWVTFMeVlDbXhwRi9hbzF1d0Z1UDh1Wng5OWVXRDRDUXk4UHlDK0J2NFNQMDdkbHRqelEvMjExKzdJZ0NSaGN3Z2xnSmFvMHBEanBJcTlzOWxBdz09Cg==",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.8/FilingForge_aarch64.app.tar.gz"
+    },
+    "darwin-aarch64-app": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2x3L0pDRlRub2pDK1FpZ1NJTlFqbTdOUk1BQkFiNER6aUZzNlhDenN2OHRlRWVMazZqU3pzT1VaOHRVd2x5bEV4T1Vva1ZOT2ZnMWNXLy81YjFmYmdvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNzc4NDc5CWZpbGU6RmlsaW5nRm9yZ2UuYXBwLnRhci5negpLMWVWVTFMeVlDbXhwRi9hbzF1d0Z1UDh1Wng5OWVXRDRDUXk4UHlDK0J2NFNQMDdkbHRqelEvMjExKzdJZ0NSaGN3Z2xnSmFvMHBEanBJcTlzOWxBdz09Cg==",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.8/FilingForge_aarch64.app.tar.gz"
+    },
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2gvNnYvbjFFc3g2NU9UeUVlcmtBNDY1V2lvSGlINFFyR1VNbUxPZm9hUkw4eWg0cVE1Sm1YeDlub09ULzdDL0htU1djVDNnTGJnTTZpMHZUQ0cvRFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNzc4NzE5CWZpbGU6RmlsaW5nRm9yZ2VfMC4xLjhfeDY0LXNldHVwLmV4ZQpzbjErS2Roc3VsN2hiOEdFTndnV1EvWi81dS9zMEJFeWxtVEExZFp3dUpBMUQ1WmRIb0x1cGhLQkphSy9GVnk4N1NxVW5lV00vcVVNZ0dYRkR5MEREUT09Cg==",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.8/FilingForge_0.1.8_x64-setup.exe"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2gvNnYvbjFFc3g2NU9UeUVlcmtBNDY1V2lvSGlINFFyR1VNbUxPZm9hUkw4eWg0cVE1Sm1YeDlub09ULzdDL0htU1djVDNnTGJnTTZpMHZUQ0cvRFFnPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwNzc4NzE5CWZpbGU6RmlsaW5nRm9yZ2VfMC4xLjhfeDY0LXNldHVwLmV4ZQpzbjErS2Roc3VsN2hiOEdFTndnV1EvWi81dS9zMEJFeWxtVEExZFp3dUpBMUQ1WmRIb0x1cGhLQkphSy9GVnk4N1NxVW5lV00vcVVNZ0dYRkR5MEREUT09Cg==",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.8/FilingForge_0.1.8_x64-setup.exe"
+    }
+  }
+}
