@@ -5,7 +5,7 @@
 **Official filings, as clean Markdown your AI can actually read.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-ff6a3d.svg)](LICENSE)
-[![Platforms](https://img.shields.io/badge/platforms-Windows%20%C2%B7%20macOS%20soon-15110e.svg)](https://github.com/nandanpugalia/FilingForge/releases/latest)
+[![Platforms](https://img.shields.io/badge/platforms-Windows%20%C2%B7%20macOS-15110e.svg)](https://github.com/nandanpugalia/FilingForge/releases/latest)
 [![Local-first](https://img.shields.io/badge/local--first-no%20cloud-7fae6d.svg)](#-privacy--local-first)
 [![Price](https://img.shields.io/badge/price-free-7fae6d.svg)](#-install)
 
@@ -38,9 +38,9 @@ FilingForge fixes the **input**. Every text-based filing becomes clean, structur
 
 ## 📸 Screenshots
 
-**Search any BSE-listed company — it resolves against the live exchange:**
+**Look up any BSE-listed company — it resolves against the live exchange:**
 
-![Search a company and FilingForge finds it on BSE](docs/shots/search.png)
+![Look up a company and FilingForge finds it on BSE](docs/shots/search.png)
 
 **Your library — every company, every filing, indexed and AI-ready:**
 
@@ -56,23 +56,11 @@ FilingForge fixes the **input**. Every text-based filing becomes clean, structur
 
 Download the latest build for your platform from **[GitHub Releases](https://github.com/nandanpugalia/FilingForge/releases/latest)**.
 
-**Windows is available now.** The macOS build is in final notarization and lands shortly.
-
 Free. No account. Your data never leaves your computer.
 
 ### macOS
 
-> **The macOS build is in final Apple notarization and lands shortly.** Windows users can skip this section. When the macOS build arrives, until notarization fully propagates it may need the one-time first-launch step below.
-
-FilingForge is an indie, open-source app and is **not yet Apple-notarized**. Until it is, macOS Gatekeeper may quarantine the download and tell you the app is *"damaged and can't be opened."* It isn't — that's just the quarantine flag on anything downloaded outside the App Store.
-
-One-time fix after dragging the app to Applications:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/FilingForge.app
-```
-
-Then open it normally. Once the app is notarized, this step goes away entirely. (Building [from source](#-build-from-source) also produces a local, no-quarantine build.)
+FilingForge is **Apple-notarized** — download the `.dmg`, drag to Applications, and open it. No quarantine warnings, no workarounds.
 
 ### Windows
 
@@ -105,8 +93,11 @@ A Skill is a **prompt-pack you run in the Claude desktop app or Codex**, pointed
 | Skill | What it does | |
 |-------|--------------|---|
 | **Business Model Brief** | A cited, analyst-grade brief on how the company actually makes money — rendered as a clean, self-contained **interactive HTML report** by your own AI (a coding agent like Claude Code or Codex, which has file access). | **Free** |
+| More Skills | Concall Decoder, Forensic Red-Flags, Valuation, Peer Comparison, and others. | Coming |
 
-More Skills are on the way. Everything stays prompt-pack shaped: open, inspectable, and run on your machine with your own model.
+Skills are **one-time purchases** — you download a `.md` file and import it. No subscription, no licence server, no network check to run. The free Skill works identically to paid ones; the difference is what the prompt does.
+
+Everything stays prompt-pack shaped: open, inspectable, and run on your machine with your own model.
 
 ---
 
