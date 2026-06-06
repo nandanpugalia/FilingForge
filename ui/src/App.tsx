@@ -1,7 +1,7 @@
 import { useReducer, useState, useEffect, useRef } from "react";
 import "./theme.css";
 import { reducer, initialState } from "./flow";
-import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, resolve } from "./api";
+import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, resolve, cancelBuild } from "./api";
 import { loadSettings, saveSettings, isFirstRun } from "./settings";
 import { tickerFor } from "./lib/ticker";
 import type { BuildScope, BuildResult, Settings } from "./types";
@@ -31,6 +31,7 @@ export default function App() {
   const updater = useUpdate();
   const [hasLibrary, setHasLibrary] = useState(false);
   const [starting, setStarting] = useState(false);
+  const [stopping, setStopping] = useState(false);
   const [breakdown, setBreakdown] = useState<Record<string, number> | undefined>(undefined);
   // settingsRef gives the long-lived async callbacks (subscribeBuildEvents.onEnd, refreshLibrary)
   // the latest settings without going stale. JSX/inline handlers below use `settings` directly —
@@ -50,6 +51,7 @@ export default function App() {
     inFlight.current = true;
     lastScope.current = scope;
     setStarting(true);
+    setStopping(false);
     try {
       const jobId = await startBuild(scope);
       dispatch({ type: "START_BUILD", jobId });
@@ -66,6 +68,7 @@ export default function App() {
             catch { /* */ }
           }
           inFlight.current = false;
+          setStopping(false);
           if (status === "error") dispatch({ type: "FAIL", message: error || "Build failed. Please try again." });
           else if (result) {
             dispatch({ type: "BUILD_DONE", result });
@@ -106,8 +109,9 @@ export default function App() {
             onChangeCompany={() => dispatch({ type: "CHANGE_COMPANY" })} onBuild={build} />
         )}
         {state.phase === "building" && (
-          <ProgressView progress={state.progress} log={state.progressLog}
-            onBack={() => { sub.current?.close(); inFlight.current = false; dispatch({ type: "BACK_TO_CONFIGURE" }); }} />
+          <ProgressView progress={state.progress} log={state.progressLog} stopping={stopping}
+            onStop={() => { if (state.jobId) { setStopping(true); cancelBuild(state.jobId).catch(() => {}); } }}
+            onBack={() => { sub.current?.close(); inFlight.current = false; setStopping(false); dispatch({ type: "BACK_TO_CONFIGURE" }); }} />
         )}
         {state.phase === "done" && state.result && state.company && (
           <DoneView ticker={tickerFor(state.company)} name={state.company.company} dest={settings.dest}

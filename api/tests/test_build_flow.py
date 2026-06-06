@@ -4,7 +4,7 @@ import time
 def _fake_work_factory(monkeypatch):
     """Replace api.routes.run_build with a fast fake that emits 2 events then returns counts."""
     import api.routes as routes
-    def fake_run_build(scrip_code, ticker, dest, everything, categories, years):
+    def fake_run_build(scrip_code, ticker, dest, everything, categories, years, should_cancel=None):
         def work(on_progress):
             on_progress({"stage": "download", "current": 1, "total": 2, "message": "a", "percent": 50})
             on_progress({"stage": "download", "current": 2, "total": 2, "message": "b", "percent": 100})
@@ -78,3 +78,41 @@ def test_sse_streams_progress_then_end(client, monkeypatch):
 def test_sse_unknown_job_is_404(client):
     r = client.get("/build/nope/events")
     assert r.status_code == 404
+
+
+def test_cancel_unknown_job_is_404(client):
+    r = client.post("/build/nope/cancel")
+    assert r.status_code == 404
+
+
+def test_cancel_running_job_returns_ok(client, monkeypatch):
+    # a work fn that blocks until cancelled, so we can cancel a genuinely-running job
+    import api.routes as routes
+    def fake_run_build(scrip_code, ticker, dest, everything, categories, years, should_cancel=None):
+        def work(on_progress):
+            while not should_cancel():
+                time.sleep(0.01)
+            return {"downloaded": 1, "skipped": 0, "failed": 0, "cancelled": True}
+        return work
+    monkeypatch.setattr(routes, "run_build", fake_run_build)
+    job_id = client.post("/build", json={"scrip_code": "1", "ticker": "T", "dest": "/tmp/x"}).json()["job_id"]
+    assert client.post(f"/build/{job_id}/cancel").json() == {"ok": True}
+    done = _poll(client, job_id, "cancelled")
+    assert done["result"]["cancelled"] is True
+
+
+def test_preview_returns_counts(client, monkeypatch):
+    import api.routes as routes
+    import engine.library as lib
+    # the route imports preview_library lazily from engine.library → patch it there
+    monkeypatch.setattr(lib, "preview_library",
+                        lambda *a, **k: {"total": 42, "new": 30, "have": 12,
+                                         "by_category": [{"label": "Financial Results", "count": 20}]})
+    # don't construct a real network client
+    monkeypatch.setattr(routes, "BSEClient", lambda *a, **k: type("C", (), {"close": lambda self: None})())
+    r = client.post("/preview", json={"scrip_code": "532790", "ticker": "TANLA", "dest": "/tmp/x",
+                                      "everything": False, "categories": ["results"]})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["total"] == 42 and body["new"] == 30 and body["have"] == 12
+    assert body["by_category"][0]["label"] == "Financial Results"

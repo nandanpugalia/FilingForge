@@ -1,6 +1,7 @@
 from pathlib import Path
 from engine.organiser import (
-    company_dir, save_filing, already_have, load_seen, record_seen,
+    company_dir, save_filing, save_markdown, clean_partials,
+    already_have, load_seen, record_seen,
 )
 from engine.models import Filing
 
@@ -58,3 +59,58 @@ def test_seen_persists_across_calls(tmp_path):
     record_seen(root, _f(news_id="x"))
     record_seen(root, _f(news_id="y"))
     assert load_seen(root) == {"x", "y"}
+
+
+# ── Atomic writes: an interrupted download must never leave a half-file the index picks up ──
+
+def test_save_filing_leaves_no_part_remnant(tmp_path):
+    root = company_dir(tmp_path, "TANLA")
+    path = save_filing(root, _f(), b"%PDF-1.7 full")
+    # success → final file is complete and NO *.part remnant remains
+    assert path.read_bytes() == b"%PDF-1.7 full"
+    assert list(path.parent.glob("*.part")) == []
+
+
+def test_save_markdown_is_atomic_sibling(tmp_path):
+    root = company_dir(tmp_path, "TANLA")
+    pdf = save_filing(root, _f(news_id="m-1"), b"%PDF-x")
+    md = save_markdown(pdf, "# clean markdown")
+    assert md == pdf.with_suffix(".md")
+    assert md.read_text(encoding="utf-8") == "# clean markdown"
+    assert list(md.parent.glob("*.part")) == []
+
+
+def test_partial_part_files_are_invisible_to_pdf_glob(tmp_path):
+    # A leftover *.part (e.g. process killed mid-write) must NOT be seen as a real filing:
+    # the indexer scans rglob("*.pdf"), so .part is excluded by construction. Lock it.
+    root = company_dir(tmp_path, "TANLA")
+    folder = root / "annual-reports" / "2025"
+    folder.mkdir(parents=True)
+    (folder / "2025-07-01_x__n1.pdf.part").write_bytes(b"%PDF-half")   # interrupted
+    (folder / "2025-07-01_y__n2.pdf").write_bytes(b"%PDF-full")        # complete
+    pdfs = list(root.rglob("*.pdf"))
+    assert len(pdfs) == 1 and pdfs[0].name.endswith("n2.pdf")
+
+
+def test_library_config_roundtrip_and_legacy_returns_none(tmp_path):
+    from engine.organiser import save_library_config, load_library_config
+    root = company_dir(tmp_path, "TANLA")
+    # a legacy v0.1.6 library (or brand-new) has no config yet
+    assert load_library_config(root) is None
+    save_library_config(root, ["annual_report", "results"], everything=False)
+    cfg = load_library_config(root)
+    assert cfg["categories"] == ["annual_report", "results"]
+    assert cfg["everything"] is False
+
+
+def test_clean_partials_removes_stray_part_files(tmp_path):
+    root = company_dir(tmp_path, "TANLA")
+    folder = root / "annual-reports" / "2025"
+    folder.mkdir(parents=True)
+    stray = folder / "2025-07-01_x__n1.pdf.part"
+    stray.write_bytes(b"%PDF-half")
+    keep = folder / "2025-07-01_y__n2.pdf"
+    keep.write_bytes(b"%PDF-full")
+    n = clean_partials(root)
+    assert n == 1
+    assert not stray.exists() and keep.exists()

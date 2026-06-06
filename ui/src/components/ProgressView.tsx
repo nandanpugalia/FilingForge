@@ -23,13 +23,14 @@ function milestone(pct: number): string {
   return "Starting up";
 }
 
-export function ProgressView({ progress, log, onBack }: {
+export function ProgressView({ progress, log, onBack, onStop, stopping }: {
   progress: ProgressEvent | null; log: string[]; onBack: () => void;
+  onStop?: () => void; stopping?: boolean;
 }) {
   const p = progress;
   const pct = p?.percent ?? 0;
   const feed = p ? log.filter((l) => l !== p.message) : log;
-  const stageText = p ? phaseLabel(p.stage) : "Finding filings on BSE";
+  const stageText = stopping ? "Stopping — saving what's downloaded…" : (p ? phaseLabel(p.stage) : "Finding filings on BSE");
 
   return (
     <div className="building">
@@ -51,6 +52,12 @@ export function ProgressView({ progress, log, onBack }: {
       )}
 
       <ul className="log" aria-hidden="true">{feed.slice(-6).map((l, i) => <li key={i}>&gt; {l}</li>)}</ul>
+
+      {onStop && pct < 100 && (
+        <button className="stop-build" onClick={onStop} disabled={stopping}>
+          {stopping ? "Stopping…" : "Stop"}
+        </button>
+      )}
     </div>
   );
 }

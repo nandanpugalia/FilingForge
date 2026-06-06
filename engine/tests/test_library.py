@@ -107,6 +107,62 @@ def test_build_writes_master_index_at_root(tmp_path):
     assert "TANLA" in (tmp_path / "INDEX.md").read_text()
 
 
+def test_preview_counts_without_downloading(tmp_path):
+    from engine.library import preview_library
+    pv = preview_library("532790", tmp_path, "TANLA", [AR], years=5, client=_full_client())
+    assert pv["total"] == 2 and pv["new"] == 2 and pv["have"] == 0
+    labels = {c["label"]: c["count"] for c in pv["by_category"]}
+    assert labels["Annual Reports"] == 2
+    # preview NEVER touches disk — no company folder, no downloads
+    assert not (tmp_path / "TANLA").exists()
+
+
+def test_preview_marks_already_have_when_library_exists(tmp_path):
+    from engine.library import preview_library
+    # build once so the seen-ledger knows both filings
+    build_library("532790", "TANLA", tmp_path, [AR], years=5, client=_full_client(), on_progress=None)
+    pv = preview_library("532790", tmp_path, "TANLA", [AR], years=5, client=_full_client())
+    assert pv["total"] == 2 and pv["have"] == 2 and pv["new"] == 0
+
+
+def test_cancel_stops_download_and_leaves_library_consistent(tmp_path):
+    # should_cancel returns True on the very first check → no filings downloaded, but the
+    # library must still be valid (INDEX rebuilt, helper written) and flagged cancelled.
+    from engine.report_helper import HELPER_NAME
+    res = build_library("532790", "TANLA", tmp_path, [AR], years=5,
+                        client=_full_client(), on_progress=None, should_cancel=lambda: True)
+    assert res.cancelled is True
+    assert res.downloaded == []
+    assert (tmp_path / "TANLA" / "INDEX.md").exists()       # never corrupt
+    assert (tmp_path / HELPER_NAME).exists()
+
+
+def test_cancel_after_first_keeps_completed_filings_whole(tmp_path):
+    # cancel AFTER the first filing → exactly one complete (pdf+md), no .part remnants
+    calls = {"n": 0}
+    def cancel():
+        calls["n"] += 1
+        return calls["n"] > 1   # 1st check False (download #1), 2nd check True (stop)
+    res = build_library("532790", "TANLA", tmp_path, [AR], years=5,
+                        client=_full_client(), on_progress=None, should_cancel=cancel)
+    assert res.cancelled is True
+    assert len(res.downloaded) == 1
+    company = tmp_path / "TANLA"
+    pdfs = list(company.rglob("*.pdf"))
+    assert len(pdfs) == 1 and pdfs[0].with_suffix(".md").exists()   # the one we kept is whole
+    assert list(company.rglob("*.part")) == []                       # no half-files left
+
+
+def test_build_writes_report_helper_at_root(tmp_path):
+    # The app-managed report template lands at the library root so every skill can read it.
+    from engine.report_helper import HELPER_NAME
+    build_library("532790", "TANLA", tmp_path, [AR], years=5,
+                  client=_full_client(), on_progress=None)
+    helper = tmp_path / HELPER_NAME
+    assert helper.exists()
+    assert "moat-grid" in helper.read_text(encoding="utf-8")   # the locked house style
+
+
 def test_build_expands_tilde_in_root(tmp_path, monkeypatch):
     # A "~/..." dest must expand to the user's home, NOT create a literal "~" folder.
     # We point home at tmp_path so the test stays sandboxed and self-cleaning.

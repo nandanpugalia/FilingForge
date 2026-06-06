@@ -41,9 +41,32 @@ def resolve_company(req: ResolveRequest) -> dict:
 def start_build(req: BuildRequest, request: Request) -> dict:
     mgr = request.app.state.jobs
     job = mgr.create()
-    work = run_build(req.scrip_code, req.ticker, req.dest, req.everything, req.categories, req.years)
+    work = run_build(req.scrip_code, req.ticker, req.dest, req.everything, req.categories, req.years,
+                     should_cancel=job.cancel_event.is_set)
     mgr.start(job, work)
     return JobCreated(job_id=job.id).model_dump()
+
+
+@router.post("/preview")
+def preview_build(req: BuildRequest) -> dict:
+    """List-only: how many filings the chosen scope would fetch (by category) and how many are
+    already in the library. No downloads — the user approves before anything is pulled."""
+    from engine.library import preview_library
+    from engine.models import CURATED_BY_KEY
+    specs = [CURATED_BY_KEY[k] for k in req.categories]
+    client = BSEClient()
+    try:
+        return preview_library(req.scrip_code, Path(req.dest).expanduser(), req.ticker, specs,
+                               req.years, client, everything=req.everything)
+    finally:
+        client.close()
+
+
+@router.post("/build/{job_id}/cancel")
+def cancel_build(job_id: str, request: Request) -> dict:
+    if not request.app.state.jobs.cancel(job_id):
+        raise HTTPException(status_code=404, detail="unknown job")
+    return {"ok": True}
 
 
 @router.get("/library")

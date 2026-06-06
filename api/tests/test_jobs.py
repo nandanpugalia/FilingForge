@@ -1,3 +1,4 @@
+import threading
 import time
 import pytest
 from api.jobs import JobManager, JOB_DONE_SENTINEL
@@ -59,6 +60,28 @@ def test_unexpected_error_is_generic_friendly_not_raw():
     _wait(job, "error")
     assert "boom internal detail" not in job.error
     assert job.error
+
+
+def test_cancel_sets_event_and_marks_status_cancelled():
+    mgr = JobManager()
+    job = mgr.create()
+    started = threading.Event()
+
+    def work(on_progress):
+        started.set()
+        while not job.cancel_event.is_set():   # the engine's should_cancel polls this
+            time.sleep(0.01)
+        return {"downloaded": 3, "skipped": 0, "failed": 0, "cancelled": True}
+
+    mgr.start(job, work)
+    assert started.wait(2)
+    assert mgr.cancel(job.id) is True
+    _wait(job, "cancelled")
+    assert job.result["cancelled"] is True
+
+
+def test_cancel_unknown_job_returns_false():
+    assert JobManager().cancel("nope") is False
 
 
 def test_get_returns_none_for_unknown_job():
