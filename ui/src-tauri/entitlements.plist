@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  macOS hardened-runtime entitlements for the FilingForge app + its PyInstaller Python
+  sidecar (filingforge-api). Without disable-library-validation, the notarized (hardened-
+  runtime) sidecar cannot dlopen its bundled Python framework — it fails with "mapping
+  process and mapped file have different Team IDs" and the app hangs on the loading screen.
+  The other keys are standard for embedding a CPython/PyInstaller runtime under hardened runtime.
+-->
+<plist version="1.0">
+<dict>
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+  <key>com.apple.security.cs.allow-dyld-environment-variables</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+</dict>
+</plist>

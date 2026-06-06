@@ -4,6 +4,15 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.6] — 2026-06-06
+
+### Fixed
+- **macOS app no longer hangs on the loading screen.** On the notarized build, Apple's
+  hardened runtime blocked the bundled Python engine from loading its own libraries
+  (*"different Team IDs"*), so the backend never started. Added the
+  `disable-library-validation` entitlement so the engine loads correctly. Windows was
+  unaffected.
+
 ## [0.1.5] — 2026-06-06
 
 ### Added
