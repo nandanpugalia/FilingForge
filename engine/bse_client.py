@@ -24,9 +24,11 @@ class BSEClient:
     def __init__(self, transport: Optional[httpx.BaseTransport] = None, rate_delay: float = RATE_DELAY,
                  max_retries: int = MAX_RETRIES, retry_backoff: float = RETRY_BACKOFF):
         # Granular timeouts: a hung connect/read fails fast instead of freezing the app on
-        # a dead socket — then the retry below gives a flaky network a second chance.
+        # a dead socket — then the retry below gives a flaky network a second chance. The 30s
+        # read cap also bounds how long a Stop takes to register: a threading.Event can't
+        # interrupt an in-flight request, so the worst-case wait for Stop is one read timeout.
         self._client = httpx.Client(headers=HEADERS, follow_redirects=True, transport=transport,
-                                    timeout=httpx.Timeout(60.0, connect=10.0))
+                                    timeout=httpx.Timeout(30.0, connect=10.0))
         self._rate_delay = rate_delay
         self._max_retries = max_retries
         self._retry_backoff = retry_backoff

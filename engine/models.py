@@ -24,12 +24,16 @@ def slug(text: str) -> str:
 
 @dataclass(frozen=True)
 class CategorySpec:
-    """A filing category the user can pick. `subcategory=None` means 'whole category' (wildcard)."""
+    """A filing category the user can pick. `subcategory=None` means 'whole category' (wildcard).
+    `default_on` marks the high-signal categories that are pre-ticked in the UI — picking only
+    these (instead of `everything`) is what stops a 5-year pull dumping 100s of postal ballots,
+    routine board notices and minor 'company update' filings."""
     key: str
     label: str
     folder: str
     category: str
     subcategory: Optional[str] = None
+    default_on: bool = False
 
     def matches(self, cat: str, sub: str) -> bool:
         if cat != self.category:
@@ -38,10 +42,10 @@ class CategorySpec:
 
 
 CURATED: list[CategorySpec] = [
-    CategorySpec("annual_report", "Annual Reports", "annual-reports", "Others", "Reg. 34 (1) Annual Report"),
-    CategorySpec("results", "Financial Results", "quarterly", "Result", "Financial Results"),
-    CategorySpec("investor_ppt", "Investor Presentations", "investor-ppts", "Company Update", "Investor Presentation"),
-    CategorySpec("concall", "Concall Transcripts", "concalls", "Company Update", "Earnings Call Transcript"),
+    CategorySpec("annual_report", "Annual Reports", "annual-reports", "Others", "Reg. 34 (1) Annual Report", default_on=True),
+    CategorySpec("results", "Financial Results", "quarterly", "Result", "Financial Results", default_on=True),
+    CategorySpec("investor_ppt", "Investor Presentations", "investor-ppts", "Company Update", "Investor Presentation", default_on=True),
+    CategorySpec("concall", "Concall Transcripts", "concalls", "Company Update", "Earnings Call Transcript", default_on=True),
     CategorySpec("board_outcome", "Board-Meeting Outcomes", "board-meetings", "Board Meeting", "Outcome of Board Meeting"),
     CategorySpec("press", "Press / Media Releases", "press", "Company Update", "Press Release / Media Release"),
     CategorySpec("analyst_meet", "Analyst / Investor Meets", "analyst-meets", "Company Update", "Analyst / Investor Meet"),
@@ -49,6 +53,11 @@ CURATED: list[CategorySpec] = [
     CategorySpec("agm_egm", "AGM / EGM", "agm-egm", "AGM/EGM", None),
 ]
 CURATED_BY_KEY: dict[str, CategorySpec] = {c.key: c for c in CURATED}
+
+
+def default_category_keys() -> list[str]:
+    """The pre-ticked high-signal category keys for a NEW library (sorted, stable)."""
+    return sorted(c.key for c in CURATED if c.default_on)
 
 
 @dataclass(frozen=True)
@@ -75,6 +84,7 @@ class LibraryResult:
     downloaded: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
+    cancelled: bool = False                 # user pressed Stop; library left consistent
 
     @property
     def total_attempted(self) -> int:

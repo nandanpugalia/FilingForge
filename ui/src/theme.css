@@ -901,6 +901,50 @@ a { color: var(--dim); text-decoration: none; }
   text-transform: none;
 }
 
+.cat-reco {
+  display: inline-block; margin-left: 8px; padding: 1px 7px;
+  font-family: var(--mono, ui-monospace, monospace); font-size: 9px;
+  letter-spacing: 0.06em; text-transform: uppercase; vertical-align: middle;
+  color: var(--good, #7fae6d); border: 1px solid var(--good, #7fae6d); border-radius: 3px;
+}
+
+/* ── Preview / approve (before download starts) ─────────────── */
+.preview-confirm { align-items: stretch; }
+.preview-head {
+  display: flex; align-items: baseline; gap: 10px; margin: 18px 0 4px;
+}
+.preview-count {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 40px; font-weight: 700; color: var(--ember); line-height: 1;
+}
+.preview-label { font-size: 15px; color: var(--ink, #e8ddd0); }
+.preview-sub { color: var(--dim); font-size: 12.5px; margin-bottom: 14px; }
+.preview-breakdown {
+  list-style: none; margin: 0 0 18px; padding: 0;
+  border-top: 1px solid var(--rule, #2a211a);
+  max-height: 240px; overflow-y: auto;
+}
+.preview-breakdown li {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 8px 2px; border-bottom: 1px solid var(--rule, #2a211a); font-size: 13.5px;
+}
+.preview-breakdown .pb-label { color: var(--ink, #e8ddd0); }
+.preview-breakdown .pb-count {
+  font-family: var(--mono, ui-monospace, monospace); color: var(--dim); font-size: 12.5px;
+}
+.preview-actions { display: flex; flex-direction: column; gap: 10px; align-items: stretch; }
+.preview-actions .link { align-self: center; }
+
+/* ── Stop button during a build ─────────────────────────────── */
+.stop-build {
+  margin: 18px auto 0; padding: 8px 22px;
+  background: transparent; color: var(--bad, #d9534f);
+  border: 1px solid var(--bad, #d9534f); border-radius: 6px;
+  font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.15s;
+}
+.stop-build:hover:not(:disabled) { background: var(--bad, #d9534f); color: #fff; }
+.stop-build:disabled { opacity: 0.5; cursor: default; }
+
 /* ── PHASE 3 · BUILDING ─────────────────────────────────────── */
 .building {
   display: flex;

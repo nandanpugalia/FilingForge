@@ -4,6 +4,28 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.7] — 2026-06-06
+
+### Added
+- **See what you'll download before it starts.** Picking a company now shows a preview —
+  how many filings will be fetched, broken down by type, and how many you already have — so
+  you approve before anything downloads. No more a five-year pull starting blind.
+- **A Stop button** during a download. It finishes the file in flight, keeps everything
+  already saved (fully indexed), and never leaves your library half-written.
+- **Smarter defaults.** New libraries pull the high-signal filings by default (annual reports,
+  results, investor presentations, concall transcripts — now tagged *Recommended*) over
+  **2 years** of history, instead of every routine notice and postal ballot. Tick **All
+  filings** to pull everything. The app **remembers the scope you last chose** as your next
+  default, and refreshing an existing library keeps whatever categories you originally chose.
+
+### Fixed
+- **Your library can no longer be corrupted by an interrupted download.** Every file is now
+  written atomically — a Stop, a window-close, a crash or a dropped connection can never leave
+  a half-written PDF or Markdown that the index would treat as real. (This also hardens older
+  libraries against the same problem going forward.)
+- Network reads time out faster (30s), so **Stop** takes effect quickly instead of appearing
+  to hang on a slow connection.
+
 ## [0.1.6] — 2026-06-06
 
 ### Fixed

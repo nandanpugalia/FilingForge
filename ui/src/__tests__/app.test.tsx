@@ -27,9 +27,10 @@ beforeEach(() => { vi.restoreAllMocks(); localStorage.clear();
   vi.spyOn(api, "getLibrary").mockResolvedValue([]); });
 afterEach(() => vi.restoreAllMocks());
 
-it("walks search → configure → building → done", async () => {
+it("walks search → configure → preview → building → done", async () => {
   vi.spyOn(api, "resolve").mockResolvedValue([
     { scrip_code: "532790", company: "Tanla Platforms Ltd", is_primary: true, isin: "INE483C01032", symbol: "TANLA" }]);
+  vi.spyOn(api, "previewBuild").mockResolvedValue({ total: 1, new: 1, have: 0, by_category: [{ label: "Annual Reports", count: 1 }] });
   vi.spyOn(api, "startBuild").mockResolvedValue("j1");
   vi.spyOn(api, "openFolder").mockResolvedValue(undefined);
   vi.spyOn(api, "subscribeBuildEvents").mockImplementation((_id, h) => {
@@ -45,6 +46,8 @@ it("walks search → configure → building → done", async () => {
   // after picking a company (configure phase) the titlebar wordmark appears
   expect(container.querySelector(".titlebar .wordmark")).not.toBeNull();
   await userEvent.click(await screen.findByRole("button", { name: /Build library/i }));
+  // preview gate → approve
+  await userEvent.click(await screen.findByRole("button", { name: /Download 1/i }));
   expect(await screen.findByText(/Your Tanla Platforms Ltd library is ready/)).toBeInTheDocument();
   expect(screen.getByText(/1 document added/)).toBeInTheDocument();
 });
@@ -52,11 +55,13 @@ it("walks search → configure → building → done", async () => {
 it("shows a friendly error if startBuild fails, and Retry re-runs", async () => {
   vi.spyOn(api, "resolve").mockResolvedValue([
     { scrip_code: "532790", company: "Tanla Platforms Ltd", is_primary: true, symbol: "TANLA" }]);
+  vi.spyOn(api, "previewBuild").mockResolvedValue({ total: 1, new: 1, have: 0, by_category: [] });
   const sb = vi.spyOn(api, "startBuild").mockRejectedValueOnce(new Error("BSE isn't responding right now."));
   render(<App />);
   await userEvent.type(screen.getByPlaceholderText(/look up a company/i), "tan");
   await userEvent.click(await screen.findByText(/Tanla Platforms Ltd/));
   await userEvent.click(await screen.findByRole("button", { name: /Build library/i }));
+  await userEvent.click(await screen.findByRole("button", { name: /Download 1/i }));
   expect(await screen.findByText(/BSE isn't responding/)).toBeInTheDocument();
   // Retry: make the second attempt succeed enough to leave the error screen
   sb.mockResolvedValueOnce("j2");

@@ -16,6 +16,20 @@ def test_curated_has_nine_specs_with_unique_keys_and_folders():
     assert CURATED_BY_KEY["annual_report"].folder == "annual-reports"
 
 
+def test_curated_default_on_marks_high_signal_categories_only():
+    # smart defaults: the analyst-grade core is pre-ticked; noisy/admin categories are off
+    # (a 5-year "everything" pull dumps 100s of postal ballots / routine updates).
+    for k in ("annual_report", "results", "investor_ppt", "concall"):
+        assert CURATED_BY_KEY[k].default_on is True, k
+    for k in ("agm_egm", "corp_actions", "board_outcome", "analyst_meet", "press"):
+        assert CURATED_BY_KEY[k].default_on is False, k
+
+
+def test_default_category_keys_are_the_high_signal_four():
+    from engine.models import default_category_keys
+    assert default_category_keys() == ["annual_report", "concall", "investor_ppt", "results"]
+
+
 def test_exact_spec_matches_category_and_subcategory():
     ar = CURATED_BY_KEY["annual_report"]
     assert ar.matches("Others", "Reg. 34 (1) Annual Report") is True

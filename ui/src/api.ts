@@ -1,6 +1,6 @@
 import { API_BASE } from "./config";
 import * as self from "./api";
-import type { Candidate, BuildScope, JobStatus, LibraryItem, ProgressEvent, ImportedSkill } from "./types";
+import type { Candidate, BuildScope, JobStatus, LibraryItem, ProgressEvent, ImportedSkill, PreviewResult } from "./types";
 
 async function safeFetch(input: string, init?: RequestInit): Promise<Response> {
   try { return await fetch(input, init); }
@@ -19,10 +19,20 @@ export async function resolve(company: string): Promise<Candidate[]> {
   if (!res.ok) return friendly(res);
   return (await res.json()).candidates as Candidate[];
 }
+export async function previewBuild(scope: BuildScope): Promise<PreviewResult> {
+  // List-only: how many filings this scope would pull (by category) + how many already have.
+  const res = await safeFetch(`${API_BASE}/preview`, jsonPost(scope));
+  if (!res.ok) return friendly(res);
+  return (await res.json()) as PreviewResult;
+}
 export async function startBuild(scope: BuildScope): Promise<string> {
   const res = await safeFetch(`${API_BASE}/build`, jsonPost(scope));
   if (!res.ok) return friendly(res);
   return (await res.json()).job_id as string;
+}
+export async function cancelBuild(jobId: string): Promise<void> {
+  const res = await safeFetch(`${API_BASE}/build/${jobId}/cancel`, { method: "POST" });
+  if (!res.ok) return friendly(res);
 }
 export async function getStatus(jobId: string): Promise<JobStatus> {
   const res = await safeFetch(`${API_BASE}/build/${jobId}`);

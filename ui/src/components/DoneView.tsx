@@ -49,9 +49,15 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
   };
   return (
     <div className="done">
-      <h2 className="ready">Your {name || ticker} library is ready.</h2>
+      <h2 className="ready">{result.cancelled
+        ? `Stopped — your ${name || ticker} library was saved.`
+        : `Your ${name || ticker} library is ready.`}</h2>
       <div className="saved-as">Saved in the <code>{ticker}/</code> folder</div>
-      <div className="summary">{result.downloaded} document{result.downloaded === 1 ? "" : "s"} added{skipNote}{failNote}</div>
+      <div className="summary">
+        {result.cancelled && "Stopped early — "}
+        {result.downloaded} document{result.downloaded === 1 ? "" : "s"} added{skipNote}{failNote}
+        {result.cancelled && " · everything saved is complete and indexed"}
+      </div>
       {rows.length > 0 && (
         <div className="breakdown">
           <div className="breakdown-head">By type:</div>
