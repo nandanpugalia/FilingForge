@@ -1,3 +1,5 @@
+mod updater_cmd;
+
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Mutex;
 use tauri::Manager;
@@ -85,6 +87,7 @@ pub fn run() {
             child: Mutex::new(None),
             shutting_down: AtomicBool::new(false),
         })
+        .invoke_handler(tauri::generate_handler![updater_cmd::check_for_update])
         .setup(|app| {
             // Spawn the engine on startup. Errors are logged, not panicked (see spawn_engine).
             spawn_engine(app.handle().clone(), 0);
