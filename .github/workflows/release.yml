@@ -193,10 +193,15 @@ jobs:
   # apps with the "Get pre-release updates" toggle ON (which point at the GitHub Pages URL)
   # see it immediately, while stable apps (releases/latest, which ignores prereleases) don't.
   # "Promote to stable" = un-mark the GitHub release as prerelease (no CI needed for that).
-  # NOTE: GitHub Pages must be enabled once (Settings → Pages → source: gh-pages branch).
-  # Validate end-to-end on the first beta tag (e.g. v0.1.8-beta).
+  # GitHub Pages must be enabled once (Settings → Pages → source: gh-pages branch); the
+  # gh-pages branch is seeded with latest-beta.json so it always exists.
+  #
+  # `needs: publish` (NOT build): the release must be un-drafted first. v0.1.8 failed here
+  # because this ran in parallel with publish and curl'd the still-draft public asset URL
+  # (404). We now (a) wait for publish, and (b) fetch via `gh release download` which is
+  # authenticated and works on draft OR published releases — belt and suspenders.
   publish-beta-feed:
-    needs: build
+    needs: publish
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -208,20 +213,37 @@ jobs:
         run: |
           set -euo pipefail
           TAG="${{ github.ref_name }}"
-          # the updater feed produced by tauri-action on this release
-          curl -fsSL "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}/latest.json" -o /tmp/latest-beta.json
-          test -s /tmp/latest-beta.json
+          # Authenticated fetch of the updater feed tauri-action attached to this release.
+          gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir /tmp --clobber
+          test -s /tmp/latest.json
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
+          # gh-pages is seeded so the first clone normally succeeds; the orphan fallback
+          # is kept only as a safety net should the branch ever go missing.
           git clone --depth 1 --branch gh-pages \
             "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" pages 2>/dev/null \
             || { git clone --depth 1 "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" pages \
-                 && cd pages && git checkout --orphan gh-pages && git rm -rf . >/dev/null 2>&1 || true; cd ..; }
-          cp /tmp/latest-beta.json pages/latest-beta.json
+                 && ( cd pages && git checkout --orphan gh-pages && git rm -rf . >/dev/null 2>&1 || true ); }
+          cp /tmp/latest.json pages/latest-beta.json
           cd pages
           git add latest-beta.json
-          git commit -m "beta feed: ${TAG}" || { echo "no change"; exit 0; }
+          git commit -m "beta feed: ${TAG}" || { echo "no change — nothing to publish"; exit 0; }
           git push origin HEAD:gh-pages
+
+      # A beta-feed hiccup must never pass silently: the release is already live, but the
+      # pre-release channel would be stale, so ping Discord with a re-run link.
+      - name: Notify Discord — beta feed update failed
+        if: ${{ failure() }}
+        shell: bash
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: |
+          [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
+          TAG="${{ github.ref_name }}"
+          RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          MSG="⚠️ **FilingForge ${TAG} — beta feed (latest-beta.json) didn't update.** The release itself is fine and Windows/macOS downloads are unaffected; only the pre-release channel mirror failed. Re-run this job: ${RUN}"
+          curl -fsS -H "Content-Type: application/json" \
+            -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
 
   # Poll Apple (blip-tolerant), staple the ticket into the DMG once Accepted, re-upload.
   # Runs in parallel with publish; a timeout/failure here does NOT unpublish the release.
@@ -263,7 +285,7 @@ jobs:
         run: |
           [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
           TAG="${{ github.ref_name }}"
-          MSG="🍎 **FilingForge ${TAG} — macOS notarized + stapled & live.** The DMG now opens zero-click (online *and* offline). Safe to flip the site's macOS button to live. 👉 next steps."
+          MSG="🍎 **FilingForge ${TAG} — macOS notarized + stapled & live.** The DMG now opens zero-click (online *and* offline). Safe to flip the site's macOS download button to live."
           curl -fsS -H "Content-Type: application/json" \
             -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
 
