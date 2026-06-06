@@ -89,6 +89,48 @@ Sections (the report renders these — see §3 for how):
   line (sources cited of total in index, FY).
 - **Key Findings**: 4–6 numbered, cited findings — what the business is, how it makes money,
   the one thing that matters most.
+
+### 2a. Provenance block and context bar
+
+The v2 report template (in `{root}/_filingforge-report.md`) renders two provenance elements
+that you must populate from your reading of the corpus:
+
+**Sticky context bar (`<div id="ctx">`)** — three slots:
+- `.co` — the company's full name (e.g. "Tanla Platforms Ltd").
+- `#ctxSec` (the `.sec` span) — the skill/section label: **"Business Model Brief"**.
+- `.cites` — the count of source filings you actually cited, e.g. **"12 sources cited"**.
+  Count each distinct filing once regardless of how many passages you used.
+
+**Provenance line (`.prov` in the masthead)** — one to two concise sentences:
+- How many filings you cited out of how many are listed in `INDEX.md`
+  (e.g. *"Cited 9 of 23 filings in INDEX.md."*).
+- The fiscal years the cited filings collectively cover, expressed as a range
+  (e.g. *"Fiscal coverage: FY22–FY25."*). Use the dates in `INDEX.md` — don't invent coverage.
+- Keep it brief; this is orientation, not filler.
+
+### 2b. Narrative chart data (SVG `#trend`)
+
+The "Revenue streams" section (§2, item 2) may carry an inline SVG chart. Populate it by
+setting these `data-*` attributes on `<svg id="trend">`:
+
+| Attribute | Content | Rules |
+|---|---|---|
+| `data-years` | Comma-separated fiscal-year labels | Chronological, e.g. `FY22,FY23,FY24,FY25` |
+| `data-rev` | Revenue figures, same order | Plain numbers, one consistent unit (e.g. ₹ cr or ₹ bn) — pick the unit the filings use most and note it in the legend |
+| `data-margin` | A margin % per year, same order | EBITDA margin preferred; operating margin acceptable if EBITDA is not disclosed; must be the same metric across all years |
+| `data-notes` (optional) | `index:note` pairs, comma-separated | Annotate inflection years only, e.g. `2:acquisition,3:new-plant` — index is 0-based |
+
+**Series discipline:** all series must be the same length and in the same chronological order.
+Use 3–5 years where the filings give you clean, comparable figures. Do not mix restated and
+non-restated figures in the same series without noting the restatement in `data-notes`.
+
+**Graceful omit:** if the filings don't yield clean, comparable multi-year revenue **and** margin
+figures — e.g. the company has fewer than two comparable fiscal years in the corpus, or key
+figures are segment-only and not consolidatable, or the margin metric shifts across periods —
+**remove the `<svg id="trend">` and its `<figure class="chart">` wrapper entirely**. A missing
+chart is invisible; an empty or half-populated one destroys trust. Never set a `data-*`
+attribute to a placeholder or an estimated value. The prose and tables in the section carry the
+analysis instead. (This mirrors the template's own instruction in `_filingforge-report.md`.)
 - **1. What the company does** — the business and the value chain it sits in. Cited.
 - **2. Revenue streams** — a table of segments with share + growth, then prose on the mix.
   Use a bar split for the headline segment/geography breakdown.
