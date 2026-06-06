@@ -1,4 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { isTauri } from "../components/ReadyGate";
 
 // How often the app auto-checks for updates. We throttle to once/24h (rather than every
@@ -13,10 +15,10 @@ export function shouldAutoCheck(lastCheckMs: number | null, nowMs: number): bool
   return nowMs - lastCheckMs >= UPDATE_CHECK_INTERVAL_MS;
 }
 
-// Auto-update state machine. Dynamic-imports the Tauri updater/process plugins so the
-// browser/preview/test builds (non-Tauri) never load them. Feed + signature are configured
-// in tauri.conf.json > plugins.updater; the user's library lives outside the app bundle, so
-// an update can never touch their filings.
+// Auto-update state machine. The check/install are driven by the app's Rust commands
+// (`check_for_update` / `install_update`), which hold the update internally and honor the
+// `beta` channel toggle. The user's library lives outside the app bundle, so an update can
+// never touch their filings. All of this short-circuits on non-Tauri builds via isTauri().
 export type UpdateState =
   | { phase: "idle" }
   | { phase: "checking" }
@@ -26,12 +28,6 @@ export type UpdateState =
   | { phase: "ready" }
   | { phase: "error"; message: string };
 
-// the updater's Update object — typed loosely to avoid importing the plugin at module load
-type TauriUpdate = {
-  version: string; body?: string;
-  downloadAndInstall: (cb: (e: { event: string; data?: { contentLength?: number; chunkLength?: number } }) => void) => Promise<void>;
-};
-
 export type UpdateController = {
   state: UpdateState;
   install: () => Promise<void>;
@@ -39,9 +35,8 @@ export type UpdateController = {
   checkNow: () => void;
 };
 
-export function useUpdate(): UpdateController {
+export function useUpdate(beta: boolean): UpdateController {
   const [state, setState] = useState<UpdateState>({ phase: "idle" });
-  const [update, setUpdate] = useState<TauriUpdate | null>(null);
 
   // force=true is a user-initiated "Check for updates" (Settings) — bypasses the throttle and
   // surfaces "checking"/"uptodate"/"error". force=false is the silent, throttled auto-check.
@@ -51,37 +46,28 @@ export function useUpdate(): UpdateController {
     if (!force && !shouldAutoCheck(last, Date.now())) return;   // throttled — skip silently
     if (force) setState({ phase: "checking" });
     try {
-      const { check } = await import("@tauri-apps/plugin-updater");
-      const u = (await check()) as TauriUpdate | null;
+      const info = await invoke<{ version: string; notes: string | null } | null>("check_for_update", { beta });
       localStorage.setItem(LAST_CHECK_KEY, String(Date.now()));
-      if (u) { setUpdate(u); setState({ phase: "available", version: u.version, notes: u.body }); }
+      if (info) setState({ phase: "available", version: info.version, notes: info.notes ?? undefined });
       else if (force) setState({ phase: "uptodate" });
     } catch (e) {
       // an unreachable feed is non-fatal — the app works fine offline. Only surface it on a
       // manual check; the silent auto-check just stays idle.
-      if (force) setState({ phase: "error", message: (e as Error).message });
+      if (force) setState({ phase: "error", message: String(e) });
     }
-  }, []);
+  }, [beta]);
 
   useEffect(() => { void runCheck(false); }, [runCheck]);   // auto, throttled, on launch
 
-  const install = async () => {
-    if (!update) return;
-    try {
-      let total = 0, got = 0;
-      await update.downloadAndInstall((e) => {
-        if (e.event === "Started") total = e.data?.contentLength ?? 0;
-        else if (e.event === "Progress") {
-          got += e.data?.chunkLength ?? 0;
-          setState({ phase: "downloading", pct: total ? Math.round((got / total) * 100) : 0 });
-        } else if (e.event === "Finished") setState({ phase: "ready" });
-      });
-      const { relaunch } = await import("@tauri-apps/plugin-process");
-      await relaunch();
-    } catch (e) {
-      setState({ phase: "error", message: (e as Error).message });
-    }
-  };
+  const install = useCallback(async () => {
+    if (!isTauri()) return;
+    setState({ phase: "downloading", pct: 0 });
+    const un1 = await listen<number>("update://progress", (e) => setState({ phase: "downloading", pct: e.payload }));
+    const un2 = await listen("update://done", () => setState({ phase: "ready" }));
+    try { await invoke("install_update", { beta }); }
+    catch (e) { setState({ phase: "error", message: String(e) }); }
+    finally { un1(); un2(); }
+  }, [beta]);
 
   const dismiss = () => setState({ phase: "idle" });
   const checkNow = useCallback(() => { void runCheck(true); }, [runCheck]);
