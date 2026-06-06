@@ -317,7 +317,11 @@ reading-progress bar and sticky context bar, and handles citation clicks Safari-
     a.addEventListener('click',function(e){
       e.preventDefault();
       var href=ffCiteTarget(raw);
-      var w=null; try{w=window.open(href,'_blank','noopener');}catch(_){}
+      // NOTE: no 'noopener' here — with it, window.open returns null even on SUCCESS (per
+      // spec), which would trip the fallback below and open the PDF twice (new tab + same
+      // tab). Without it the return value is truthy on success, so we open exactly once and
+      // only fall back to same-tab when the popup is genuinely blocked. Safe: it's a local PDF.
+      var w=null; try{w=window.open(href,'_blank');}catch(_){}
       if(!w){ window.location.href=href; }   // blocked → same tab, guaranteed to open
     });
   });
