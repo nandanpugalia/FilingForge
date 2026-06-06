@@ -1,3 +1,4 @@
+mod engine_info;
 mod updater_cmd;
 
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -21,8 +22,10 @@ struct EngineState {
 fn spawn_engine(app: tauri::AppHandle, attempt: u32) {
     const MAX_RESTARTS: u32 = 5;
 
+    let info = app.state::<engine_info::EngineInfo>();
+    let (port, token) = (info.port, info.token.clone());
     let command = match app.shell().sidecar("filingforge-api") {
-        Ok(c) => c,
+        Ok(c) => c.env("FF_PORT", port.to_string()).env("FF_TOKEN", token),
         Err(e) => {
             eprintln!("[engine] sidecar binary 'filingforge-api' not found: {e}");
             return;
@@ -83,11 +86,22 @@ pub fn run() {
         // process plugin provides relaunch() after an update installs.
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .manage(engine_info::EngineInfo {
+            port: engine_info::pick_port().unwrap_or_else(|| {
+                eprintln!("[engine] no free port in 8765–8775; defaulting to 8765");
+                8765
+            }),
+            token: engine_info::gen_token(),
+        })
         .manage(EngineState {
             child: Mutex::new(None),
             shutting_down: AtomicBool::new(false),
         })
-        .invoke_handler(tauri::generate_handler![updater_cmd::check_for_update, updater_cmd::install_update])
+        .invoke_handler(tauri::generate_handler![
+            updater_cmd::check_for_update,
+            updater_cmd::install_update,
+            engine_info::engine_info
+        ])
         .setup(|app| {
             // Spawn the engine on startup. Errors are logged, not panicked (see spawn_engine).
             spawn_engine(app.handle().clone(), 0);

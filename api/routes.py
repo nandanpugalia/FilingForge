@@ -40,6 +40,7 @@ def resolve_company(req: ResolveRequest) -> dict:
 @router.post("/build", status_code=202)
 def start_build(req: BuildRequest, request: Request) -> dict:
     mgr = request.app.state.jobs
+    request.app.state.library_root = req.dest
     job = mgr.create()
     work = run_build(req.scrip_code, req.ticker, req.dest, req.everything, req.categories, req.years,
                      should_cancel=job.cancel_event.is_set)
@@ -70,7 +71,8 @@ def cancel_build(job_id: str, request: Request) -> dict:
 
 
 @router.get("/library")
-def library(root: str) -> dict:
+def library(root: str, request: Request) -> dict:
+    request.app.state.library_root = root
     return {"companies": read_library(Path(root))}
 
 

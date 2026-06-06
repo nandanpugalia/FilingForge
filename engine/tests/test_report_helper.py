@@ -52,3 +52,13 @@ def test_helper_overwrites_stale_version(tmp_path):
     text = write_report_helper(tmp_path).read_text(encoding="utf-8")
     assert "OLD STALE TEMPLATE" not in text
     assert "moat-grid" in text
+
+
+def test_helper_has_v2_markers(tmp_path):
+    text = write_report_helper(tmp_path).read_text(encoding="utf-8")
+    for marker in ("pg-header", "ember-rule", "Key Findings", "moat-grid",
+                   "data-rev", "infer", 'id="ctx"', 'id="trend"'):
+        assert marker in text, marker
+    # graceful chart: instructions tell the AI to omit the chart if data is missing
+    low = text.lower()
+    assert "omit the chart" in low or "if the data isn't available" in low or "if the data isn’t available" in low

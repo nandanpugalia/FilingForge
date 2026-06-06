@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { API_BASE } from "../config";
+import { apiBase } from "../api";
 
 /** True only inside the Tauri webview (the desktop app). */
 export function isTauri(): boolean {
@@ -23,7 +23,11 @@ const SLOW_LINE = "Hang tight — first launch is a little slower…";
 
 async function pingHealth(signal: AbortSignal): Promise<boolean> {
   try {
-    const res = await fetch(`${API_BASE}/health`, { signal });
+    // Poll the SAME port the Rust shell chose for the sidecar (engine_info is available
+    // immediately at webview load), not a hardcoded 8765 — otherwise a non-default port
+    // would hang the splash forever. apiBase() resolves to 8765 in non-Tauri builds.
+    const base = await apiBase();
+    const res = await fetch(`${base}/health`, { signal });
     return res.ok;
   } catch {
     return false;
@@ -34,8 +38,8 @@ async function pingHealth(signal: AbortSignal): Promise<boolean> {
  * Gates the app behind the engine sidecar's readiness.
  *
  * In the desktop app (Tauri) the Python engine is spawned at launch and takes
- * several seconds to start serving on 127.0.0.1:8765, so we poll /health and
- * show a themed splash until it's up. In a plain web build (or tests) there is
+ * several seconds to start serving on the shell-chosen loopback port, so we poll
+ * /health and show a themed splash until it's up. In a plain web build (or tests) there is
  * no sidecar to wait for, so children render immediately.
  */
 export function ReadyGate({ children }: { children: ReactNode }) {

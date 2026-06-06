@@ -106,6 +106,13 @@ jobs:
           releaseName: "FilingForge v__VERSION__"
           releaseBody: "See the assets below to download. Auto-update metadata: latest.json."
           releaseDraft: true
+          # A hyphenated tag (e.g. v0.1.9-beta) is a PRE-RELEASE: GitHub's releases/latest —
+          # the STABLE updater feed + the website download buttons — excludes prereleases, so
+          # beta builds reach ONLY the gh-pages beta feed (latest-beta.json). Promote to stable
+          # later with `gh release edit <tag> --prerelease=false` (no rebuild). A plain tag
+          # (v0.1.9) has no hyphen → normal release → stable. Without this, a -beta tag would
+          # publish straight to every stable user via releases/latest.
+          prerelease: ${{ contains(github.ref_name, '-') }}
           includeUpdaterJson: true
 
       # The website's download buttons point at releases/latest/download/FilingForge.dmg
