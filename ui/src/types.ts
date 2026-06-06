@@ -7,5 +7,5 @@ export interface PreviewCategory { label: string; count: number; }
 export interface PreviewResult { total: number; new: number; have: number; by_category: PreviewCategory[]; }
 export interface LibraryItem { ticker: string; total: number; counts: Record<string, number>; }
 export interface ImportedSkill { id: string; name: string; tier: "Free" | "Premium"; desc: string; prompt: string; imported: true; }
-export interface Settings { dest: string; years: number; everything: boolean; categories: string[]; openWhenDone: boolean; }
+export interface Settings { dest: string; years: number; everything: boolean; categories: string[]; openWhenDone: boolean; beta: boolean; }
 export interface CategoryDef { key: string; label: string; sublabel: string; }

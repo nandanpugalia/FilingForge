@@ -14,7 +14,7 @@ vi.mock("../api", () => ({
 }));
 
 const company: Candidate = { scrip_code: "532790", company: "Tanla Platforms Ltd", is_primary: true, symbol: "TANLA" };
-const settings: Settings = { dest: "~/FilingForgeLibrary", years: 1, everything: true, categories: ["annual_report","results","investor_ppt","concall"], openWhenDone: true };
+const settings: Settings = { dest: "~/FilingForgeLibrary", years: 1, everything: true, categories: ["annual_report","results","investor_ppt","concall"], openWhenDone: true, beta: false };
 
 beforeEach(() => { vi.mocked(api.previewBuild).mockClear(); });
 
