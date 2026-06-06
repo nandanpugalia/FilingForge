@@ -300,13 +300,23 @@ reading-progress bar and sticky context bar, and handles citation clicks Safari-
   // collapse via chevron ONLY (never lose your place clicking a heading)
   document.querySelectorAll('.sec-chev').forEach(function(c){c.addEventListener('click',function(e){e.stopPropagation();c.closest('.section').classList.toggle('collapsed');});});
 
-  // citations: try a new tab; if the browser blocks it (Safari refuses a new window to a
-  // local file://), fall back to same-tab so the PDF ALWAYS opens. Always preventDefault
-  // first, then decide — never leave a dead truthy window swallow the click.
+  // citations open the cited PDF. When this report is served over the app's token-gated
+  // http route, the page URL carries ?token=… and the relative PDF links must carry it too
+  // or the server 403s — so copy the current token onto same-origin relative hrefs (before
+  // any #page= fragment). Opened from a plain file:// (chat-mode fallback) there's no token
+  // and links are left untouched. Always preventDefault first, then try a new tab, falling
+  // back to same-tab so the PDF ALWAYS opens (Safari may refuse window.open to a file://).
+  function ffCiteTarget(href){
+    var q=location.search;                                 // "?token=…" when served, else ""
+    if(!q||/^([a-z]+:|#|\/\/)/i.test(href))return href;    // absolute/scheme/anchor → as-is
+    var hash='',i=href.indexOf('#'); if(i>=0){hash=href.slice(i);href=href.slice(0,i);}
+    return href+(href.indexOf('?')>=0?'&':'?')+q.slice(1)+hash;
+  }
   document.querySelectorAll('a.cite[href]').forEach(function(a){
-    var href=a.getAttribute('href'); if(!href||href.charAt(0)==='#')return;
+    var raw=a.getAttribute('href'); if(!raw||raw.charAt(0)==='#')return;
     a.addEventListener('click',function(e){
       e.preventDefault();
+      var href=ffCiteTarget(raw);
       var w=null; try{w=window.open(href,'_blank','noopener');}catch(_){}
       if(!w){ window.location.href=href; }   // blocked → same tab, guaranteed to open
     });
