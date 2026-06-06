@@ -28,6 +28,16 @@ it("SettingsOverlay 'Check for updates' calls checkNow and surfaces status", asy
   expect(screen.getByText(/on the latest version/i)).toBeInTheDocument();
 });
 
+it("SettingsOverlay beta toggle renders and saves beta preference", async () => {
+  const onSave = vi.fn();
+  render(<SettingsOverlay settings={{ ...DEFAULT_SETTINGS, beta: false }} onSave={onSave} onClose={() => {}} />);
+  const checkbox = screen.getByRole("checkbox", { name: /get pre-release updates/i });
+  expect(checkbox).not.toBeChecked();
+  await userEvent.click(checkbox);
+  await userEvent.click(screen.getByRole("button", { name: /save/i }));
+  expect(onSave).toHaveBeenCalledWith(expect.objectContaining({ beta: true }));
+});
+
 it("SettingsOverlay shows UPI-only support (QR + id, no BMC/Sponsors) + closes", async () => {
   const onClose = vi.fn();
   render(<SettingsOverlay settings={DEFAULT_SETTINGS} onSave={() => {}} onClose={onClose} />);
