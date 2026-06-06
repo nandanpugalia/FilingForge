@@ -33,6 +33,7 @@ def create_app() -> FastAPI:
         allow_methods=["*"], allow_headers=["*"],
     )
     app.state.jobs = JobManager()
+    app.state.library_root = None
     app.add_exception_handler(FilingForgeError, filingforge_exception_handler)
 
     from starlette.exceptions import HTTPException as StarletteHTTPException
@@ -44,4 +45,6 @@ def create_app() -> FastAPI:
     app.add_exception_handler(StarletteHTTPException, _http_friendly)
 
     app.include_router(router)
+    from .serve import router as serve_router
+    app.include_router(serve_router)
     return app
