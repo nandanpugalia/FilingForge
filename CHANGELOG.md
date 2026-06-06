@@ -4,6 +4,17 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.8] — 2026-06-07
+
+### Added
+- **Pre-release updates channel.** A new Settings toggle, *"Get pre-release updates"* (off by
+  default), lets you opt in to try new versions early — before they roll out to everyone. This
+  lets the project test each release on real installs first, so stable updates are safer.
+
+### Changed
+- The in-app updater now selects its feed (stable or pre-release) based on your preference, with
+  the update check folded into the existing once-a-day check (no extra background activity).
+
 ## [0.1.7] — 2026-06-06
 
 ### Added
