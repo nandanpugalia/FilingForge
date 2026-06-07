@@ -7,11 +7,10 @@ export const ISSUES_URL = "https://github.com/nandanpugalia/FilingForge/issues/n
 // Worker endpoint that receives bug/feature reports. Empty until deployed —
 // when empty the report form degrades gracefully (no network, friendly thanks).
 export const BUG_WORKER_URL = import.meta.env.VITE_BUG_WORKER_URL ?? "";
-// Payments Worker (Razorpay checkout + redeem) for premium skills. Placeholder —
-// the real URL is filled at deploy via VITE_WORKER_URL. Tests mock fetch, so the
-// value here doesn't matter to them.
+// Payments Worker (Razorpay checkout + redeem) for premium skills. Deployed Cloudflare
+// Worker; override at build time with VITE_WORKER_URL if it ever moves. Tests mock fetch.
 export const WORKER_URL =
-  import.meta.env.VITE_WORKER_URL ?? "https://filingforge-worker.example.workers.dev";
+  import.meta.env.VITE_WORKER_URL ?? "https://filingforge-pay.bhaavbhagwanhai.workers.dev";
 // UPI-only support. Real FilingForge-noted QR (/upi.png) + VPA.
 export const DONATE = {
   upiId: "nandanpugalia@okicici",
