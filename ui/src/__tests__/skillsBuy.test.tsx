@@ -39,13 +39,28 @@ it("(a) shows 'Get — ₹3,000' when not owned; clicking it runs checkout then 
   vi.spyOn(api, "redeem").mockResolvedValue({ status: "pending" });
 
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
+  // Get is gated on a valid email — enter one first.
+  await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "buyer@example.com");
   const get = await screen.findByRole("button", { name: /Get — ₹3,000/ });
   await userEvent.click(get);
 
   await waitFor(() => expect(checkout).toHaveBeenCalledTimes(1));
+  expect(checkout).toHaveBeenCalledWith("buyer@example.com");   // email carried to the worker
   expect(open).toHaveBeenCalledWith("https://rzp.io/i/abc");
   // session persisted for resume
   expect(localStorage.getItem("ff_pending_concall")).toBe("sess-1");
+});
+
+it("(a2) Get stays disabled until a valid email is entered", async () => {
+  vi.spyOn(api, "getSkills").mockResolvedValue([]);
+  render(<SkillsOverlay root="/root" onClose={() => {}} />);
+  const get = await screen.findByRole("button", { name: /Get — ₹3,000/ });
+  expect(get).toBeDisabled();
+  await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "not-an-email");
+  expect(get).toBeDisabled();
+  await userEvent.clear(await screen.findByLabelText(/Email for receipt/i));
+  await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "ok@buyer.com");
+  expect(get).toBeEnabled();
 });
 
 it("(b) a redeem returning md installs the pack and it shows as owned ('Use')", async () => {
@@ -59,6 +74,7 @@ it("(b) a redeem returning md installs the pack and it shows as owned ('Use')", 
   const install = vi.spyOn(api, "installSkillMd").mockResolvedValue(owned);
 
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
+  await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "buyer@example.com");
   await userEvent.click(await screen.findByRole("button", { name: /Get — ₹3,000/ }));
 
   // poll fires immediately? No — poll is interval-based. Use the "I've paid" button which appears once polling.
@@ -102,6 +118,17 @@ it("resume banner appears when a pending session exists and the pack isn't owned
   vi.spyOn(api, "getSkills").mockResolvedValue([]);
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
   expect(await screen.findByText(/Finish your Concall Decoder purchase/i)).toBeInTheDocument();
+});
+
+it("'Continue' reopens the saved payment URL (not a dead button)", async () => {
+  localStorage.setItem("ff_pending_concall", "sess-resume");
+  localStorage.setItem("ff_pending_concall_url", "https://rzp.io/i/resume");
+  vi.spyOn(api, "getSkills").mockResolvedValue([]);
+  vi.spyOn(api, "redeem").mockResolvedValue({ status: "pending" });
+  const open = vi.spyOn(ext, "openExternal").mockResolvedValue();
+  render(<SkillsOverlay root="/root" onClose={() => {}} />);
+  await userEvent.click(await screen.findByRole("button", { name: /^Continue$/ }));
+  await waitFor(() => expect(open).toHaveBeenCalledWith("https://rzp.io/i/resume"));
 });
 
 it("no resume banner once the pack is owned (and pending is cleared)", async () => {

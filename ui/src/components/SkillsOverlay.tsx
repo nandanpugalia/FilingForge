@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useEscapeClose } from "../lib/useEscapeClose";
 import { getLibrary, getSkills, importSkill, installSkillMd, startCheckout, redeem } from "../api";
 import { openExternal } from "../lib/openExternal";
-import { setPending, getPending, clearPending } from "../lib/pendingPurchase";
+import { setPending, getPending, getPendingUrl, clearPending } from "../lib/pendingPurchase";
 import { pickSkillFile } from "../lib/pickSkillFile";
 import type { LibraryItem, ImportedSkill } from "../types";
 import bmBrief from "../skills/business-model-brief.md?raw";
@@ -86,8 +86,11 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
   const [buyMsg, setBuyMsg] = useState<string | null>(null);      // status / friendly error
   const [installed, setInstalled] = useState(false);             // toast "added ✓"
   const [code, setCode] = useState("");                           // paste-code field
+  const [email, setEmail] = useState("");                         // buyer email (receipt + unlock code)
   const [resume, setResume] = useState<string | null>(null);     // pending session for the banner
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 
   useEscapeClose(onClose);
 
@@ -180,13 +183,14 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     }, 3000);
   };
 
-  // "Get — ₹3,000" → checkout → open browser → start poll.
+  // "Get — ₹3,000" → checkout (carrying the email) → open browser → start poll.
   const get = async () => {
+    if (!emailOk) { setBuyMsg("Enter your email so we can send your receipt and unlock code."); return; }
     setBuyMsg(null);
     setBuyBusy(true);
     try {
-      const { url, session } = await startCheckout();
-      setPending(session);
+      const { url, session } = await startCheckout(email.trim());
+      setPending(session, url);
       setResume(null);
       await openExternal(url);
       startPoll(session);
@@ -221,8 +225,13 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     } catch { setBuyMsg("Couldn't check that code just now. Try again in a moment."); }
   };
 
-  // Resume an interrupted purchase from the banner.
-  const continueResume = () => { if (resume) startPoll(resume); };
+  // Resume an interrupted purchase: reopen the saved payment page (if any), then poll.
+  const continueResume = async () => {
+    if (!resume) return;
+    const url = getPendingUrl();
+    if (url) { try { await openExternal(url); } catch { /* browser blocked — poll still runs */ } }
+    startPoll(resume);
+  };
 
   return (
     <div className="overlay" role="dialog" aria-label="Skills" onClick={onClose}>
@@ -311,9 +320,15 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
               </div>
               <div className="pr-buy">
                 <span className="pr-price premium">Premium</span>
-                <button className="pr-get" onClick={get} disabled={buyBusy || polling}>
+                <button className="pr-get" onClick={get} disabled={buyBusy || polling || !emailOk}>
                   {buyBusy ? "Opening…" : `Get — ${CONCALL_PRICE}`}
                 </button>
+              </div>
+              <div className="pr-email">
+                <span className="pr-redeem-label">Your email — receipt &amp; unlock code</span>
+                <input className="pr-redeem-input" type="email" value={email}
+                  placeholder="you@email.com"
+                  onChange={(e) => setEmail(e.target.value)} aria-label="Email for receipt" />
               </div>
               <div className="pr-redeem">
                 <span className="pr-redeem-label">Already paid? Redeem code</span>
