@@ -163,7 +163,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     if (r.status === "ready") { await install(r.md); return true; }
     if (r.status === "notfound") {
       stopPoll();
-      setBuyMsg("That code wasn't recognised. If you just paid, give it a minute, then paste the code from the thank-you page below.");
+      setBuyMsg("That code wasn't recognised. If you just paid, give it a minute, then paste the code from your email below.");
       return false;
     }
     return false;   // pending
@@ -178,7 +178,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     pollTimer.current = setInterval(async () => {
       if (Date.now() - started > 3 * 60 * 1000) {
         stopPoll();
-        setBuyMsg("Your purchase is safe — paste the code from the thank-you page below to unlock it.");
+        setBuyMsg("Your purchase is safe — paste the code from your email below to unlock it.");
         return;
       }
       try { await tryRedeem(session); } catch { /* keep polling */ }
@@ -206,7 +206,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
   // "I've paid — check now" → immediate redeem on the pending session.
   const checkNow = async () => {
     const session = getPending() || resume;
-    if (!session) { setBuyMsg("Start the purchase first, or paste the code from the thank-you page."); return; }
+    if (!session) { setBuyMsg("Start the purchase first, or paste the code from your email."); return; }
     setBuyMsg("Checking…");
     try {
       const ok = await tryRedeem(session);
@@ -222,7 +222,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     try {
       const r = await redeem(session);
       if (r.status === "ready") { await install(r.md); setCode(""); }
-      else if (r.status === "notfound") setBuyMsg("That code wasn't recognised. Copy it exactly from the thank-you page.");
+      else if (r.status === "notfound") setBuyMsg("That code wasn't recognised. Copy it exactly from your email.");
       else setBuyMsg("Not confirmed yet — if you just paid, give it a minute and try again.");
     } catch { setBuyMsg("Couldn't check that code just now. Try again in a moment."); }
   };
@@ -346,7 +346,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
                 <span className="pr-redeem-label">Already paid? Redeem code</span>
                 <div className="pr-redeem-row">
                   <input className="pr-redeem-input" type="text" value={code}
-                    placeholder="Paste the code from your thank-you page"
+                    placeholder="Paste the code from your email"
                     onChange={(e) => setCode(e.target.value)} aria-label="Redeem code" />
                   <button className="pr-get" onClick={redeemCode} disabled={!code.trim()}>Redeem</button>
                 </div>
