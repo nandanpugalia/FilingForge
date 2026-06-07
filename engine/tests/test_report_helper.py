@@ -2,19 +2,27 @@
 locked FilingForge report visual template (Direction-C). Every skill references it, so
 the visual layer is free + centrally upgradable and premium skills carry only logic."""
 from pathlib import Path
-from engine.report_helper import write_report_helper, HELPER_NAME
+from engine.report_helper import write_report_helper, HELPER_NAME, HELPER_DIR, LEGACY_HELPER_NAME
 
 
-def test_writes_helper_to_library_root(tmp_path):
+def test_writes_helper_into_system_folder(tmp_path):
     path = write_report_helper(tmp_path)
-    assert path == tmp_path / HELPER_NAME
+    assert path == tmp_path / HELPER_DIR / HELPER_NAME
     assert path.exists()
 
 
-def test_helper_name_is_underscore_prefixed_markdown(tmp_path):
-    # leading underscore sorts it to the top and signals "app-managed, not a company"
-    assert HELPER_NAME.startswith("_")
+def test_helper_lives_in_underscore_prefixed_system_folder(tmp_path):
+    # leading-underscore FOLDER sorts to the top and signals "app-managed, not a company"
+    assert HELPER_DIR.startswith("_")
     assert HELPER_NAME.endswith(".md")
+
+
+def test_helper_cleans_legacy_root_template(tmp_path):
+    # existing libraries had the template at the root; the new write removes it
+    (tmp_path / LEGACY_HELPER_NAME).write_text("LEGACY ROOT TEMPLATE", encoding="utf-8")
+    write_report_helper(tmp_path)
+    assert not (tmp_path / LEGACY_HELPER_NAME).exists()
+    assert (tmp_path / HELPER_DIR / HELPER_NAME).exists()
 
 
 def test_helper_contains_locked_direction_c_visuals(tmp_path):
@@ -48,7 +56,8 @@ def test_helper_is_idempotent(tmp_path):
 
 def test_helper_overwrites_stale_version(tmp_path):
     # the app owns this file — a stale/edited copy must be replaced on next write
-    (tmp_path / HELPER_NAME).write_text("OLD STALE TEMPLATE", encoding="utf-8")
+    (tmp_path / HELPER_DIR).mkdir(exist_ok=True)
+    (tmp_path / HELPER_DIR / HELPER_NAME).write_text("OLD STALE TEMPLATE", encoding="utf-8")
     text = write_report_helper(tmp_path).read_text(encoding="utf-8")
     assert "OLD STALE TEMPLATE" not in text
     assert "moat-grid" in text

@@ -128,13 +128,13 @@ def test_preview_marks_already_have_when_library_exists(tmp_path):
 def test_cancel_stops_download_and_leaves_library_consistent(tmp_path):
     # should_cancel returns True on the very first check → no filings downloaded, but the
     # library must still be valid (INDEX rebuilt, helper written) and flagged cancelled.
-    from engine.report_helper import HELPER_NAME
+    from engine.report_helper import HELPER_NAME, HELPER_DIR
     res = build_library("532790", "TANLA", tmp_path, [AR], years=5,
                         client=_full_client(), on_progress=None, should_cancel=lambda: True)
     assert res.cancelled is True
     assert res.downloaded == []
     assert (tmp_path / "TANLA" / "INDEX.md").exists()       # never corrupt
-    assert (tmp_path / HELPER_NAME).exists()
+    assert (tmp_path / HELPER_DIR / HELPER_NAME).exists()
 
 
 def test_cancel_after_first_keeps_completed_filings_whole(tmp_path):
@@ -153,12 +153,12 @@ def test_cancel_after_first_keeps_completed_filings_whole(tmp_path):
     assert list(company.rglob("*.part")) == []                       # no half-files left
 
 
-def test_build_writes_report_helper_at_root(tmp_path):
-    # The app-managed report template lands at the library root so every skill can read it.
-    from engine.report_helper import HELPER_NAME
+def test_build_writes_report_helper(tmp_path):
+    # The app-managed report template lands in the _filingforge/ system folder so every skill reads it.
+    from engine.report_helper import HELPER_NAME, HELPER_DIR
     build_library("532790", "TANLA", tmp_path, [AR], years=5,
                   client=_full_client(), on_progress=None)
-    helper = tmp_path / HELPER_NAME
+    helper = tmp_path / HELPER_DIR / HELPER_NAME
     assert helper.exists()
     assert "moat-grid" in helper.read_text(encoding="utf-8")   # the locked house style
 
