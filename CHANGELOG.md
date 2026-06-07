@@ -4,6 +4,18 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.10] — 2026-06-07
+
+### Added
+- **Premium Skills you can buy in-app.** The Skills page now offers **Concall Decoder** (₹3,000) —
+  a deep, cited read on a company's earnings calls across quarters (guidance track record, tone
+  shifts, what management won't answer). Click **Get**, pay securely via Razorpay in your browser,
+  switch back, and it unlocks automatically. A redeem code is your backup, and it works on up to 10
+  devices. The free **Business Model Brief** stays free.
+
+### Changed
+- Skills page tidied to the two live packs (Business Model Brief, Concall Decoder).
+
 ## [0.1.9] — 2026-06-07
 
 ### Added

@@ -32,3 +32,28 @@ def test_skills_import_rejects_bad_file_with_friendly_message(client, monkeypatc
     r = client.post("/skills/import", json={"path": "/tmp/evil.txt"})
     assert r.status_code == 400
     assert "Markdown" in r.json()["user_message"]
+
+
+def test_skills_install_writes_content_and_returns_skill(client, monkeypatch):
+    import api.routes as routes
+    captured = {}
+    def fake_save(name, content, directory):
+        captured.update(name=name, content=content)
+        return {"id": "concall-decoder", "name": "Concall Decoder", "tier": "Premium",
+                "desc": "", "prompt": "decode", "imported": True}
+    monkeypatch.setattr(routes, "save_skill_content", fake_save)
+    r = client.post("/skills/install", json={"name": "Concall Decoder", "content": "decode"})
+    assert r.status_code == 200
+    assert r.json()["skill"]["id"] == "concall-decoder"
+    assert captured["name"] == "Concall Decoder" and captured["content"] == "decode"
+
+
+def test_skills_install_rejects_bad_name_with_friendly_message(client, monkeypatch):
+    import api.routes as routes
+    from engine.errors import SkillImportError
+    def boom(name, content, directory):
+        raise SkillImportError(technical="bad", user_message="Couldn’t install that skill — its name is invalid.")
+    monkeypatch.setattr(routes, "save_skill_content", boom)
+    r = client.post("/skills/install", json={"name": "...", "content": "x"})
+    assert r.status_code == 400
+    assert "install" in r.json()["user_message"]

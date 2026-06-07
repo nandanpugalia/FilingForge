@@ -12,6 +12,7 @@ labelled; with no frontmatter we derive a sensible name from the filename and de
 the Free tier, so a plain community .md imports cleanly.
 """
 from __future__ import annotations
+import re
 import shutil
 from pathlib import Path
 
@@ -46,6 +47,18 @@ def _split_frontmatter(text: str) -> tuple[dict[str, str], str]:
             meta[key.strip().lower()] = val.strip()
     body = "\n".join(lines[end + 1:]).lstrip("\n")
     return meta, body
+
+
+def _slugify(name: str) -> str:
+    """A safe, lowercase, hyphenated filename stem — no path separators, no traversal.
+    Empty/unsluggable names raise so we never write a stray or escaping file."""
+    slug = re.sub(r"[^a-z0-9]+", "-", name.strip().lower()).strip("-")
+    if not slug:
+        raise SkillImportError(
+            technical=f"unsluggable skill name: {name!r}",
+            user_message="Couldn’t install that skill — its name is invalid.",
+        )
+    return slug
 
 
 def _titleize(stem: str) -> str:
@@ -102,4 +115,20 @@ def import_skill(src: Path, directory: Path) -> dict:
     directory.mkdir(parents=True, exist_ok=True)
     dest = directory / src.name
     shutil.copyfile(src, dest)
+    return _skill_from_file(dest)
+
+
+def save_skill_content(name: str, content: str, directory: Path) -> dict:
+    """Install a skill that arrived as md TEXT (a paid pack downloaded from the Worker, not a
+    file the user picked). Writes ``content`` to ``directory/<safe-slug>.md`` and returns the
+    skill exactly as ``list_imported_skills`` would, so it shows up like any imported skill.
+
+    The name is slugified to a safe filename (no path separators / traversal). Unlike
+    ``import_skill`` we don't re-require the manifest here — the content came from our own
+    Worker, not an arbitrary user file — but it is parsed identically once on disk."""
+    slug = _slugify(name)
+    directory = Path(directory).expanduser()
+    directory.mkdir(parents=True, exist_ok=True)
+    dest = directory / f"{slug}.md"
+    dest.write_text(content, encoding="utf-8")
     return _skill_from_file(dest)

@@ -49,6 +49,54 @@ describe("startBuild / getStatus / getLibrary / openFolder", () => {
   });
 });
 
+describe("payments worker: startCheckout / redeem / redeemFallback / installSkillMd", () => {
+  it("startCheckout makes a UUID session, POSTs /checkout, returns {url, session}", async () => {
+    const f = mockFetch(200, { url: "https://rzp.io/i/abc" }); vi.stubGlobal("fetch", f);
+    const out = await api.startCheckout();
+    expect(out.url).toBe("https://rzp.io/i/abc");
+    expect(out.session).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i);
+    const [calledUrl, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(calledUrl).toContain("/checkout");
+    expect(JSON.parse(init.body as string).session).toBe(out.session);
+  });
+  it("startCheckout throws friendly when the worker fails", async () => {
+    vi.stubGlobal("fetch", mockFetch(502, {}));
+    await expect(api.startCheckout()).rejects.toThrow(/checkout/i);
+  });
+  it("redeem 200 returns the md text", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => "# SKILL MD" } as Response));
+    const r = await api.redeem("s1");
+    expect(r).toEqual({ status: "ready", md: "# SKILL MD" });
+  });
+  it("redeem 202 is pending; 403/404 are notfound; offline is pending", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 202, text: async () => "" } as Response));
+    expect((await api.redeem("s")).status).toBe("pending");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => "" } as Response));
+    expect((await api.redeem("s")).status).toBe("notfound");
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 404, text: async () => "" } as Response));
+    expect((await api.redeem("s")).status).toBe("notfound");
+    vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new TypeError("Failed to fetch")));
+    expect((await api.redeem("s")).status).toBe("pending");
+  });
+  it("redeemFallback POSTs session + payment_id and returns md on 200", async () => {
+    const f = vi.fn().mockResolvedValue({ ok: true, status: 200, text: async () => "MD" } as Response);
+    vi.stubGlobal("fetch", f);
+    const r = await api.redeemFallback("s1", "pay_123");
+    expect(r).toEqual({ status: "ready", md: "MD" });
+    const body = JSON.parse((f.mock.calls[0][1] as RequestInit).body as string);
+    expect(body).toEqual({ session: "s1", payment_id: "pay_123" });
+  });
+  it("installSkillMd POSTs name+content to the engine /skills/install", async () => {
+    const f = mockFetch(200, { skill: { id: "concall-decoder", name: "Concall Decoder", tier: "Premium", desc: "", prompt: "x", imported: true } });
+    vi.stubGlobal("fetch", f);
+    const s = await api.installSkillMd("Concall Decoder", "# MD");
+    expect(s.id).toBe("concall-decoder");
+    const [url, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/skills/install");
+    expect(JSON.parse(init.body as string)).toEqual({ name: "Concall Decoder", content: "# MD" });
+  });
+});
+
 describe("apiBase uses the runtime engine port", () => {
   beforeEach(() => { vi.resetModules(); });
   afterEach(() => {

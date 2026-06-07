@@ -88,14 +88,17 @@ it("LibraryOverlay: Refresh + Add company are wired", async () => {
   expect(onAddCompany).toHaveBeenCalled();
 });
 
-it("SkillsOverlay: Business Model Brief is free, premium is priced (tiers + coming-soon render)", async () => {
+it("SkillsOverlay: Business Model Brief is free, Concall Decoder is the priced premium pack", async () => {
   vi.spyOn(api, "getLibrary").mockResolvedValue([]);
   vi.spyOn(api, "getSkills").mockResolvedValue([]);
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
   expect(screen.getByText("Business Model Brief")).toBeInTheDocument();
+  expect(screen.getByText("Concall Decoder")).toBeInTheDocument();        // the premium pack
   expect(screen.getAllByText("Free").length).toBeGreaterThanOrEqual(1);   // free packs
-  expect(screen.getByText("Premium")).toBeInTheDocument();                // premium tier (no money shown)
-  expect(screen.getAllByText(/Coming soon/i).length).toBeGreaterThanOrEqual(2); // the not-yet-live packs
+  expect(screen.getByText("Premium")).toBeInTheDocument();                // premium tier
+  // the priced "Get — ₹3,000" buy button is shown; Full Due-Diligence is gone
+  expect(screen.getByRole("button", { name: /Get — ₹3,000/ })).toBeInTheDocument();
+  expect(screen.queryByText(/Full Due-Diligence/i)).not.toBeInTheDocument();
 });
 
 it("SkillsOverlay: Use asks which company, then copies a prompt with THAT company's paths + the skill", async () => {
