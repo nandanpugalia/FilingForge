@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useEscapeClose } from "../lib/useEscapeClose";
-import { getLibrary, getSkills, importSkill } from "../api";
+import { getLibrary, getSkills, importSkill, installSkillMd, startCheckout, redeem } from "../api";
+import { openExternal } from "../lib/openExternal";
+import { setPending, getPending, clearPending } from "../lib/pendingPurchase";
 import { pickSkillFile } from "../lib/pickSkillFile";
 import type { LibraryItem, ImportedSkill } from "../types";
 import bmBrief from "../skills/business-model-brief.md?raw";
@@ -9,11 +11,15 @@ import bmBrief from "../skills/business-model-brief.md?raw";
 // FilingForge never calls an LLM. Two shelves feed this list:
 //   • BUILT_IN — packs bundled in the app (free).
 //   • imported — *.md the user drops into ~/.filingforge/skills/ (how PREMIUM packs,
-//     sold later as a paid download, arrive). The run-flow is identical for both, so
-//     adding paid skills later is purely additive — nothing here has to change.
+//     sold as a paid download, arrive). The run-flow is identical for both.
 // "Use" asks which downloaded company to run it for, then copies a prompt with that
-// company's exact paths pre-filled. Future paid-but-not-owned packs show "Coming soon"
-// (later a Buy link); once imported they become "Use" like any other.
+// company's exact paths pre-filled.
+//
+// Premium: the first paid pack is **Concall Decoder (₹3,000)**. When NOT owned it shows
+// a "Get — ₹3,000" buy row (checkout → pay in browser → poll auto-unlocks → install).
+// Once owned it arrives in ~/.filingforge/skills/ and is listed by getSkills() with
+// id "concall-decoder" — so it renders as a normal "Use" skill and the buy teaser is
+// suppressed (dedup), no double-listing.
 type Skill = {
   id: string; name: string; desc: string;
   tier: "Free" | "Premium";
@@ -22,13 +28,17 @@ type Skill = {
   imported?: boolean;
 };
 
+// The premium skill the buy flow sells. CONTENT lives in the Worker, never the repo.
+const CONCALL_ID = "concall-decoder";        // imported id once installed
+const CONCALL_NAME = "Concall Decoder";
+const CONCALL_DESC =
+  "Every earnings call across your library, decoded — guidance vs delivery, tone shifts, " +
+  "the questions management dodged and what they're really signalling.";
+const CONCALL_PRICE = "₹3,000";
+
 const BUILT_IN: Skill[] = [
   { id: "bm", name: "Business Model Brief", tier: "Free", status: "ready", prompt: bmBrief,
     desc: "A cited, analyst-grade business-model brief — revenue, concentration, unit economics and moat — rendered to a clean PDF by your own AI." },
-  { id: "concall", name: "Concall Brief", tier: "Free", status: "soon",
-    desc: "Every earnings call across your library, distilled to the signal — guidance, surprises and what management is really saying." },
-  { id: "dd", name: "Full Due-Diligence Report", tier: "Premium", status: "soon",
-    desc: "The complete deep-dive: business, financials, balance-sheet forensics, management quality and risks — a finished research report." },
 ];
 
 // Compose the company-specific prompt: the Skill body, prefixed with the exact paths
@@ -54,6 +64,10 @@ const asSkill = (s: ImportedSkill): Skill => ({
   status: "ready", prompt: s.prompt, imported: true,
 });
 
+// Is this imported skill the Concall Decoder pack? (match on id or name, case-insensitive)
+const isConcall = (s: ImportedSkill): boolean =>
+  s.id.toLowerCase() === CONCALL_ID || s.name.trim().toLowerCase() === CONCALL_NAME.toLowerCase();
+
 export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => void }) {
   const [companies, setCompanies] = useState<LibraryItem[]>([]);
   const [imported, setImported] = useState<ImportedSkill[]>([]);
@@ -62,11 +76,34 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
   const [emptyFor, setEmptyFor] = useState<string | null>(null); // skill id showing the "download first" hint
   const [gotId, setGotId] = useState<string | null>(null);
   const [importErr, setImportErr] = useState<string | null>(null);
+
+  // ── Buy-flow state (Concall Decoder) ──────────────────────────────────────
+  const [buyBusy, setBuyBusy] = useState(false);                  // checkout in flight
+  const [polling, setPolling] = useState(false);                  // poll loop running
+  const [buyMsg, setBuyMsg] = useState<string | null>(null);      // status / friendly error
+  const [installed, setInstalled] = useState(false);             // toast "added ✓"
+  const [code, setCode] = useState("");                           // paste-code field
+  const [resume, setResume] = useState<string | null>(null);     // pending session for the banner
+  const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEscapeClose(onClose);
 
   useEffect(() => { getLibrary(root).then(setCompanies).catch(() => setCompanies([])); }, [root]);
   const refreshSkills = () => getSkills().then(setImported).catch(() => setImported([]));
   useEffect(() => { refreshSkills(); }, []);
+
+  // Owned detection: present iff an imported skill is the Concall Decoder pack.
+  const owned = imported.some(isConcall);
+
+  // Resume banner: a pending session exists AND the skill isn't owned yet.
+  useEffect(() => {
+    const p = getPending();
+    setResume(p && !owned ? p : null);
+    if (owned) clearPending();
+  }, [owned]);
+
+  // Stop the poll loop on unmount.
+  useEffect(() => () => { if (pollTimer.current) clearInterval(pollTimer.current); }, []);
 
   const skills: Skill[] = [...BUILT_IN, ...imported.map(asSkill)];
 
@@ -97,6 +134,93 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     catch (e) { setImportErr((e as Error).message); }
   };
 
+  // ── Buy flow ──────────────────────────────────────────────────────────────
+  const stopPoll = () => { if (pollTimer.current) { clearInterval(pollTimer.current); pollTimer.current = null; } setPolling(false); };
+
+  // Install the watermarked md → mark owned → toast → clear pending.
+  const install = async (md: string) => {
+    await installSkillMd(CONCALL_NAME, md);
+    await refreshSkills();
+    clearPending();
+    setResume(null);
+    stopPoll();
+    setBuyMsg(null);
+    setInstalled(true);
+    setTimeout(() => setInstalled(false), 4000);
+  };
+
+  // One redeem attempt. Returns true if it installed (so callers can stop).
+  const tryRedeem = async (session: string): Promise<boolean> => {
+    const r = await redeem(session);
+    if (r.status === "ready") { await install(r.md); return true; }
+    if (r.status === "notfound") {
+      stopPoll();
+      setBuyMsg("That code wasn't recognised. If you just paid, give it a minute and click “I've paid”, or paste the code from the thank-you page.");
+      return false;
+    }
+    return false;   // pending
+  };
+
+  // Poll every 3s for ~3 minutes. Stops on install or timeout.
+  const startPoll = (session: string) => {
+    stopPoll();
+    setPolling(true);
+    setBuyMsg("Waiting for your payment to confirm — this unlocks automatically.");
+    const started = Date.now();
+    pollTimer.current = setInterval(async () => {
+      if (Date.now() - started > 3 * 60 * 1000) {
+        stopPoll();
+        setBuyMsg("Your purchase is safe — paste the code from the thank-you page, or click “I've paid”.");
+        return;
+      }
+      try { await tryRedeem(session); } catch { /* keep polling */ }
+    }, 3000);
+  };
+
+  // "Get — ₹3,000" → checkout → open browser → start poll.
+  const get = async () => {
+    setBuyMsg(null);
+    setBuyBusy(true);
+    try {
+      const { url, session } = await startCheckout();
+      setPending(session);
+      setResume(null);
+      await openExternal(url);
+      startPoll(session);
+    } catch (e) {
+      setBuyMsg((e as Error).message || "Couldn't start checkout. Please try again.");
+    } finally {
+      setBuyBusy(false);
+    }
+  };
+
+  // "I've paid — check now" → immediate redeem on the pending session.
+  const checkNow = async () => {
+    const session = getPending() || resume;
+    if (!session) { setBuyMsg("Start the purchase first, or paste the code from the thank-you page."); return; }
+    setBuyMsg("Checking…");
+    try {
+      const ok = await tryRedeem(session);
+      if (!ok && !polling) setBuyMsg("Not confirmed yet — give it a minute. Your purchase is safe.");
+    } catch { setBuyMsg("Couldn't check just now. Try again in a moment."); }
+  };
+
+  // Paste-code → redeem the pasted session directly.
+  const redeemCode = async () => {
+    const session = code.trim();
+    if (!session) return;
+    setBuyMsg("Checking your code…");
+    try {
+      const r = await redeem(session);
+      if (r.status === "ready") { await install(r.md); setCode(""); }
+      else if (r.status === "notfound") setBuyMsg("That code wasn't recognised. Copy it exactly from the thank-you page.");
+      else setBuyMsg("Not confirmed yet — if you just paid, give it a minute and try again.");
+    } catch { setBuyMsg("Couldn't check that code just now. Try again in a moment."); }
+  };
+
+  // Resume an interrupted purchase from the banner.
+  const continueResume = () => { if (resume) startPoll(resume); };
+
   return (
     <div className="overlay" role="dialog" aria-label="Skills" onClick={onClose}>
       <div className="panel" onClick={(e) => e.stopPropagation()}>
@@ -110,6 +234,14 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
           it into the Claude desktop app or Codex, and your AI produces the result.
           Nothing leaves your machine.
         </p>
+
+        {resume && (
+          <div className="pr-resume" role="status">
+            <span>Finish your Concall Decoder purchase.</span>
+            <button className="pr-get" onClick={continueResume} disabled={polling}>Continue</button>
+            <button className="link" onClick={checkNow}>I've paid — check now</button>
+          </div>
+        )}
 
         <ul className="skill-list">
           {skills.map((s) => {
@@ -166,7 +298,36 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
               </li>
             );
           })}
+
+          {/* Premium teaser — only when NOT owned (else it's already a "Use" row above; dedup). */}
+          {!owned && (
+            <li className="skill-row premium-teaser">
+              <div className="pr-main">
+                <div className="pr-head"><span className="pr-name">{CONCALL_NAME}</span></div>
+                <p className="pr-desc">{CONCALL_DESC}</p>
+              </div>
+              <div className="pr-buy">
+                <span className="pr-price premium">Premium</span>
+                <button className="pr-get" onClick={get} disabled={buyBusy || polling}>
+                  {buyBusy ? "Opening…" : `Get — ${CONCALL_PRICE}`}
+                </button>
+              </div>
+              <div className="pr-redeem">
+                <span className="pr-redeem-label">Already paid? Redeem code</span>
+                <div className="pr-redeem-row">
+                  <input className="pr-redeem-input" type="text" value={code}
+                    placeholder="Paste the code from your thank-you page"
+                    onChange={(e) => setCode(e.target.value)} aria-label="Redeem code" />
+                  <button className="pr-get" onClick={redeemCode} disabled={!code.trim()}>Redeem</button>
+                </div>
+                {polling && <button className="link" onClick={checkNow}>I've paid — check now</button>}
+                {buyMsg && <p className="pr-buy-note">{buyMsg}</p>}
+              </div>
+            </li>
+          )}
         </ul>
+
+        {installed && <p className="pr-got-note" role="status">Concall Decoder added ✓</p>}
 
         <div className="skills-import">
           <button className="link" onClick={doImport}>+ Import a skill…</button>

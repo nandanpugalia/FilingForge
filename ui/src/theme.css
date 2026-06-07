@@ -1630,6 +1630,57 @@ a { color: var(--dim); text-decoration: none; }
   line-height: 1.5;
   margin: 2px 0 0;
 }
+/* premium buy flow (Concall Decoder): resume banner, redeem field, status note */
+.pr-resume {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0 0 12px;
+  padding: 10px 14px;
+  background: var(--panel-soft, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--ember);
+  border-radius: var(--radius);
+  font-size: 12.5px;
+  color: var(--ink);
+}
+.pr-resume span { flex: 1 1 auto; }
+.pr-redeem {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 8px 0 0;
+  padding: 12px 14px;
+  background: var(--panel-soft, rgba(255, 255, 255, 0.02));
+  border: 1px solid var(--grid-soft);
+  border-radius: var(--radius);
+}
+.pr-redeem-label {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dim);
+}
+.pr-redeem-row { display: flex; gap: 8px; align-items: center; }
+.pr-redeem-input {
+  flex: 1 1 auto;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink);
+  background: var(--bg);
+  border: 1px solid var(--grid);
+  border-radius: var(--radius);
+  padding: 7px 10px;
+}
+.pr-buy-note {
+  color: var(--dim);
+  font-size: 11.5px;
+  line-height: 1.5;
+  margin: 2px 0 0;
+}
 /* company picker: appears under a Skill's row when Get is pressed */
 .pr-pick {
   grid-column: 1 / -1;

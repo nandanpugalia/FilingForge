@@ -1,5 +1,6 @@
 import * as self from "./api";
 import { isTauri } from "./components/ReadyGate";
+import { WORKER_URL } from "./config";
 import type { Candidate, BuildScope, JobStatus, LibraryItem, ProgressEvent, ImportedSkill, PreviewResult } from "./types";
 
 // ── Source of truth for the engine URL ──────────────────────────────────────
@@ -84,6 +85,67 @@ export async function importSkill(path: string): Promise<ImportedSkill> {
   const res = await safeFetch(`${await apiBase()}/skills/import`, jsonPost({ path }));
   if (!res.ok) return friendly(res);
   return (await res.json()).skill as ImportedSkill;
+}
+// Install a skill that arrived as md TEXT (a paid pack fetched from the Worker) — goes to
+// the engine sidecar (~/.filingforge/skills/) so it appears in getSkills() like an import.
+export async function installSkillMd(name: string, content: string): Promise<ImportedSkill> {
+  const res = await safeFetch(`${await apiBase()}/skills/install`, jsonPost({ name, content }));
+  if (!res.ok) return friendly(res);
+  return (await res.json()).skill as ImportedSkill;
+}
+
+// ── Payments Worker (Razorpay) — premium skill buy flow ──────────────────────
+// These hit the WORKER, not the engine sidecar. The Worker holds the Razorpay
+// secret and is the source of truth; the app only ever sees the watermarked .md.
+const newSession = (): string =>
+  (crypto.randomUUID ? crypto.randomUUID()
+    : "xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx".replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
+      }));
+
+// Generate a session, ask the Worker for a ₹3,000 payment link. Returns both so the
+// caller can persist the session (resume/paste-code) and open the URL in the browser.
+export async function startCheckout(): Promise<{ url: string; session: string }> {
+  const session = newSession();
+  const res = await safeFetch(`${WORKER_URL}/checkout`, jsonPost({ session }));
+  if (!res.ok) throw new Error("Couldn't start checkout. Please try again in a moment.");
+  const url = (await res.json())?.url as string | undefined;
+  if (!url) throw new Error("Couldn't start checkout. Please try again in a moment.");
+  return { url, session };
+}
+
+export type RedeemResult =
+  | { status: "ready"; md: string }       // 200 — the watermarked skill .md
+  | { status: "pending" }                 // 202 — paid not yet seen / still processing
+  | { status: "notfound" };               // 403/404 — refunded, cap hit, or unknown code
+
+// Poll/redeem by session. 200 → md text; 202 → pending; 403/404 → friendly "not found".
+export async function redeem(session: string): Promise<RedeemResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${WORKER_URL}/redeem?session=${encodeURIComponent(session)}`);
+  } catch {
+    // offline / network blip — treat as pending so the caller can keep polling / fall back.
+    return { status: "pending" };
+  }
+  if (res.status === 202) return { status: "pending" };
+  if (res.status === 403 || res.status === 404) return { status: "notfound" };
+  if (!res.ok) return { status: "pending" };
+  return { status: "ready", md: await res.text() };
+}
+
+// Webhook-loss insurance: reconcile straight from Razorpay using the payment id.
+export async function redeemFallback(session: string, paymentId: string): Promise<RedeemResult> {
+  let res: Response;
+  try {
+    res = await fetch(`${WORKER_URL}/redeem-fallback`, jsonPost({ session, payment_id: paymentId }));
+  } catch {
+    return { status: "pending" };
+  }
+  if (res.status === 403 || res.status === 404) return { status: "notfound" };
+  if (!res.ok) return { status: "pending" };
+  return { status: "ready", md: await res.text() };
 }
 export async function openFolder(path: string): Promise<void> {
   const res = await safeFetch(`${await apiBase()}/open-folder`, jsonPost({ path }));

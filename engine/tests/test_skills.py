@@ -1,5 +1,5 @@
 import pytest
-from engine.skills import list_imported_skills, import_skill, skills_dir
+from engine.skills import list_imported_skills, import_skill, save_skill_content, skills_dir
 from engine.errors import FilingForgeError
 
 
@@ -80,3 +80,36 @@ def test_import_rejects_non_markdown(tmp_path):
 def test_import_rejects_missing_file(tmp_path):
     with pytest.raises(FilingForgeError):
         import_skill(tmp_path / "ghost.md", tmp_path / "store")
+
+
+# --- save_skill_content: install a premium skill that arrived as md TEXT (from the Worker) ---
+
+def test_save_skill_content_writes_file_and_it_appears_in_the_list(tmp_path):
+    dest = tmp_path / "store"        # does not exist yet — save must create it
+    content = ("---\nfilingforge_skill: 1\nname: Concall Decoder\ntier: Premium\n"
+               "desc: Decodes the concall.\n---\nDecode it.\n")
+    s = save_skill_content("Concall Decoder", content, dest)
+    # written under a safe slug, parsed exactly like an imported file
+    assert (dest / "concall-decoder.md").exists()
+    assert s["id"] == "concall-decoder"
+    assert s["name"] == "Concall Decoder" and s["tier"] == "Premium"
+    # and it shows up via the same list function the UI uses
+    listed = list_imported_skills(dest)
+    assert [x["id"] for x in listed] == ["concall-decoder"]
+    assert listed[0]["prompt"].strip() == "Decode it."
+
+
+def test_save_skill_content_slugifies_the_name_safely(tmp_path):
+    dest = tmp_path / "store"
+    save_skill_content("My Cool Skill!!", "filingforge_skill: 1\nbody", dest)
+    # no path traversal, no spaces/specials in the filename — a safe slug
+    files = [p.name for p in dest.glob("*.md")]
+    assert files == ["my-cool-skill.md"]
+
+
+def test_save_skill_content_rejects_an_empty_or_unsluggable_name(tmp_path):
+    with pytest.raises(FilingForgeError):
+        save_skill_content("   ", "filingforge_skill: 1\nbody", tmp_path / "store")
+    with pytest.raises(FilingForgeError):
+        save_skill_content("...///", "filingforge_skill: 1\nbody", tmp_path / "store")
+    assert not (tmp_path / "store").exists()   # nothing written

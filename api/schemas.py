@@ -61,3 +61,8 @@ class OpenFolderRequest(BaseModel):
 
 class ImportSkillRequest(BaseModel):
     path: str = Field(min_length=1)          # absolute path to the .md the user picked
+
+
+class InstallSkillRequest(BaseModel):
+    name: str = Field(min_length=1)          # display name → slugified to a safe filename
+    content: str = Field(min_length=1)       # the .md text (e.g. a paid pack from the Worker)

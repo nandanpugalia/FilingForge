@@ -10,11 +10,11 @@ from engine import __version__ as engine_version
 from engine.bse_client import BSEClient
 from engine.resolver import resolve
 from engine.indexer import read_library
-from engine.skills import list_imported_skills, import_skill, skills_dir
+from engine.skills import list_imported_skills, import_skill, save_skill_content, skills_dir
 from .jobs import run_build, JOB_DONE_SENTINEL
 from .osutil import open_folder
 from .schemas import (ResolveRequest, CandidateOut, BuildRequest, JobCreated, JobStatusOut,
-                      OpenFolderRequest, ImportSkillRequest)
+                      OpenFolderRequest, ImportSkillRequest, InstallSkillRequest)
 
 router = APIRouter()
 
@@ -119,6 +119,15 @@ def skills() -> dict:
 def skills_import(req: ImportSkillRequest) -> dict:
     from pathlib import Path as _P
     skill = import_skill(_P(req.path), skills_dir())   # SkillImportError → 400 via handler
+    return {"skill": skill}
+
+
+@router.post("/skills/install")
+def skills_install(req: InstallSkillRequest) -> dict:
+    """Install a skill that arrived as md TEXT (a paid pack the app fetched from the Worker).
+    Writes it into ~/.filingforge/skills/ under a safe slug → appears in GET /skills like any
+    imported skill. SkillImportError (bad name) → 400 via handler."""
+    skill = save_skill_content(req.name, req.content, skills_dir())
     return {"skill": skill}
 
 
