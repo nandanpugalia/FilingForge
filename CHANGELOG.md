@@ -10,7 +10,7 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Premium Skills you can buy in-app.** The Skills page now offers **Concall Decoder** (₹3,000) —
   a deep, cited read on a company's earnings calls across quarters (guidance track record, tone
   shifts, what management won't answer). Click **Get**, pay securely via Razorpay in your browser,
-  switch back, and it unlocks automatically. A redeem code is your backup, and it works on up to 10
+  switch back, and it unlocks automatically. A redeem code is your backup, and it works on up to 3
   devices. The free **Business Model Brief** stays free.
 
 ### Changed
