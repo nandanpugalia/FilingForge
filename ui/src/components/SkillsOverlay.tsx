@@ -32,13 +32,16 @@ type Skill = {
 const CONCALL_ID = "concall-decoder";        // imported id once installed
 const CONCALL_NAME = "Concall Decoder";
 const CONCALL_DESC =
-  "Every earnings call across your library, decoded — guidance vs delivery, tone shifts, " +
-  "the questions management dodged and what they're really signalling.";
+  "Every earnings call in your library, decoded — management's guidance track record " +
+  "(kept vs missed), shifts in tone, the questions analysts keep pressing, and the ones " +
+  "management avoids. A cited read on how much to trust the team.";
 const CONCALL_PRICE = "₹3,000";
 
 const BUILT_IN: Skill[] = [
   { id: "bm", name: "Business Model Brief", tier: "Free", status: "ready", prompt: bmBrief,
-    desc: "A cited, analyst-grade business-model brief — revenue, concentration, unit economics and moat — rendered to a clean PDF by your own AI." },
+    desc: "An analyst-grade brief on what the business really is and how it wins — revenue mix, " +
+      "customer concentration, unit economics, and a six-point moat assessment. Every claim cited " +
+      "to its filing, rendered as a clean report by your own AI." },
 ];
 
 // Compose the company-specific prompt: the Skill body, prefixed with the exact paths
