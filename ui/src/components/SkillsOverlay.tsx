@@ -155,7 +155,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     if (r.status === "ready") { await install(r.md); return true; }
     if (r.status === "notfound") {
       stopPoll();
-      setBuyMsg("That code wasn't recognised. If you just paid, give it a minute and click “I've paid”, or paste the code from the thank-you page.");
+      setBuyMsg("That code wasn't recognised. If you just paid, give it a minute, then paste the code from the thank-you page below.");
       return false;
     }
     return false;   // pending
@@ -170,7 +170,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     pollTimer.current = setInterval(async () => {
       if (Date.now() - started > 3 * 60 * 1000) {
         stopPoll();
-        setBuyMsg("Your purchase is safe — paste the code from the thank-you page, or click “I've paid”.");
+        setBuyMsg("Your purchase is safe — paste the code from the thank-you page below to unlock it.");
         return;
       }
       try { await tryRedeem(session); } catch { /* keep polling */ }

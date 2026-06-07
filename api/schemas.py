@@ -64,5 +64,5 @@ class ImportSkillRequest(BaseModel):
 
 
 class InstallSkillRequest(BaseModel):
-    name: str = Field(min_length=1)          # display name → slugified to a safe filename
+    name: str = Field(min_length=1, max_length=200)   # display name → slug; cap keeps the filename under NAME_MAX (422 not 500)
     content: str = Field(min_length=1)       # the .md text (e.g. a paid pack from the Worker)
