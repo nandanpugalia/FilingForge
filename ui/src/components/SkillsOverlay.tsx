@@ -87,6 +87,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
   const [installed, setInstalled] = useState(false);             // toast "added ✓"
   const [code, setCode] = useState("");                           // paste-code field
   const [email, setEmail] = useState("");                         // buyer email (receipt + unlock code)
+  const [askEmail, setAskEmail] = useState(false);               // Get clicked → reveal the email step
   const [resume, setResume] = useState<string | null>(null);     // pending session for the banner
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -149,6 +150,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     await refreshSkills();
     clearPending();
     setResume(null);
+    setAskEmail(false);
     stopPoll();
     setBuyMsg(null);
     setInstalled(true);
@@ -320,16 +322,26 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
               </div>
               <div className="pr-buy">
                 <span className="pr-price premium">Premium</span>
-                <button className="pr-get" onClick={get} disabled={buyBusy || polling || !emailOk}>
-                  {buyBusy ? "Opening…" : `Get — ${CONCALL_PRICE}`}
-                </button>
+                {!askEmail && (
+                  <button className="pr-get" onClick={() => { setBuyMsg(null); setAskEmail(true); }} disabled={polling}>
+                    {`Get — ${CONCALL_PRICE}`}
+                  </button>
+                )}
               </div>
-              <div className="pr-email">
-                <span className="pr-redeem-label">Your email — receipt &amp; unlock code</span>
-                <input className="pr-redeem-input" type="email" value={email}
-                  placeholder="you@email.com"
-                  onChange={(e) => setEmail(e.target.value)} aria-label="Email for receipt" />
-              </div>
+              {askEmail && (
+                <div className="pr-email">
+                  <span className="pr-redeem-label">Where should we send your receipt &amp; unlock code?</span>
+                  <div className="pr-redeem-row">
+                    <input className="pr-redeem-input" type="email" value={email} autoFocus
+                      placeholder="you@email.com"
+                      onChange={(e) => setEmail(e.target.value)} aria-label="Email for receipt"
+                      onKeyDown={(e) => { if (e.key === "Enter" && emailOk && !buyBusy) get(); }} />
+                    <button className="pr-get" onClick={get} disabled={buyBusy || polling || !emailOk}>
+                      {buyBusy ? "Opening…" : "Continue →"}
+                    </button>
+                  </div>
+                </div>
+              )}
               <div className="pr-redeem">
                 <span className="pr-redeem-label">Already paid? Redeem code</span>
                 <div className="pr-redeem-row">

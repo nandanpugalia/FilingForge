@@ -39,10 +39,10 @@ it("(a) shows 'Get — ₹3,000' when not owned; clicking it runs checkout then 
   vi.spyOn(api, "redeem").mockResolvedValue({ status: "pending" });
 
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
-  // Get is gated on a valid email — enter one first.
+  // Get is always clickable; it reveals the email step, then Continue runs checkout.
+  await userEvent.click(await screen.findByRole("button", { name: /Get — ₹3,000/ }));
   await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "buyer@example.com");
-  const get = await screen.findByRole("button", { name: /Get — ₹3,000/ });
-  await userEvent.click(get);
+  await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
 
   await waitFor(() => expect(checkout).toHaveBeenCalledTimes(1));
   expect(checkout).toHaveBeenCalledWith("buyer@example.com");   // email carried to the worker
@@ -51,16 +51,19 @@ it("(a) shows 'Get — ₹3,000' when not owned; clicking it runs checkout then 
   expect(localStorage.getItem("ff_pending_concall")).toBe("sess-1");
 });
 
-it("(a2) Get stays disabled until a valid email is entered", async () => {
+it("(a2) Get is always enabled; it reveals an email step whose Continue is gated on a valid email", async () => {
   vi.spyOn(api, "getSkills").mockResolvedValue([]);
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
   const get = await screen.findByRole("button", { name: /Get — ₹3,000/ });
-  expect(get).toBeDisabled();
+  expect(get).toBeEnabled();                                    // CTA is never a dead button
+  await userEvent.click(get);
+  const cont = await screen.findByRole("button", { name: /Continue/ });
+  expect(cont).toBeDisabled();                                  // until a valid email
   await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "not-an-email");
-  expect(get).toBeDisabled();
+  expect(cont).toBeDisabled();
   await userEvent.clear(await screen.findByLabelText(/Email for receipt/i));
   await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "ok@buyer.com");
-  expect(get).toBeEnabled();
+  expect(cont).toBeEnabled();
 });
 
 it("(b) a redeem returning md installs the pack and it shows as owned ('Use')", async () => {
@@ -74,8 +77,9 @@ it("(b) a redeem returning md installs the pack and it shows as owned ('Use')", 
   const install = vi.spyOn(api, "installSkillMd").mockResolvedValue(owned);
 
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
-  await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "buyer@example.com");
   await userEvent.click(await screen.findByRole("button", { name: /Get — ₹3,000/ }));
+  await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "buyer@example.com");
+  await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
 
   // poll fires immediately? No — poll is interval-based. Use the "I've paid" button which appears once polling.
   const checkNow = await screen.findByRole("button", { name: /I've paid — check now/i });
