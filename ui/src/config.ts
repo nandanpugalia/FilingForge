@@ -2,7 +2,11 @@
 // Rust shell chose, via apiBase()/engineInfo() in api.ts. Don't reintroduce a hardcoded base
 // here: a non-8765 port would silently bypass it and break the app.
 export const SEARCH_DEBOUNCE_MS = 250;
-export const APP_VERSION = "0.1.10";
+// Injected at build/test time from src-tauri/tauri.conf.json (see vite.config.ts) so it
+// ALWAYS matches the real native version. Never hardcode this — it silently drifted to
+// "0.1.10" once and made every build report the wrong version (and broke OTA detection).
+declare const __APP_VERSION__: string;
+export const APP_VERSION = typeof __APP_VERSION__ === "string" ? __APP_VERSION__ : "0.0.0";
 export const ISSUES_URL = "https://github.com/nandanpugalia/FilingForge/issues/new";
 // Worker endpoint that receives bug/feature reports. Empty until deployed —
 // when empty the report form degrades gracefully (no network, friendly thanks).

@@ -64,19 +64,11 @@ jobs:
         with:
           targets: ${{ matrix.triple }}
 
-      # Cache compiled Rust dependencies so future builds recompile only changed code
-      # (~15 min cold compile → ~3-7 min warm). Output is identical; only speed changes.
-      # continue-on-error + save-only-on-main: a flaky cache SAVE (the post-step tarring/
-      # uploading the cache hiccuped on the Windows runner) must NEVER fail the job — doing
-      # so skips the downstream publish + beta-feed jobs and strands the release as a draft
-      # (it did exactly that to v0.1.12-beta). Release/tag builds now only RESTORE the cache
-      # (no save → no flake), and even a restore hiccup is non-fatal.
-      - name: Cache Rust build
-        uses: Swatinem/rust-cache@v2
-        continue-on-error: true
-        with:
-          workspaces: ui/src-tauri
-          save-if: ${{ github.ref == 'refs/heads/main' }}
+      # NO Rust cache on release builds — deliberately. The cache caused TWO release bugs:
+      # (1) a flaky cache-save post-step failed the job and stranded a release as a draft,
+      # (2) a stale cached app-bundle shipped an OLD Info.plist version inside a correctly-
+      # named DMG. Releases are infrequent; a clean ~15-min cold compile is correct and worth
+      # it. Speed-caching belongs in the CI (test) workflow, never in the release pipeline.
 
       - name: Set up Node
         uses: actions/setup-node@v4
