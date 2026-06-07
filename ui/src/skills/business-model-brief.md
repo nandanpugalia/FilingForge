@@ -196,6 +196,11 @@ don't redesign it; the consistent, recognisable look is what makes a reader trus
 sight. The template also specifies the portability rules (one file, inline CSS/JS, system fonts,
 no CDNs) and how to wire clickable citations to the real source PDFs.
 
+**Encoding — keep the file ASCII-clean.** Write punctuation symbols as HTML entities so the file is
+always valid UTF-8 and renders identically everywhere: `&middot;` for `·`, `&mdash;` for `—`,
+`&ldquo;`/`&rdquo;` + `&lsquo;`/`&rsquo;` for curly quotes, `&#8377;` (or `Rs`) for the rupee sign.
+Never paste a raw non-ASCII byte into the HTML — a stray byte renders as a broken `&#65533;` glyph.
+
 If you can't find that file (e.g. an older library, or chat mode), fall back to a clean,
 self-contained report with a dark header, an ember (#ff6a3d) accent on warm paper (#faf6ec),
 Georgia serif body, numbered key findings, and a footer reading
