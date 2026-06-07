@@ -2,7 +2,7 @@
 // Rust shell chose, via apiBase()/engineInfo() in api.ts. Don't reintroduce a hardcoded base
 // here: a non-8765 port would silently bypass it and break the app.
 export const SEARCH_DEBOUNCE_MS = 250;
-export const APP_VERSION = "0.1.9";
+export const APP_VERSION = "0.1.10";
 export const ISSUES_URL = "https://github.com/nandanpugalia/FilingForge/issues/new";
 // Worker endpoint that receives bug/feature reports. Empty until deployed —
 // when empty the report form degrades gracefully (no network, friendly thanks).
