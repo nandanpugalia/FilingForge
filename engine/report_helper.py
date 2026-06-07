@@ -4,8 +4,9 @@ A FilingForge Skill produces an HTML research report. The *visual* layer of that
 (the locked "Direction-C" house style, v2: dark masthead, ember divider, sticky context bar,
 reading-progress bar, numbered key findings, a visual moat grid, an inline SVG narrative
 chart, a cited know/don't-know table, fact-vs-analysis styling) lives HERE, in one file the
-engine writes to the library root as ``_filingforge-report.md``. Every skill — free or
-premium — references this file via the library path it is already handed, so:
+engine writes as ``_filingforge/report-template.md`` (a system folder under the library
+root). Every skill — free or premium — references this file via the library path it is
+already handed, so:
 
   • the visual layer is FREE and app-managed (a premium skill carries only analytical logic);
   • improving the look is a one-file change that every skill picks up on next run;
@@ -17,7 +18,11 @@ The engine rewrites it on every library build, so a stale or hand-edited copy is
 from __future__ import annotations
 from pathlib import Path
 
-HELPER_NAME = "_filingforge-report.md"
+# Report template now lives in a system folder to keep the library root clean:
+#   {root}/_filingforge/report-template.md   (was {root}/_filingforge-report.md)
+HELPER_DIR = "_filingforge"
+HELPER_NAME = "report-template.md"
+LEGACY_HELPER_NAME = "_filingforge-report.md"   # cleaned up from the root on each build
 
 # ── The locked house stylesheet (Direction-C v2). One file, zero dependencies, system fonts
 #    only, print-optimised. Skills paste this verbatim — consistency IS the format. The raw
@@ -375,11 +380,21 @@ reading-progress bar and sticky context bar, and handles citation clicks Safari-
 
 
 def write_report_helper(root: Path) -> Path:
-    """Write (or overwrite) the report helper at ``root/_filingforge-report.md`` and return
-    its path. Idempotent: same template every time. The app owns this file, so any stale or
-    hand-edited copy is replaced on each library build."""
+    """Write (or overwrite) the report helper at ``root/_filingforge/report-template.md`` and
+    return its path. Idempotent: same template every time. The app owns this file, so any stale
+    or hand-edited copy is replaced on each library build, and the legacy root-level copy
+    (``_filingforge-report.md``) is removed."""
     root = Path(root).expanduser()
     root.mkdir(parents=True, exist_ok=True)
-    path = root / HELPER_NAME
+    helper_dir = root / HELPER_DIR
+    helper_dir.mkdir(exist_ok=True)
+    path = helper_dir / HELPER_NAME
     path.write_text(_TEMPLATE, encoding="utf-8")
+    # Clean up the legacy root-level template so existing libraries tidy themselves.
+    legacy = root / LEGACY_HELPER_NAME
+    if legacy.exists():
+        try:
+            legacy.unlink()
+        except OSError:
+            pass
     return path

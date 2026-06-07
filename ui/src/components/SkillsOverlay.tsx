@@ -55,7 +55,7 @@ function promptFor(skill: Skill, ticker: string, root: string): string {
     `${ticker}'s folder: ${r}/${ticker}/\n` +
     `Read its index first: ${r}/${ticker}/INDEX.md\n` +
     `Other companies I have: ${r}/INDEX.md\n` +
-    `Report template (use its house style): ${r}/_filingforge-report.md\n` +
+    `Report template (use its house style): ${r}/_filingforge/report-template.md\n` +
     `Work only from ${ticker}'s official filings — the path is above, don't ask me for it.\n\n` +
     `---\n\n` +
     (skill.prompt ?? "")

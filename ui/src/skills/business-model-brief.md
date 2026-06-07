@@ -111,7 +111,7 @@ Sections (the report renders these — see §3 for how):
 
 ### 2a. Provenance block and context bar
 
-The v2 report template (in `{root}/_filingforge-report.md`) renders two provenance elements
+The v2 report template (in `{root}/_filingforge/report-template.md`) renders two provenance elements
 that you must populate from your reading of the corpus:
 
 **Sticky context bar (`<div id="ctx">`)** — three slots:
@@ -149,7 +149,7 @@ figures are segment-only and not consolidatable, or the margin metric shifts acr
 **remove the `<svg id="trend">` and its `<figure class="chart">` wrapper entirely**. A missing
 chart is invisible; an empty or half-populated one destroys trust. Never set a `data-*`
 attribute to a placeholder or an estimated value. The prose and tables in the section carry the
-analysis instead. (This mirrors the template's own instruction in `_filingforge-report.md`.)
+analysis instead. (This mirrors the template's own instruction in `_filingforge/report-template.md`.)
 - **1. What the company does** — the business and the value chain it sits in. Cited.
 - **2. Revenue streams** — a table of segments with share + growth, then prose on the mix.
   Use a bar split for the headline segment/geography breakdown.
@@ -186,7 +186,7 @@ This is where the value shows. **Read the report template the FilingForge app ma
 library root:**
 
 ```
-{LIBRARY_ROOT}/_filingforge-report.md
+{LIBRARY_ROOT}/_filingforge/report-template.md
 ```
 
 That file is the locked FilingForge house style (the "Direction-C" look: dark masthead, ember
