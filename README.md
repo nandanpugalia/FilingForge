@@ -92,8 +92,8 @@ A Skill is a **prompt-pack you run in the Claude desktop app or Codex**, pointed
 
 | Skill | What it does | |
 |-------|--------------|---|
-| **Business Model Brief** | A cited, analyst-grade brief on how the company actually makes money — rendered as a clean, self-contained **interactive HTML report** by your own AI (a coding agent like Claude Code or Codex, which has file access). | **Free** |
-| More Skills | Concall Decoder, Forensic Red-Flags, Valuation, Peer Comparison, and others. | Coming |
+| **Business Model Brief** | A cited, analyst-grade brief on how the company actually makes money — revenue mix, concentration, unit economics, moat — rendered as a clean, self-contained **interactive HTML report** by your own AI (a coding agent like Claude Code or Codex, which has file access). | **Free** |
+| **Concall Decoder** | Every earnings call in your library, decoded — management's guidance track record (kept vs missed), tone shifts, what analysts keep asking, and what management avoids. A cited read on how much to trust the team. | **₹3,000** |
 
 Skills are **one-time purchases** — you download a `.md` file and import it. No subscription, no licence server, no network check to run. The free Skill works identically to paid ones; the difference is what the prompt does.
 
