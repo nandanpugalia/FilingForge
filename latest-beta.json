@@ -1,23 +1,23 @@
 {
-  "version": "0.1.12",
+  "version": "0.1.13",
   "notes": "See the assets below to download. Auto-update metadata: latest.json.",
-  "pub_date": "2026-06-07T20:25:38.875Z",
+  "pub_date": "2026-06-07T20:50:38.483Z",
   "platforms": {
     "darwin-aarch64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2xIc1Rtc0M4Y290TlNTSDFOUGVWUjVXUjFPN3lxbGVaWkJvRS8xSGQxWmtiQWhPUjV3MUEwTk1RVHN3Q3Z5b0NicVFsL3d5My9INmJ3QzFrVEJnSlFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODYzNTk0CWZpbGU6RmlsaW5nRm9yZ2UuYXBwLnRhci5negpaN2FCblE4aXFZVFNPVTl2b1Bia01Ham1aQ0JZcXl3VXBPMTYxOG1uR04ycERVK1E3aWYyTXBnNlpWTUxsWWk5ZE9HWkw2Y0MxcllGemI0VFFBZlFEUT09Cg==",
-      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.12-beta/FilingForge_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2tta2dWS3g0TEdWdGw3TXl1Q005MGtQemVrK2ZtZ1VkdURtQUd0RHdLU1daSGZqMkpHNzB0MWx3QktDcmVWeEVMUFpla3A5UC82UFZoL2JiTml6blFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODY1Mjc2CWZpbGU6RmlsaW5nRm9yZ2UuYXBwLnRhci5negp3emJsU2RPRmRtdGRzYjc0dW00a01JbXVDZ3FmTTJ4NmJCRU1WbTdvUnF0elBrR1pPTEdUMGFEVVlxTEk4d0M4VGxZNitLZ3FQV1N5M3ZhaEFFUEdCZz09Cg==",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.13-beta/FilingForge_aarch64.app.tar.gz"
     },
     "darwin-aarch64-app": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2xIc1Rtc0M4Y290TlNTSDFOUGVWUjVXUjFPN3lxbGVaWkJvRS8xSGQxWmtiQWhPUjV3MUEwTk1RVHN3Q3Z5b0NicVFsL3d5My9INmJ3QzFrVEJnSlFrPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODYzNTk0CWZpbGU6RmlsaW5nRm9yZ2UuYXBwLnRhci5negpaN2FCblE4aXFZVFNPVTl2b1Bia01Ham1aQ0JZcXl3VXBPMTYxOG1uR04ycERVK1E3aWYyTXBnNlpWTUxsWWk5ZE9HWkw2Y0MxcllGemI0VFFBZlFEUT09Cg==",
-      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.12-beta/FilingForge_aarch64.app.tar.gz"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ2tta2dWS3g0TEdWdGw3TXl1Q005MGtQemVrK2ZtZ1VkdURtQUd0RHdLU1daSGZqMkpHNzB0MWx3QktDcmVWeEVMUFpla3A5UC82UFZoL2JiTml6blFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODY1Mjc2CWZpbGU6RmlsaW5nRm9yZ2UuYXBwLnRhci5negp3emJsU2RPRmRtdGRzYjc0dW00a01JbXVDZ3FmTTJ4NmJCRU1WbTdvUnF0elBrR1pPTEdUMGFEVVlxTEk4d0M4VGxZNitLZ3FQV1N5M3ZhaEFFUEdCZz09Cg==",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.13-beta/FilingForge_aarch64.app.tar.gz"
     },
     "windows-x86_64": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ25IcVRKQmZpYW9DdXA1L3NsR0pTNWdJNE9JOXJhZ0FFUVVhbnJRcG1makVOeFI2dGYrMHBoNTZNOXRmR1lkTGlmQ3FoMFJhcDhlWnYyMVZ0WWVVMFFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODYzOTM1CWZpbGU6RmlsaW5nRm9yZ2VfMC4xLjEyX3g2NC1zZXR1cC5leGUKUklEMEQ4UkFYZS9TcFkxNWNEN2MzOEJiQk1DMm1zVW13bDJFdmwyaDJiSStSQjE2amRreVg0cENyMUFRcitKTWR1UEM3YVM3TEVGWGVqdU5XSUlxQWc9PQo=",
-      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.12-beta/FilingForge_0.1.12_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ3Nkb0dDTlFnZnFvNnBOdjVWQjE2UzNyU2RoZkkwUHJBWnd6aVpZcGVsQXUzb1ZaODgxTGlmb2xXeVJOaTg3RERvbDZrMVZGM1k2SUluaXc4Mjd2ZEFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODY1NDM2CWZpbGU6RmlsaW5nRm9yZ2VfMC4xLjEzX3g2NC1zZXR1cC5leGUKWTRSeE1Pdm5oU2JrWmJmMXRXZGFBNjBkWkpxa2hGSTFoeTJIQjVxazVSeWprTXVZTDRoSnpIOTI5cWVvTXB2ZmVvcDdXYmR5K3hvd0ZPcTZjQU1SQUE9PQo=",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.13-beta/FilingForge_0.1.13_x64-setup.exe"
     },
     "windows-x86_64-nsis": {
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ25IcVRKQmZpYW9DdXA1L3NsR0pTNWdJNE9JOXJhZ0FFUVVhbnJRcG1makVOeFI2dGYrMHBoNTZNOXRmR1lkTGlmQ3FoMFJhcDhlWnYyMVZ0WWVVMFFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODYzOTM1CWZpbGU6RmlsaW5nRm9yZ2VfMC4xLjEyX3g2NC1zZXR1cC5leGUKUklEMEQ4UkFYZS9TcFkxNWNEN2MzOEJiQk1DMm1zVW13bDJFdmwyaDJiSStSQjE2amRreVg0cENyMUFRcitKTWR1UEM3YVM3TEVGWGVqdU5XSUlxQWc9PQo=",
-      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.12-beta/FilingForge_0.1.12_x64-setup.exe"
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVRSGZvTE5rODYzZ3Nkb0dDTlFnZnFvNnBOdjVWQjE2UzNyU2RoZkkwUHJBWnd6aVpZcGVsQXUzb1ZaODgxTGlmb2xXeVJOaTg3RERvbDZrMVZGM1k2SUluaXc4Mjd2ZEFRPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzgwODY1NDM2CWZpbGU6RmlsaW5nRm9yZ2VfMC4xLjEzX3g2NC1zZXR1cC5leGUKWTRSeE1Pdm5oU2JrWmJmMXRXZGFBNjBkWkpxa2hGSTFoeTJIQjVxazVSeWprTXVZTDRoSnpIOTI5cWVvTXB2ZmVvcDdXYmR5K3hvd0ZPcTZjQU1SQUE9PQo=",
+      "url": "https://github.com/nandanpugalia/FilingForge/releases/download/v0.1.13-beta/FilingForge_0.1.13_x64-setup.exe"
     }
   }
 }
