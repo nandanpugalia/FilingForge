@@ -1664,6 +1664,7 @@ a { color: var(--dim); text-decoration: none; }
   text-transform: uppercase;
   color: var(--dim);
 }
+.pr-email { grid-column: 1 / -1; display: flex; flex-direction: column; gap: 6px; margin: 4px 0 0; }
 .pr-redeem-row { display: flex; gap: 8px; align-items: center; }
 .pr-redeem-input {
   flex: 1 1 auto;

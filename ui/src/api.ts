@@ -106,9 +106,10 @@ const newSession = (): string =>
 
 // Generate a session, ask the Worker for a ₹3,000 payment link. Returns both so the
 // caller can persist the session (resume/paste-code) and open the URL in the browser.
-export async function startCheckout(): Promise<{ url: string; session: string }> {
+// `email` (when valid) is carried onto the link so the buyer gets the receipt + skill .md.
+export async function startCheckout(email?: string): Promise<{ url: string; session: string }> {
   const session = newSession();
-  const res = await safeFetch(`${WORKER_URL}/checkout`, jsonPost({ session }));
+  const res = await safeFetch(`${WORKER_URL}/checkout`, jsonPost({ session, email }));
   if (!res.ok) throw new Error("Couldn't start checkout. Please try again in a moment.");
   const url = (await res.json())?.url as string | undefined;
   if (!url) throw new Error("Couldn't start checkout. Please try again in a moment.");
