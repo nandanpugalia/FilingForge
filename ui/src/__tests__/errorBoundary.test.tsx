@@ -1,6 +1,8 @@
 import { it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { ErrorBoundary } from "../components/ErrorBoundary";
+import { WORKER_URL } from "../config";
 
 function Boom(): never {
   throw new Error("kaboom");
@@ -32,4 +34,23 @@ it("renders a recoverable fallback (message + Reload) when a child throws", () =
   expect(screen.getByRole("button", { name: /reload/i })).toBeInTheDocument();
   // and a way to report it, since the in-app report button is gone after a crash
   expect(screen.getByRole("button", { name: /report this/i })).toBeInTheDocument();
+});
+
+it("reports a crash through the Worker (same flow as the in-app reporter)", async () => {
+  const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ ok: true }) });
+  vi.stubGlobal("fetch", fetchMock);
+  render(
+    <ErrorBoundary>
+      <Boom />
+    </ErrorBoundary>
+  );
+  await userEvent.click(screen.getByRole("button", { name: /report this/i }));
+
+  expect(fetchMock).toHaveBeenCalledTimes(1);
+  const [url, opts] = fetchMock.mock.calls[0];
+  expect(url).toBe(`${WORKER_URL}/report`);
+  const sent = JSON.parse((opts as { body: string }).body);
+  expect(sent.screen).toBe("crash");
+  expect(sent.comment).toContain("kaboom");
+  expect(await screen.findByText(/reported — thank you/i)).toBeInTheDocument();
 });
