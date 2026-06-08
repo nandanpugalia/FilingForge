@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { APP_VERSION } from "../config";
+import { APP_VERSION, WORKER_URL } from "../config";
 import { useEscapeClose } from "../lib/useEscapeClose";
 import { openExternal } from "../lib/openExternal";
 
@@ -24,19 +24,14 @@ export function ReportOverlay({ screen, onClose }: { screen: string; onClose: ()
   const os = detectOs();
   const canSubmit = comment.trim().length > 0 && status !== "sending";
 
-  async function submit() {
-    if (!canSubmit) return;
-    setStatus("sending");
-
-    // Open a prefilled GitHub issue in the system browser. Trackable, no backend,
-    // and the repo's GitHub→Discord webhook notifies the maintainer automatically.
+  // Open a prefilled GitHub issue in the system browser — the FALLBACK path, used only if
+  // the Worker submit fails. Needs a GitHub account, so it's no longer the primary route.
+  async function openGithubFallback() {
     const kind = type === "bug" ? "Bug" : "Feature";
     const label = type === "bug" ? "bug" : "enhancement";
     const title = `[${kind}] ${comment.trim().slice(0, 60)}`;
     const body = [
-      comment.trim(),
-      "",
-      "---",
+      comment.trim(), "", "---",
       `- **Type:** ${type}`,
       `- **App version:** ${APP_VERSION}`,
       `- **Screen:** ${screen}`,
@@ -49,19 +44,42 @@ export function ReportOverlay({ screen, onClose }: { screen: string; onClose: ()
       `?labels=${encodeURIComponent(label)}` +
       `&title=${encodeURIComponent(title)}` +
       `&body=${encodeURIComponent(body)}`;
+    await openExternal(url);
+  }
 
+  async function submit() {
+    if (!canSubmit) return;
+    setStatus("sending");
+    // PRIMARY path: send to the Worker, which files the GitHub issue server-side (so the user
+    // needs NO GitHub account) and pings Discord. Email is sent for a reply, kept private.
     try {
-      await openExternal(url);
+      const res = await fetch(`${WORKER_URL}/report`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          type, comment: comment.trim(), name: name.trim(), email: email.trim(),
+          version: APP_VERSION, screen, os,
+        }),
+      });
+      if (!res.ok) throw new Error(`report ${res.status}`);
       setStatus("sent");
       setTimeout(onClose, 1800);
+      return;
     } catch {
-      setStatus("failed");
+      // Worker unreachable → fall back to the prefilled GitHub issue so the report isn't lost.
+      try {
+        await openGithubFallback();
+        setStatus("sent");
+        setTimeout(onClose, 1800);
+      } catch {
+        setStatus("failed");
+      }
     }
   }
 
   const message =
-    status === "sent" ? "Opening GitHub to post your report — thank you! 🙏" :
-    status === "failed" ? "Couldn't open the browser — please try again." : null;
+    status === "sent" ? "Thank you — your report's been sent! 🙏" :
+    status === "failed" ? "Couldn't send — please check your connection and try again." : null;
 
   return (
     <div className="overlay" role="dialog" aria-label="Send feedback" onClick={onClose}>
@@ -100,7 +118,7 @@ export function ReportOverlay({ screen, onClose }: { screen: string; onClose: ()
         {message && <div className={`report-status ${status}`}>{message}</div>}
 
         <button className="primary" disabled={!canSubmit} onClick={submit}>
-          {status === "sending" ? "Opening…" : "Send"}
+          {status === "sending" ? "Sending…" : "Send"}
         </button>
       </div>
     </div>
