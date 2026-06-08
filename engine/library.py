@@ -17,6 +17,11 @@ from .errors import FilingForgeError
 
 CancelFn = Optional[Callable[[], bool]]
 
+# Headlines that are typically big multi-MB PDFs. A single such download can sit for 20s+ on a
+# slow link with the % bar frozen, which users read as "stuck at 10-15%". Flagging it in the
+# message makes the wait legible instead of looking like a hang.
+_LARGE_DOC_HINTS = ("annual report", "business responsibility", "integrated report", "investor presentation")
+
 
 def _process(company, scrip_code, ticker, specs, years, client, on_progress, everything,
              should_cancel: CancelFn = None):
@@ -34,7 +39,9 @@ def _process(company, scrip_code, ticker, specs, years, client, on_progress, eve
             res.skipped.append(f.news_id)
             emit(on_progress, ProgressEvent("download", i, total, f"Already have: {label}"))
             continue
-        emit(on_progress, ProgressEvent("download", i, total, f"Downloading {label}…"))
+        big = any(h in label.lower() for h in _LARGE_DOC_HINTS)
+        hint = " — large file, this can take a moment" if big else ""
+        emit(on_progress, ProgressEvent("download", i, total, f"Downloading {label}…{hint}"))
         try:
             pdf = download_filing(f, client)
             pdf_path = save_filing(company, f, pdf)                 # atomic

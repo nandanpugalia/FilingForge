@@ -8,6 +8,10 @@ from .models import Candidate
 from .errors import CompanyNotFoundError
 
 URL = "https://api.bseindia.com/BseIndiaAPI/api/PeerSmartSearch/w"
+# BSE renames a listed company and the OLD name stops matching its live search (e.g. Zomato →
+# Eternal Ltd, 2025). Map the former name → the current one so a user typing the old name still
+# resolves. Keyed lowercased; extend as more high-profile renames happen.
+_ALIASES = {"zomato": "Eternal"}
 _LICLICK = re.compile(r"liclick\('(\d{6})','([^']+)'\)")
 _SELECTED = re.compile(r"quotemenuselect[^>]*?liclick\('(\d{6})'")
 _LI = re.compile(r"<li\b.*?</li>", re.S)            # each result row
@@ -33,7 +37,13 @@ def resolve(name: str, client: BSEClient) -> list[Candidate]:
     html = client.get_text(URL, {"Type": "EQ", "text": name})
     pairs = _LICLICK.findall(html)
     if not pairs:
-        raise CompanyNotFoundError(name)
+        # The company may have been renamed on BSE — retry once with the known current name.
+        alias = _ALIASES.get(name.strip().lower())
+        if alias:
+            html = client.get_text(URL, {"Type": "EQ", "text": alias})
+            pairs = _LICLICK.findall(html)
+        if not pairs:
+            raise CompanyNotFoundError(name)
     isin_by_code: dict[str, str] = {}
     symbol_by_code: dict[str, str] = {}
     for block in _LI.findall(html):

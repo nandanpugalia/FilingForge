@@ -33,6 +33,23 @@ def test_no_match_raises_company_not_found():
         resolve("ZЗ", _client_serving("<li>nothing here</li>"))
 
 
+def test_renamed_company_resolves_via_alias():
+    # Zomato renamed to Eternal Ltd on BSE: searching the OLD name returns nothing, so the
+    # resolver retries with the current name. Serve empty for "Zomato", a real row for "Eternal".
+    eternal = ("\"<li class='quotemenu quotemenuselect' onclick=\\\"liclick('543320','Eternal Ltd')\\\">"
+               "<a>ETERNAL LTD<br /><span>ETERNAL&nbsp;&nbsp;&nbsp;INE758T01015&nbsp;&nbsp;&nbsp;543320"
+               "</span></a></li>\"")
+
+    def handler(req: httpx.Request) -> httpx.Response:
+        text = req.url.params.get("text", "")
+        return httpx.Response(200, text=eternal if text.lower() == "eternal" else "<li>no match</li>")
+
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    out = resolve("Zomato", client)
+    assert out[0].scrip_code == "543320"
+    assert out[0].company == "Eternal Ltd"
+
+
 def test_resolve_surfaces_isin_when_present():
     html = (FIXTURES / "peersmartsearch_tanla.html").read_text()
     out = resolve("TANLA", _client_serving(html))
