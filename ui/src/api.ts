@@ -104,12 +104,14 @@ const newSession = (): string =>
         return (c === "x" ? r : (r & 0x3) | 0x8).toString(16);
       }));
 
-// Generate a session, ask the Worker for a ₹3,000 payment link. Returns both so the
-// caller can persist the session (resume/paste-code) and open the URL in the browser.
-// `email` (when valid) is carried onto the link so the buyer gets the receipt + skill .md.
-export async function startCheckout(email?: string): Promise<{ url: string; session: string }> {
+// Generate a session, ask the Worker for a payment link. Returns both so the caller can
+// persist the session (resume/paste-code) and open the URL in the browser. `email` (when valid)
+// is carried onto the link so the buyer gets the receipt + skill .md. `skill` selects which paid
+// SKU (the Worker validates price server-side); omit it and the Worker defaults to the original
+// skill, so older callers keep working.
+export async function startCheckout(email?: string, skill?: string): Promise<{ url: string; session: string }> {
   const session = newSession();
-  const res = await safeFetch(`${WORKER_URL}/checkout`, jsonPost({ session, email }));
+  const res = await safeFetch(`${WORKER_URL}/checkout`, jsonPost({ session, email, skill }));
   if (!res.ok) throw new Error("Couldn't start checkout. Please try again in a moment.");
   const url = (await res.json())?.url as string | undefined;
   if (!url) throw new Error("Couldn't start checkout. Please try again in a moment.");

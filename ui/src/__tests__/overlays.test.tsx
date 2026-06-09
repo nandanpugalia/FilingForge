@@ -93,11 +93,12 @@ it("SkillsOverlay: Business Model Brief is free, Concall Decoder is the priced p
   vi.spyOn(api, "getSkills").mockResolvedValue([]);
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
   expect(screen.getByText("Business Model Brief")).toBeInTheDocument();
-  expect(screen.getByText("Concall Decoder")).toBeInTheDocument();        // the premium pack
-  expect(screen.getAllByText("Free").length).toBeGreaterThanOrEqual(1);   // free packs
-  expect(screen.getByText("Premium")).toBeInTheDocument();                // premium tier
-  // the priced "Get — ₹3,000" buy button is shown; Full Due-Diligence is gone
-  expect(screen.getByRole("button", { name: /Get — ₹3,000/ })).toBeInTheDocument();
+  expect(screen.getByText("Concall Decoder")).toBeInTheDocument();              // premium pack #1
+  expect(screen.getByText("Capital Allocation Audit")).toBeInTheDocument();     // premium pack #2
+  expect(screen.getAllByText("Free").length).toBeGreaterThanOrEqual(1);         // free packs
+  expect(screen.getAllByText("Premium").length).toBeGreaterThanOrEqual(2);      // two premium tiers
+  // priced "Get — ₹3,000" buy buttons are shown (one per premium pack); Full Due-Diligence is gone
+  expect(screen.getAllByRole("button", { name: /Get — ₹3,000/ }).length).toBeGreaterThanOrEqual(2);
   expect(screen.queryByText(/Full Due-Diligence/i)).not.toBeInTheDocument();
 });
 

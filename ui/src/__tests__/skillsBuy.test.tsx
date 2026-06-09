@@ -39,13 +39,13 @@ it("(a) shows 'Get — ₹3,000' when not owned; clicking it runs checkout then 
   vi.spyOn(api, "redeem").mockResolvedValue({ status: "pending" });
 
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
-  // Get is always clickable; it reveals the email step, then Continue runs checkout.
-  await userEvent.click(await screen.findByRole("button", { name: /Get — ₹3,000/ }));
+  // Two premium teasers now (Concall + Capital Allocation Audit) → click the first (Concall).
+  await userEvent.click((await screen.findAllByRole("button", { name: /Get — ₹3,000/ }))[0]);
   await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "buyer@example.com");
   await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
 
   await waitFor(() => expect(checkout).toHaveBeenCalledTimes(1));
-  expect(checkout).toHaveBeenCalledWith("buyer@example.com");   // email carried to the worker
+  expect(checkout).toHaveBeenCalledWith("buyer@example.com", "concall-decoder");   // email + skill id
   expect(open).toHaveBeenCalledWith("https://rzp.io/i/abc");
   // session persisted for resume
   expect(localStorage.getItem("ff_pending_concall")).toBe("sess-1");
@@ -54,7 +54,7 @@ it("(a) shows 'Get — ₹3,000' when not owned; clicking it runs checkout then 
 it("(a2) Get is always enabled; it reveals an email step whose Continue is gated on a valid email", async () => {
   vi.spyOn(api, "getSkills").mockResolvedValue([]);
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
-  const get = await screen.findByRole("button", { name: /Get — ₹3,000/ });
+  const get = (await screen.findAllByRole("button", { name: /Get — ₹3,000/ }))[0];
   expect(get).toBeEnabled();                                    // CTA is never a dead button
   await userEvent.click(get);
   const cont = await screen.findByRole("button", { name: /Continue/ });
@@ -77,7 +77,7 @@ it("(b) a redeem returning md installs the pack and it shows as owned ('Use')", 
   const install = vi.spyOn(api, "installSkillMd").mockResolvedValue(owned);
 
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
-  await userEvent.click(await screen.findByRole("button", { name: /Get — ₹3,000/ }));
+  await userEvent.click((await screen.findAllByRole("button", { name: /Get — ₹3,000/ }))[0]);
   await userEvent.type(await screen.findByLabelText(/Email for receipt/i), "buyer@example.com");
   await userEvent.click(await screen.findByRole("button", { name: /Continue/ }));
 
@@ -86,9 +86,9 @@ it("(b) a redeem returning md installs the pack and it shows as owned ('Use')", 
   await userEvent.click(checkNow);
 
   await waitFor(() => expect(install).toHaveBeenCalledWith("Concall Decoder", "# CONCALL MD"));
-  // owned now → a "Use" button exists for Concall Decoder and NO "Get" button
+  // Concall owned now → its "Use" appears + the toast; only the OTHER pack's Get teaser remains.
   expect(await screen.findByText(/Concall Decoder added ✓/)).toBeInTheDocument();
-  await waitFor(() => expect(screen.queryByRole("button", { name: /Get — ₹3,000/ })).not.toBeInTheDocument());
+  await waitFor(() => expect(screen.getAllByRole("button", { name: /Get — ₹3,000/ }).length).toBe(1));
   expect(screen.getAllByRole("button", { name: /^Use$/ }).length).toBeGreaterThanOrEqual(1);
 });
 
@@ -111,9 +111,9 @@ it("(d) when concall-decoder is already imported, it shows 'Use' and NOT a dupli
   render(<SkillsOverlay root="/root" onClose={() => {}} />);
   await waitFor(() => expect(screen.getAllByRole("button", { name: /^Use$/ }).length).toBeGreaterThanOrEqual(1));
   expect(await screen.findByText("Concall Decoder")).toBeInTheDocument();
-  // owned → no buy teaser, no duplicate Concall Decoder name
-  expect(screen.queryByRole("button", { name: /Get — ₹3,000/ })).not.toBeInTheDocument();
+  // Concall owned → no duplicate Concall row + no Concall Get teaser. Other packs still show Get.
   expect(screen.getAllByText("Concall Decoder").length).toBe(1);
+  expect(screen.queryByText("Capital Allocation Audit")).toBeInTheDocument();   // the other pack still teased
   expect(screen.getAllByRole("button", { name: /^Use$/ }).length).toBeGreaterThanOrEqual(1);
 });
 

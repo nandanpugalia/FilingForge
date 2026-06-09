@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useEscapeClose } from "../lib/useEscapeClose";
 import { getLibrary, getSkills, importSkill, installSkillMd, startCheckout, redeem } from "../api";
 import { openExternal } from "../lib/openExternal";
-import { setPending, getPending, getPendingUrl, clearPending } from "../lib/pendingPurchase";
+import { setPending, getPending, getPendingUrl, getPendingSkill, clearPending } from "../lib/pendingPurchase";
 import { pickSkillFile } from "../lib/pickSkillFile";
 import type { LibraryItem, ImportedSkill } from "../types";
 import bmBrief from "../skills/business-model-brief.md?raw";
@@ -28,14 +28,25 @@ type Skill = {
   imported?: boolean;
 };
 
-// The premium skill the buy flow sells. CONTENT lives in the Worker, never the repo.
-const CONCALL_ID = "concall-decoder";        // imported id once installed
-const CONCALL_NAME = "Concall Decoder";
-const CONCALL_DESC =
-  "Every earnings call in your library, decoded — management's guidance track record " +
-  "(kept vs missed), shifts in tone, the questions analysts keep pressing, and the ones " +
-  "management avoids. A cited read on how much to trust the team.";
-const CONCALL_PRICE = "₹3,000";
+// The paid skills the buy flow sells. CONTENT lives in the Worker (KV), never the repo.
+// Add a paid skill = add an entry here (and to the Worker CATALOG + SKILLS KV).
+type Premium = { id: string; name: string; desc: string; price: string };
+const PREMIUM: Premium[] = [
+  {
+    id: "concall-decoder", name: "Concall Decoder", price: "₹3,000",
+    desc:
+      "Every earnings call in your library, decoded — management's guidance track record " +
+      "(kept vs missed), shifts in tone, the questions analysts keep pressing, and the ones " +
+      "management avoids. A cited read on how much to trust the team.",
+  },
+  {
+    id: "capital-allocation-audit", name: "Capital Allocation Audit", price: "₹3,000",
+    desc:
+      "A multi-year audit of what management does with the cash — where every rupee of operating " +
+      "cash flow went, the return earned on it (ROIC), the acquisition track record, buybacks & " +
+      "dilution, leverage, and the red flags. Cited, with a proof-of-work manifest.",
+  },
+];
 
 const BUILT_IN: Skill[] = [
   { id: "bm", name: "Business Model Brief", tier: "Free", status: "ready", prompt: bmBrief,
@@ -67,9 +78,9 @@ const asSkill = (s: ImportedSkill): Skill => ({
   status: "ready", prompt: s.prompt, imported: true,
 });
 
-// Is this imported skill the Concall Decoder pack? (match on id or name, case-insensitive)
-const isConcall = (s: ImportedSkill): boolean =>
-  s.id.toLowerCase() === CONCALL_ID || s.name.trim().toLowerCase() === CONCALL_NAME.toLowerCase();
+// Does this imported skill match a paid pack? (id or name, case-insensitive)
+const matchesPremium = (s: ImportedSkill, p: Premium): boolean =>
+  s.id.toLowerCase() === p.id || s.name.trim().toLowerCase() === p.name.toLowerCase();
 
 export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => void }) {
   const [companies, setCompanies] = useState<LibraryItem[]>([]);
@@ -85,9 +96,10 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
   const [polling, setPolling] = useState(false);                  // poll loop running
   const [buyMsg, setBuyMsg] = useState<string | null>(null);      // status / friendly error
   const [installed, setInstalled] = useState(false);             // toast "added ✓"
+  const [installedName, setInstalledName] = useState("Skill");    // which pack the toast names
   const [code, setCode] = useState("");                           // paste-code field
   const [email, setEmail] = useState("");                         // buyer email (receipt + unlock code)
-  const [askEmail, setAskEmail] = useState(false);               // Get clicked → reveal the email step
+  const [buyingId, setBuyingId] = useState<string | null>(null); // which premium skill's email step is open
   const [resume, setResume] = useState<string | null>(null);     // pending session for the banner
   const pollTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -99,15 +111,22 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
   const refreshSkills = () => getSkills().then(setImported).catch(() => setImported([]));
   useEffect(() => { refreshSkills(); }, []);
 
-  // Owned detection: present iff an imported skill is the Concall Decoder pack.
-  const owned = imported.some(isConcall);
+  // Per-skill ownership: a paid pack is "owned" iff an imported skill matches it.
+  const isOwned = (p: Premium) => imported.some((s) => matchesPremium(s, p));
+  const unowned = PREMIUM.filter((p) => !isOwned(p));
+  // The pending purchase's skill (so the resume banner + install name the right pack). A legacy
+  // pending with no stored skill id is treated as the first paid pack (back-compat).
+  const pendingSkill = getPendingSkill();
+  const pendingDef = (pendingSkill.id && PREMIUM.find((p) => p.id === pendingSkill.id)) || PREMIUM[0];
+  const pendingOwned = isOwned(pendingDef);
 
-  // Resume banner: a pending session exists AND the skill isn't owned yet.
+  // Resume banner: a pending session exists AND that skill isn't owned yet.
   useEffect(() => {
     const p = getPending();
-    setResume(p && !owned ? p : null);
-    if (owned) clearPending();
-  }, [owned]);
+    setResume(p && !pendingOwned ? p : null);
+    if (pendingOwned) clearPending();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [imported]);
 
   // Stop the poll loop on unmount.
   useEffect(() => () => { if (pollTimer.current) clearInterval(pollTimer.current); }, []);
@@ -146,13 +165,16 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
 
   // Install the watermarked md → mark owned → toast → clear pending.
   const install = async (md: string) => {
-    await installSkillMd(CONCALL_NAME, md);
+    // Name it by the pending skill (falls back to the first paid pack for legacy pendings).
+    const nm = getPendingSkill().name || PREMIUM[0].name;
+    await installSkillMd(nm, md);
     await refreshSkills();
     clearPending();
     setResume(null);
-    setAskEmail(false);
+    setBuyingId(null);
     stopPoll();
     setBuyMsg(null);
+    setInstalledName(nm);
     setInstalled(true);
     setTimeout(() => setInstalled(false), 4000);
   };
@@ -185,14 +207,14 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     }, 3000);
   };
 
-  // "Get — ₹3,000" → checkout (carrying the email) → open browser → start poll.
-  const get = async () => {
+  // "Get — ₹3,000" → checkout for THIS skill (carrying the email) → open browser → start poll.
+  const get = async (def: Premium) => {
     if (!emailOk) { setBuyMsg("Enter your email so we can send your receipt and unlock code."); return; }
     setBuyMsg(null);
     setBuyBusy(true);
     try {
-      const { url, session } = await startCheckout(email.trim());
-      setPending(session, url);
+      const { url, session } = await startCheckout(email.trim(), def.id);
+      setPending(session, url, def.id, def.name);
       setResume(null);
       await openExternal(url);
       startPoll(session);
@@ -251,7 +273,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
 
         {resume && (
           <div className="pr-resume" role="status">
-            <span>Finish your Concall Decoder purchase.</span>
+            <span>Finish your {pendingSkill.name || pendingDef.name} purchase.</span>
             <button className="pr-get" onClick={continueResume} disabled={polling}>Continue</button>
             <button className="link" onClick={checkNow}>I've paid — check now</button>
           </div>
@@ -313,35 +335,42 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
             );
           })}
 
-          {/* Premium teaser — only when NOT owned (else it's already a "Use" row above; dedup). */}
-          {!owned && (
-            <li className="skill-row premium-teaser">
+          {/* Premium teasers — one per NOT-owned paid pack (owned ones already show as "Use" rows). */}
+          {unowned.map((def) => (
+            <li key={def.id} className="skill-row premium-teaser">
               <div className="pr-main">
-                <div className="pr-head"><span className="pr-name">{CONCALL_NAME}</span></div>
-                <p className="pr-desc">{CONCALL_DESC}</p>
+                <div className="pr-head"><span className="pr-name">{def.name}</span></div>
+                <p className="pr-desc">{def.desc}</p>
               </div>
               <div className="pr-buy">
                 <span className="pr-price premium">Premium</span>
-                {!askEmail && (
-                  <button className="pr-get" onClick={() => { setBuyMsg(null); setAskEmail(true); }} disabled={polling}>
-                    {`Get — ${CONCALL_PRICE}`}
+                {buyingId !== def.id && (
+                  <button className="pr-get"
+                    onClick={() => { setBuyMsg(null); setCode(""); setBuyingId(def.id); }} disabled={polling}>
+                    {`Get — ${def.price}`}
                   </button>
                 )}
               </div>
-              {askEmail && (
+              {buyingId === def.id && (
                 <div className="pr-email">
                   <span className="pr-redeem-label">Where should we send your receipt &amp; unlock code?</span>
                   <div className="pr-redeem-row">
                     <input className="pr-redeem-input" type="email" value={email} autoFocus
                       placeholder="you@email.com"
                       onChange={(e) => setEmail(e.target.value)} aria-label="Email for receipt"
-                      onKeyDown={(e) => { if (e.key === "Enter" && emailOk && !buyBusy) get(); }} />
-                    <button className="pr-get" onClick={get} disabled={buyBusy || polling || !emailOk}>
+                      onKeyDown={(e) => { if (e.key === "Enter" && emailOk && !buyBusy) get(def); }} />
+                    <button className="pr-get" onClick={() => get(def)} disabled={buyBusy || polling || !emailOk}>
                       {buyBusy ? "Opening…" : "Continue →"}
                     </button>
                   </div>
                 </div>
               )}
+            </li>
+          ))}
+
+          {/* One shared "already paid? redeem" box — a code resolves to its skill server-side. */}
+          {unowned.length > 0 && (
+            <li className="skill-row premium-teaser">
               <div className="pr-redeem">
                 <span className="pr-redeem-label">Already paid? Redeem code</span>
                 <div className="pr-redeem-row">
@@ -357,7 +386,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
           )}
         </ul>
 
-        {installed && <p className="pr-got-note" role="status">Concall Decoder added ✓</p>}
+        {installed && <p className="pr-got-note" role="status">{installedName} added ✓</p>}
 
         <div className="skills-import">
           <button className="link" onClick={doImport}>+ Import a skill…</button>
