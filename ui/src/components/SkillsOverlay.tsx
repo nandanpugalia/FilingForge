@@ -165,8 +165,12 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
 
   // Install the watermarked md → mark owned → toast → clear pending.
   const install = async (md: string) => {
-    // Name it by the pending skill (falls back to the first paid pack for legacy pendings).
-    const nm = getPendingSkill().name || PREMIUM[0].name;
+    // Name it from the md's OWN frontmatter `name:` first — that's authoritative and is the only
+    // correct source for a pasted code with no pending (comp codes, cross-device redeems). Fall
+    // back to the pending skill, then the first paid pack. Without this, a pasted CAU code would
+    // install as "Concall Decoder" and overwrite concall-decoder.md.
+    const fmName = md.match(/^---\s*[\s\S]*?\bname:\s*(.+?)\s*$/m)?.[1]?.trim();
+    const nm = fmName || getPendingSkill().name || PREMIUM[0].name;
     await installSkillMd(nm, md);
     await refreshSkills();
     clearPending();

@@ -125,30 +125,30 @@ export type RedeemResult =
 
 // Poll/redeem by session. 200 → md text; 202 → pending; 403/404 → friendly "not found".
 export async function redeem(session: string): Promise<RedeemResult> {
-  let res: Response;
   try {
-    res = await fetch(`${WORKER_URL}/redeem?session=${encodeURIComponent(session)}`);
+    const res = await fetch(`${WORKER_URL}/redeem?session=${encodeURIComponent(session)}`);
+    if (res.status === 202) return { status: "pending" };
+    if (res.status === 403 || res.status === 404) return { status: "notfound" };
+    if (!res.ok) return { status: "pending" };
+    // res.text() must stay INSIDE the try: macOS WKWebView can error the body stream
+    // (e.g. on an attachment-disposition response). Degrade to pending, never hard-throw.
+    return { status: "ready", md: await res.text() };
   } catch {
-    // offline / network blip — treat as pending so the caller can keep polling / fall back.
+    // offline / network blip / body-read error — treat as pending so the caller keeps polling.
     return { status: "pending" };
   }
-  if (res.status === 202) return { status: "pending" };
-  if (res.status === 403 || res.status === 404) return { status: "notfound" };
-  if (!res.ok) return { status: "pending" };
-  return { status: "ready", md: await res.text() };
 }
 
 // Webhook-loss insurance: reconcile straight from Razorpay using the payment id.
 export async function redeemFallback(session: string, paymentId: string): Promise<RedeemResult> {
-  let res: Response;
   try {
-    res = await fetch(`${WORKER_URL}/redeem-fallback`, jsonPost({ session, payment_id: paymentId }));
+    const res = await fetch(`${WORKER_URL}/redeem-fallback`, jsonPost({ session, payment_id: paymentId }));
+    if (res.status === 403 || res.status === 404) return { status: "notfound" };
+    if (!res.ok) return { status: "pending" };
+    return { status: "ready", md: await res.text() };   // body read inside try (see redeem())
   } catch {
     return { status: "pending" };
   }
-  if (res.status === 403 || res.status === 404) return { status: "notfound" };
-  if (!res.ok) return { status: "pending" };
-  return { status: "ready", md: await res.text() };
 }
 export async function openFolder(path: string): Promise<void> {
   const res = await safeFetch(`${await apiBase()}/open-folder`, jsonPost({ path }));
