@@ -237,7 +237,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     try {
       const ok = await tryRedeem(session);
       if (!ok && !polling) setBuyMsg("Not confirmed yet — give it a minute. Your purchase is safe.");
-    } catch { setBuyMsg("Couldn't check just now. Try again in a moment."); }
+    } catch (e) { setBuyMsg(`Couldn't check: ${(e as Error)?.message || String(e)}`); }
   };
 
   // Paste-code → redeem the pasted session directly.
@@ -250,7 +250,7 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
       if (r.status === "ready") { await install(r.md); setCode(""); }
       else if (r.status === "notfound") setBuyMsg("That code wasn't recognised. Copy it exactly from your email.");
       else setBuyMsg("Not confirmed yet — if you just paid, give it a minute and try again.");
-    } catch { setBuyMsg("Couldn't check that code just now. Try again in a moment."); }
+    } catch (e) { setBuyMsg(`Couldn't redeem: ${(e as Error)?.message || String(e)}`); }
   };
 
   // Resume an interrupted purchase: reopen the saved payment page (if any), then poll.
