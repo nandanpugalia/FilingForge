@@ -105,6 +105,8 @@ Everything stays prompt-pack shaped: open, inspectable, and run on your machine 
 
 Building locally also gives you a **no-quarantine** build on macOS.
 
+If you only want the Python engine, start with **[docs/ENGINE.md](docs/ENGINE.md)**.
+
 **Prerequisites**
 
 - **Rust** (stable toolchain) — for Tauri
