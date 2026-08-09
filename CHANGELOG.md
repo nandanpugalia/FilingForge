@@ -4,6 +4,25 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.17] — 2026-08-09
+
+### Added
+- **Annual reports now go back to 1997.** BSE only started requiring annual reports in its
+  announcements feed in 2015, so every FilingForge library stopped there. FilingForge now also
+  reads BSE's separate annual-report archive, which reaches back to **1997** — including for
+  companies that have since been delisted. **Refresh any company and up to eighteen extra years
+  of annual reports fill themselves in.** Nothing you already have is downloaded again.
+- **An MCP server, so your AI can work the library itself.** Point Claude Desktop, Claude Code,
+  or any MCP client at your library and it can browse companies, search filings, read the clean
+  Markdown, and pull new companies from BSE — without you moving files around.
+  `pip install "filingforge-engine[mcp]"` then `filingforge-mcp --root ~/FilingForge`.
+  Two deliberate limits: the library folder is fixed when the server starts and nothing outside
+  it can be read, and pulling a company never guesses between similarly-named ones.
+
+### Fixed
+- **A duplicate annual report in some years.** BSE serves the same report from two of its systems
+  under different internal ids, so 2020-2023 could arrive twice. Each report is now counted once.
+
 ## [0.1.10] — 2026-06-07
 
 ### Added
