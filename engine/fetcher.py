@@ -2,7 +2,7 @@
 from __future__ import annotations
 from datetime import date, timedelta
 from .bse_client import BSEClient
-from .errors import DownloadError
+from .errors import DownloadError, FilingForgeError
 from .models import Filing, CategorySpec, slug
 
 ANN_URL = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
@@ -91,6 +91,38 @@ def list_annual_reports(scrip_code: str, client: BSEClient, *, years: int | None
         ))
     out.sort(key=lambda f: f.date, reverse=True)
     return out
+
+
+def list_all_filings(scrip_code: str, specs: list[CategorySpec], years: int,
+                     client: BSEClient, *, everything: bool = False) -> list[Filing]:
+    """Both BSE filing sources as one listing, the overlap counted once.
+
+    Announcements only carry annual reports from 2015 (LODR Reg. 34(1)); the
+    archive carries them from 1997. Where a report is in both, the ANNOUNCEMENT
+    entry wins — `already_have` keys on news_id, so preferring the archive's id
+    would make every existing library re-download reports it already holds.
+
+    The archive is only read when annual reports are actually wanted, and an
+    archive outage degrades to announcements-only rather than failing the pull.
+    """
+    filings = list_filings(scrip_code, specs, years, client, everything=everything)
+    if not (everything or any(s.key == "annual_report" for s in specs)):
+        return filings
+
+    have = {_attachment_id(f.attachment) for f in filings}
+    try:
+        archived = list_annual_reports(scrip_code, client, years=years)
+    except FilingForgeError:
+        return filings                      # archive down → keep what we have
+    filings.extend(f for f in archived if _attachment_id(f.attachment) not in have)
+    return filings
+
+
+def _attachment_id(attachment: str) -> str:
+    """Last path segment, lowercased — the one thing both sources share for the
+    same document (a bare filename in announcements, the tail of a full URL in
+    the archive)."""
+    return attachment.rsplit("/", 1)[-1].strip().lower()
 
 
 def _ar_year(row: dict) -> int:

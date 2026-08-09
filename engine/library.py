@@ -6,7 +6,7 @@ from typing import Callable, Optional
 from pathlib import Path
 from .bse_client import BSEClient
 from .models import CategorySpec, LibraryResult
-from .fetcher import list_filings, download_filing
+from .fetcher import list_all_filings, download_filing
 from .organiser import (company_dir, save_filing, save_markdown, clean_partials,
                         already_have, record_seen, save_library_config)
 from .converter import pdf_to_markdown
@@ -28,7 +28,7 @@ def _process(company, scrip_code, ticker, specs, years, client, on_progress, eve
     res = LibraryResult()
     clean_partials(company)   # clear any *.part left by a prior interrupted run
     emit(on_progress, ProgressEvent("list", 0, 1, "Finding filings on BSE…"))
-    filings = list_filings(scrip_code, specs, years, client, everything=everything)
+    filings = list_all_filings(scrip_code, specs, years, client, everything=everything)
     total = len(filings)
     for i, f in enumerate(filings, 1):
         if should_cancel and should_cancel():   # checked BEFORE each filing → recorded ones are whole
@@ -71,7 +71,7 @@ def preview_library(scrip_code, root, ticker, specs, years, client, *, everythin
     category, and how many are already in the library. Stateless — touches no disk. The build
     re-lists at download time, so this is an honest estimate, not a frozen manifest."""
     company = company_dir(Path(root).expanduser(), ticker)
-    filings = list_filings(scrip_code, specs, years, client, everything=everything)
+    filings = list_all_filings(scrip_code, specs, years, client, everything=everything)
     existing = company.exists()
     by_cat: dict[str, int] = {}
     new = have = 0
