@@ -25,6 +25,25 @@ jobs:
       - name: Run pytest
         run: pytest -q
 
+  mcp:
+    name: MCP server tests
+    runs-on: ubuntu-latest
+    # A separate job on purpose: mcp 2.x wants starlette >=1.0, which the
+    # fastapi==0.115.5 the desktop API pins forbids. Installing both into one
+    # environment breaks the API. Here the MCP server gets a clean env, so its
+    # adapter tests actually run instead of skipping.
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install engine + MCP server
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[mcp]" pytest
+      - name: Run MCP tests
+        run: pytest mcp_server/tests -q
+
   ui:
     name: UI tests
     runs-on: ubuntu-latest

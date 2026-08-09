@@ -8,13 +8,20 @@ dependencies = ["httpx==0.27.2", "pypdf==4.3.1"]
 
 [project.optional-dependencies]
 api = ["fastapi==0.115.5", "uvicorn[standard]==0.32.1"]
+# NOTE: mcp 2.x requires starlette >=1.0, which is incompatible with the
+# fastapi==0.115.5 the desktop API pins. Install the MCP server in its OWN
+# environment; CI runs its tests in a separate job for the same reason.
+mcp = ["mcp>=2.0.0"]
 dev = ["pytest==8.3.3", "fastapi==0.115.5", "uvicorn[standard]==0.32.1"]
 
+[project.scripts]
+filingforge-mcp = "mcp_server.server:main"
+
 [tool.setuptools.packages.find]
-include = ["engine*", "api*"]
+include = ["engine*", "api*", "mcp_server*"]
 
 [tool.pytest.ini_options]
-testpaths = ["engine/tests", "api/tests"]
+testpaths = ["engine/tests", "api/tests", "mcp_server/tests"]
 addopts = "-q"
 
 [build-system]

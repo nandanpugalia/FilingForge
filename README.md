@@ -74,13 +74,39 @@ One window. Search a company, pick what you want, and it builds the library.
 
 | | | |
 |---|---|---|
-| **1 · Search** | Type a company. FilingForge finds it on **BSE** and pulls its official filings — annual reports, results, investor presentations, and more. | |
+| **1 · Search** | Type a company. FilingForge finds it on **BSE** and pulls its official filings — annual reports, results, investor presentations, and more. **Annual reports go back to 1997** where BSE has them, including for companies since delisted. | |
 | **2 · Convert** | Every PDF becomes a clean `.md` sibling — readable, structured, AI-ready. No PDFs for your model to choke on. | |
 | **3 · Index** | A per-company and master `INDEX.md` map every document, so you (or your AI) point at one folder and have everything. | |
 
 The library is laid out **year-wise**, and refreshes are **smart and incremental** — re-run a company and FilingForge pulls only what's new, leaving your existing Markdown untouched.
 
+**Two sources, one library.** BSE's announcements feed only carries annual reports from 2015, when LODR Reg. 34(1) started requiring them. FilingForge also reads BSE's separate annual-report archive, which reaches back to **1997** — so a library covers two decades, not one, and a company that has since delisted keeps its history. Where a report sits in both places it is counted once, and refreshing an existing library adds the older years without re-downloading anything you already have.
+
 > FilingForge converts **text-based** filings (the vast majority of BSE documents) to clean Markdown — deliberately lightweight, no OCR, no GPU. The occasional scanned-image PDF is saved as-is and clearly flagged, so your AI never reads fabricated text.
+
+---
+
+## 🔌 MCP server — let your AI drive the library
+
+FilingForge ships an **MCP server**, so an MCP-aware client (Claude Desktop, Claude Code, and others) can work the library directly instead of you copying files around.
+
+```bash
+pip install "filingforge-engine[mcp]"
+filingforge-mcp --root ~/FilingForge
+```
+
+| Tool | What it does |
+|------|--------------|
+| `list_companies` | What's in the library, with filing counts |
+| `get_index` | A company's `INDEX.md`, or the master index |
+| `search_filings` | Find documents by title, narrowed by company / category / year |
+| `read_filing` | Returns the **clean Markdown** — never the PDF |
+| `pull_company` | Download a company from BSE into the library |
+| `refresh_company` | Re-pull one already held, keeping its original categories |
+
+Two deliberate constraints. The **library root is fixed when the server starts**, and every path is resolved and checked against it — a model cannot read outside your library. And `pull_company` **never guesses between similarly-named companies**: an ambiguous name returns the candidates and downloads nothing.
+
+> The MCP extra installs into its own environment — `mcp` 2.x needs a newer Starlette than the desktop app's API pins. Keep them separate.
 
 ---
 
