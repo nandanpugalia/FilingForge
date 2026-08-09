@@ -82,6 +82,32 @@ def test_everything_mode_still_reads_the_archive():
     assert "AR-500495-2003" in {f.news_id for f in out}
 
 
+def test_counts_a_report_once_even_when_bse_gives_it_two_attachment_ids():
+    # Found in beta on Escorts FY2020-FY2023: BSE serves the SAME annual report
+    # from its two systems under DIFFERENT attachment GUIDs, so matching on the
+    # attachment alone lets a duplicate through. The filing DATE is identical to
+    # the day in every observed case, and is the stable identity.
+    ann = {"Table": [
+        {"NEWSID": "ann-ar-2020", "DissemDT": "2020-08-02T10:00:00",
+         "HEADLINE": "This is to inform you that the Seventy Fourth Annual General Meeting",
+         "ATTACHMENTNAME": "f0868fee-guid-a.pdf", "CATEGORYNAME": "Others",
+         "SUBCATNAME": "Reg. 34 (1) Annual Report"},
+    ]}
+    archive = {"Table": [
+        {"Scripcode": "500495", "Year": "2020", "Fld_AuthoriseDate": "2020-08-02T00:00:00",
+         "PDFDownload": "https://www.bseindia.com/bseplus/AnnualReport/500495/DIFFERENT-guid-b.pdf"},
+    ]}
+    out = list_all_filings("500495", [AR_SPEC], 25, _client(ann=ann, archive=archive))
+    assert len(out) == 1
+    assert out[0].news_id == "ann-ar-2020"   # announcement wins → no re-download
+
+
+def test_the_archive_still_supplies_a_year_the_announcements_lack():
+    # The date-dedupe must not swallow genuinely archive-only years.
+    out = list_all_filings("500495", [AR_SPEC], 25, _client())
+    assert "AR-500495-2003" in {f.news_id for f in out}
+
+
 def test_an_unavailable_archive_does_not_lose_the_announcements():
     # Some scrips 404 the archive endpoint. That must degrade, not fail the pull.
     client = BSEClient(

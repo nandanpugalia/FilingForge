@@ -109,12 +109,21 @@ def list_all_filings(scrip_code: str, specs: list[CategorySpec], years: int,
     if not (everything or any(s.key == "annual_report" for s in specs)):
         return filings
 
-    have = {_attachment_id(f.attachment) for f in filings}
+    have_attachments = {_attachment_id(f.attachment) for f in filings}
+    # BSE serves the same annual report from its two systems under DIFFERENT
+    # attachment GUIDs for some years (seen on Escorts FY2020-FY2023), so the
+    # attachment alone is not enough. The filing date is identical to the day in
+    # every observed overlap, and is the stable identity.
+    have_dates = {f.date for f in filings if f.folder == "annual-reports"}
     try:
         archived = list_annual_reports(scrip_code, client, years=years)
     except FilingForgeError:
         return filings                      # archive down → keep what we have
-    filings.extend(f for f in archived if _attachment_id(f.attachment) not in have)
+    filings.extend(
+        f for f in archived
+        if _attachment_id(f.attachment) not in have_attachments
+        and f.date not in have_dates
+    )
     return filings
 
 
