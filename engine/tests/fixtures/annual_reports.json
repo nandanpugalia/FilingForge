@@ -1,0 +1,40 @@
+{
+  "Table": [
+    {
+      "Scripcode": "500495",
+      "scrip_name": "Escorts Kubota Limited",
+      "Year": "2026",
+      "PDFDownload": "https://www.bseindia.com/xml-data/corpfiling/AttachHis/aa4acd39-762b-4cf1-9948-7ad5537f6059.pdf",
+      "Fld_AuthoriseDate": "2026-06-19T20:02:37.463",
+      "Priorityflag": 1,
+      "status": "New"
+    },
+    {
+      "Scripcode": "500495",
+      "scrip_name": "Escorts Kubota Limited",
+      "Year": "2012",
+      "PDFDownload": "https://www.bseindia.com/bseplus/AnnualReport/500495/5004950912.pdf",
+      "Fld_AuthoriseDate": "2013-02-22T00:00:00",
+      "Priorityflag": 1,
+      "status": "New"
+    },
+    {
+      "Scripcode": "500495",
+      "scrip_name": "Escorts Kubota Limited",
+      "Year": "2000",
+      "PDFDownload": "https://www.bseindia.com/HIS_ANN_RPT/HISTANNR/2000/ESCORTS_LTD-500495-MARCH-2000.PDF",
+      "Fld_AuthoriseDate": null,
+      "Priorityflag": 2,
+      "status": "New"
+    },
+    {
+      "Scripcode": "500495",
+      "scrip_name": "Escorts Kubota Limited",
+      "Year": "1998",
+      "PDFDownload": "",
+      "Fld_AuthoriseDate": null,
+      "Priorityflag": 2,
+      "status": "New"
+    }
+  ]
+}
