@@ -38,6 +38,27 @@ def test_parses_relative_pdf_links_and_excludes_duplicates_and_assets():
     )
 
 
+def test_parses_onclick_pdf_with_nearby_quarter_and_transcript_label():
+    candidates = import_module("spike.linked_document.candidates")
+    html = b"""
+      <div class="row">
+        <span>Q1</span><i>L&amp;T Earnings Call Transcript Q1FY27</i>
+        <a href="#" onclick="return fnDownloadpdf('https://investor.example.com/Q1FY27-Transcript.pdf');">
+          Download
+        </a>
+        <a href="#" onclick="return fnDownloadpdf('https://investor.example.com/Q1FY27-Audio.mp3');">
+          Audio
+        </a>
+      </div>
+    """
+
+    parsed = candidates.parse_html_candidates(html, "https://investor.example.com/transcripts")
+
+    assert len(parsed) == 1
+    assert parsed[0].url == "https://investor.example.com/Q1FY27-Transcript.pdf"
+    assert "Earnings Call Transcript Q1FY27" in parsed[0].label
+
+
 def test_infers_equivalent_financial_year_tokens():
     candidates = import_module("spike.linked_document.candidates")
 
@@ -71,6 +92,15 @@ def test_maps_indian_day_first_quarter_end_to_fiscal_quarter():
     tokens = candidates.infer_period_tokens(ctx, "for the quarter ended on 30th September 2025")
 
     assert {"q2fy26", "q2fy202526"} <= tokens
+
+
+def test_infers_ocr_spaced_short_fy_with_explicit_quarter():
+    candidates = import_module("spike.linked_document.candidates")
+    ctx = context("concalls", "Transcript of Q1 / FY2 7 Earnings Call")
+
+    tokens = candidates.infer_period_tokens(ctx, "Q1 / FY2 7 Earnings Call transcript")
+
+    assert {"fy27", "fy202627", "q1fy27", "q1fy202627"} <= tokens
 
 
 def test_selects_unique_candidate_with_matching_type_and_period():

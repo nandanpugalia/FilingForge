@@ -52,6 +52,48 @@ def test_rejects_short_pdf_without_external_https_link():
     ) is False
 
 
+def test_detects_linkless_letter_with_explicit_uploaded_website_link_intent():
+    evidence = import_module("spike.linked_document.evidence")
+    linkless = PdfEvidence(
+        page_count=1,
+        text=(
+            "BSE Limited. The transcript has been uploaded on the Company's website "
+            "at the below link. Kindly take the same on record."
+        ),
+        links=(),
+    )
+
+    assert evidence.is_linked_cover_letter(context("concalls"), linkless) is True
+
+
+def test_detects_uploaded_transcript_wording_with_investor_website_link():
+    evidence = import_module("spike.linked_document.evidence")
+    uploaded = PdfEvidence(
+        page_count=1,
+        text=(
+            "BSE Limited. Pursuant to the Regulations, we have uploaded the transcript "
+            "of the Q1 earnings call on our Investor Website."
+        ),
+        links=("https://investor.example.com/Transcripts-Archives.aspx",),
+    )
+
+    assert evidence.is_linked_cover_letter(context("concalls"), uploaded) is True
+
+
+def test_detects_ocr_spaced_available_on_company_web_site_wording():
+    evidence = import_module("spike.linked_document.evidence")
+    presentation = PdfEvidence(
+        page_count=1,
+        text=(
+            "BSE Limited. Pursuant to Regulation 30, the Investors Presentation "
+            "is available o n the Company's web site at click here."
+        ),
+        links=("https://investor.example.com/Q1FY25-Presentation.pdf",),
+    )
+
+    assert evidence.is_linked_cover_letter(context("investor-ppts"), presentation) is True
+
+
 def test_rejects_short_genuine_transcript_without_delegation_language():
     evidence = import_module("spike.linked_document.evidence")
     transcript = PdfEvidence(

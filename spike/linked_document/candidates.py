@@ -19,6 +19,10 @@ _QUARTER_END_DAY_FIRST_RE = re.compile(
     r"\b(?:3[01]|[12]?\d)(?:st|nd|rd|th)?\s+(march|june|september|december)\s*,?\s*(20\d{2})",
     re.IGNORECASE,
 )
+_SHORT_QUARTER_FY_RE = re.compile(
+    r"\bq([1-4])\s*/?\s*fy\s*(\d)\s*(\d)\b",
+    re.IGNORECASE,
+)
 _TYPE_TERMS = {
     "annual-reports": ("annual report",),
     "concalls": ("transcript", "transcription"),
@@ -26,6 +30,7 @@ _TYPE_TERMS = {
     "quarterly": ("financial result", "quarterly result", "quarterly results"),
 }
 _MINIMUM_SCORE = 9
+_URL_IN_ATTRIBUTE_RE = re.compile(r"https://[^'\"\s]+", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -45,23 +50,37 @@ class _AnchorParser(HTMLParser):
         self.anchors: list[tuple[str, str]] = []
         self._href: str | None = None
         self._label: list[str] = []
+        self._context_label = ""
+        self._recent_text: list[str] = []
 
     def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
         if tag.lower() != "a":
             return
         values = dict(attrs)
-        self._href = values.get("href")
+        onclick = values.get("onclick") or ""
+        onclick_url = _URL_IN_ATTRIBUTE_RE.search(onclick)
+        self._href = onclick_url.group(0) if onclick_url else values.get("href")
         self._label = []
+        self._context_label = " ".join(self._recent_text[-4:])
 
     def handle_data(self, data: str) -> None:
         if self._href is not None:
             self._label.append(data)
+        else:
+            normalized = " ".join(data.split())
+            if normalized:
+                self._recent_text.append(normalized)
 
     def handle_endtag(self, tag: str) -> None:
         if tag.lower() == "a" and self._href is not None:
-            self.anchors.append((self._href, " ".join("".join(self._label).split())))
+            anchor_label = " ".join("".join(self._label).split())
+            label = " ".join(part for part in (self._context_label, anchor_label) if part)
+            self.anchors.append((self._href, label))
+            if anchor_label:
+                self._recent_text.append(anchor_label)
             self._href = None
             self._label = []
+            self._context_label = ""
 
 
 def parse_html_candidates(html: bytes, landing_url: str) -> tuple[Candidate, ...]:
@@ -93,6 +112,14 @@ def infer_period_tokens(context: DocumentContext, cover_text: str) -> frozenset[
         if end_year < start_year:
             end_year += 100
         tokens.update(_fy_tokens(start_year, end_year))
+
+    for match in _SHORT_QUARTER_FY_RE.finditer(source):
+        quarter = int(match.group(1))
+        end_year = 2000 + int(match.group(2) + match.group(3))
+        start_year = end_year - 1
+        tokens.update(_fy_tokens(start_year, end_year))
+        tokens.add(f"q{quarter}fy{end_year % 100:02d}")
+        tokens.add(f"q{quarter}fy{start_year}{end_year % 100:02d}")
 
     quarter_by_month = {"june": 1, "september": 2, "december": 3, "march": 4}
     quarter_ends = [

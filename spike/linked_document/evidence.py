@@ -66,9 +66,15 @@ def is_linked_cover_letter(context: DocumentContext, evidence: PdfEvidence) -> b
 
     normalized = " ".join(evidence.text.lower().split())
     has_exchange_context = any(signal in normalized for signal in _EXCHANGE_SIGNALS)
-    has_delegation = any(signal in normalized for signal in _DELEGATION_SIGNALS)
     has_external_link = any(_is_external_https_link(link) for link in evidence.links)
-    return has_exchange_context and has_delegation and has_external_link
+    has_website = "website" in normalized or "web site" in normalized
+    has_availability = any(word in normalized for word in ("uploaded", "available", "accessed"))
+    has_strong_delegation = has_website and has_availability and (
+        "link" in normalized or has_external_link
+    )
+    has_delegation = any(signal in normalized for signal in _DELEGATION_SIGNALS) or has_strong_delegation
+    has_locator_evidence = has_external_link or (has_strong_delegation and "link" in normalized)
+    return has_exchange_context and has_delegation and has_locator_evidence
 
 
 def external_https_links(evidence: PdfEvidence) -> tuple[str, ...]:
