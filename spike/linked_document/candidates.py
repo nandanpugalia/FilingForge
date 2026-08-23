@@ -21,7 +21,7 @@ _QUARTER_END_DAY_FIRST_RE = re.compile(
 )
 _TYPE_TERMS = {
     "annual-reports": ("annual report",),
-    "concalls": ("transcript", "concall", "conference call", "earnings call"),
+    "concalls": ("transcript", "transcription"),
     "investor-ppts": ("investor presentation", "earnings presentation", "results presentation"),
     "quarterly": ("financial result", "quarterly result", "quarterly results"),
 }
@@ -120,7 +120,10 @@ def score_candidate(
     compact = re.sub(r"[^a-z0-9]", "", searchable.lower())
 
     desired_terms = _TYPE_TERMS.get(context.folder, ())
-    if any(term in normalized_words for term in desired_terms):
+    desired_match = any(term in normalized_words for term in desired_terms)
+    if context.folder == "annual-reports" and re.search(r"\bar\b", normalized_words):
+        desired_match = True
+    if desired_match:
         type_score = 6
     elif any(
         term in normalized_words
@@ -133,7 +136,11 @@ def score_candidate(
         type_score = 0
 
     period_tokens = infer_period_tokens(context, cover_text)
-    quarter_tokens = {token for token in period_tokens if token.startswith("q")}
+    quarter_tokens = (
+        {token for token in period_tokens if token.startswith("q")}
+        if context.folder != "annual-reports"
+        else set()
+    )
     exact_tokens = quarter_tokens or period_tokens
     period_score = 5 if any(token in compact for token in exact_tokens) else 0
     context_years = set(re.findall(r"20\d{2}", f"{context.headline} {cover_text}"))

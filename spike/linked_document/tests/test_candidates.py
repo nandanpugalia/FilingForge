@@ -89,6 +89,31 @@ def test_selects_unique_candidate_with_matching_type_and_period():
     assert score.period_score == 5
 
 
+def test_concall_transcript_beats_same_quarter_invite_and_audio():
+    candidates = import_module("spike.linked_document.candidates")
+    ctx = context("concalls", "Earnings Call Transcript")
+    cover = "Transcript for the quarter ended on 30th September 2025"
+    choices = (
+        Candidate("https://example.com/Q2FY26-transcript.pdf", "Q2 FY26 Earnings Call Transcript", "adapter"),
+        Candidate("https://example.com/Q2FY26-invite.pdf", "Q2 FY26 Conference Call Invite", "adapter"),
+        Candidate("https://example.com/Q2FY26-audio.mp3", "Q2 FY26 Conference Call Audio", "adapter"),
+    )
+
+    assert candidates.select_unique_candidate(ctx, cover, choices) == choices[0]
+
+
+def test_annual_report_matches_standalone_ar_filename_despite_june_letter_date():
+    candidates = import_module("spike.linked_document.candidates")
+    ctx = context("annual-reports", "Annual Report")
+    cover = "Letter dated June 29, 2026. Annual Report for Financial Year 2025-26."
+    choices = (
+        Candidate("https://example.com/Company_AR_2025-26.pdf", "Download PDF", "html"),
+        Candidate("https://example.com/Annual-Report-FY-2024-25.pdf", "Download PDF", "html"),
+    )
+
+    assert candidates.select_unique_candidate(ctx, cover, choices) == choices[0]
+
+
 def test_does_not_match_incompatible_document_type():
     candidates = import_module("spike.linked_document.candidates")
     presentation = Candidate(

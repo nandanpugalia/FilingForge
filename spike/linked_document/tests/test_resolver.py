@@ -101,6 +101,29 @@ def test_resolves_direct_link_to_substantive_pdf_in_one_request():
     assert calls == [(target, "pdf")]
 
 
+def test_treats_repository_query_path_ending_in_pdf_as_direct_pdf():
+    resolver = import_module("spike.linked_document.resolver")
+    target = (
+        "https://investor.example.com/content/repository/"
+        "?path=/results/Q4FY25-Earnings-Presentation.pdf"
+    )
+    replacement = make_pdf("Complete investor presentation", pages=20)
+    fetch, calls = fake_fetch({target: HttpDocument(target, "application/pdf", replacement)})
+
+    result = resolver.resolve_document(
+        context("investor-ppts", "Investor Presentation Q4 FY2024-25"),
+        cover_pdf(
+            target,
+            "BSE Limited pursuant to Regulation Investor Presentation Q4 FY2024-25 is available at the following link",
+        ),
+        fetch=fetch,
+        validate=allow_public,
+    )
+
+    assert result.status == "resolved"
+    assert calls == [(target, "pdf")]
+
+
 def test_prefers_one_direct_pdf_over_generic_homepage_link():
     resolver = import_module("spike.linked_document.resolver")
     target = "https://investor.example.com/Transcript_Q1FY27.pdf"

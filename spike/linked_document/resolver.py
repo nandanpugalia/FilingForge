@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 from collections.abc import Callable
 from typing import Literal
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 import httpx
 from pypdf.errors import PdfReadError
@@ -98,4 +98,11 @@ def _fetch_and_validate_pdf(context: DocumentContext, url: str, fetch: Fetch) ->
 
 
 def _looks_like_pdf(url: str) -> bool:
-    return urlsplit(url).path.lower().endswith(".pdf")
+    parsed = urlsplit(url)
+    if parsed.path.lower().endswith(".pdf"):
+        return True
+    return any(
+        value.lower().endswith(".pdf")
+        for values in parse_qs(parsed.query).values()
+        for value in values
+    )
