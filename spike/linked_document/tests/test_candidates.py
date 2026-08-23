@@ -1,0 +1,108 @@
+from datetime import date
+from importlib import import_module
+
+from spike.linked_document.models import Candidate, DocumentContext
+
+
+def context(
+    folder: str = "annual-reports",
+    headline: str = "Annual Report FY 2025-26",
+) -> DocumentContext:
+    return DocumentContext(
+        company="Example Limited",
+        folder=folder,
+        filing_date=date(2026, 7, 28),
+        headline=headline,
+        source_url="https://www.bseindia.com/example.pdf",
+    )
+
+
+def test_parses_relative_pdf_links_and_excludes_duplicates_and_assets():
+    candidates = import_module("spike.linked_document.candidates")
+    html = b"""
+        <a href="/reports/FY2025-26.pdf">Annual Report FY 2025-26</a>
+        <a href="/reports/FY2025-26.pdf#page=1">Duplicate</a>
+        <a href="javascript:void(0)">Script</a>
+        <a href="https://investor.example.com/logo.png">Logo</a>
+        <a href="mailto:investor@example.com">Email</a>
+    """
+
+    parsed = candidates.parse_html_candidates(html, "https://investor.example.com/annual-reports/")
+
+    assert parsed == (
+        Candidate(
+            url="https://investor.example.com/reports/FY2025-26.pdf",
+            label="Annual Report FY 2025-26",
+            source="html",
+        ),
+    )
+
+
+def test_infers_equivalent_financial_year_tokens():
+    candidates = import_module("spike.linked_document.candidates")
+
+    tokens = candidates.infer_period_tokens(context(), "Financial Year 2025-2026")
+
+    assert {"fy202526", "fy26", "202526", "20252026"} <= tokens
+
+
+def test_maps_december_quarter_end_to_q3_of_next_financial_year():
+    candidates = import_module("spike.linked_document.candidates")
+    ctx = context("investor-ppts", "Investor Presentation")
+
+    tokens = candidates.infer_period_tokens(ctx, "for the quarter ended December 31, 2025")
+
+    assert {"q3fy26", "q3fy202526"} <= tokens
+
+
+def test_maps_march_quarter_end_to_q4_of_same_financial_year():
+    candidates = import_module("spike.linked_document.candidates")
+    ctx = context("concalls", "Earnings Call Transcript")
+
+    tokens = candidates.infer_period_tokens(ctx, "for the quarter and year ended March 31, 2026")
+
+    assert {"q4fy26", "q4fy202526"} <= tokens
+
+
+def test_selects_unique_candidate_with_matching_type_and_period():
+    candidates = import_module("spike.linked_document.candidates")
+    choices = (
+        Candidate("https://example.com/ar-fy24-25.pdf", "Annual Report FY 2024-25", "html"),
+        Candidate("https://example.com/ar-fy25-26.pdf", "Annual Report FY 2025-26", "html"),
+        Candidate("https://example.com/q3fy26.pdf", "Q3FY26 Earnings Presentation", "html"),
+    )
+
+    selected = candidates.select_unique_candidate(context(), "", choices)
+
+    assert selected == choices[1]
+    score = candidates.score_candidate(context(), "", choices[1])
+    assert score.type_score == 6
+    assert score.period_score == 5
+
+
+def test_does_not_match_incompatible_document_type():
+    candidates = import_module("spike.linked_document.candidates")
+    presentation = Candidate(
+        "https://example.com/q3fy26.pdf",
+        "Q3FY26 Earnings Presentation",
+        "html",
+    )
+
+    assert candidates.select_unique_candidate(context(), "", (presentation,)) is None
+
+
+def test_tied_best_candidates_are_ambiguous():
+    candidates = import_module("spike.linked_document.candidates")
+    choices = (
+        Candidate("https://a.example/ar.pdf", "Annual Report FY 2025-26", "html"),
+        Candidate("https://b.example/ar.pdf", "Annual Report FY 2025-26", "html"),
+    )
+
+    assert candidates.select_unique_candidate(context(), "", choices) is None
+
+
+def test_below_threshold_candidate_is_not_selected():
+    candidates = import_module("spike.linked_document.candidates")
+    undated = Candidate("https://example.com/annual-report.pdf", "Annual Report", "html")
+
+    assert candidates.select_unique_candidate(context(), "", (undated,)) is None
