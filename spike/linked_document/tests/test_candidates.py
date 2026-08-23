@@ -59,6 +59,18 @@ def test_parses_onclick_pdf_with_nearby_quarter_and_transcript_label():
     assert "Earnings Call Transcript Q1FY27" in parsed[0].label
 
 
+def test_ordinary_href_does_not_inherit_unrelated_nearby_text():
+    candidates = import_module("spike.linked_document.candidates")
+    html = b"""
+      <div>Annual Report FY 2025-26</div>
+      <a href="/reports/Annual_Report_FY_2024-25.pdf">Download PDF</a>
+    """
+
+    parsed = candidates.parse_html_candidates(html, "https://investor.example.com/")
+
+    assert parsed[0].label == "Download PDF"
+
+
 def test_infers_equivalent_financial_year_tokens():
     candidates = import_module("spike.linked_document.candidates")
 

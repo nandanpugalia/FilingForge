@@ -61,7 +61,7 @@ class _AnchorParser(HTMLParser):
         onclick_url = _URL_IN_ATTRIBUTE_RE.search(onclick)
         self._href = onclick_url.group(0) if onclick_url else values.get("href")
         self._label = []
-        self._context_label = " ".join(self._recent_text[-4:])
+        self._context_label = " ".join(self._recent_text[-4:]) if onclick_url else ""
 
     def handle_data(self, data: str) -> None:
         if self._href is not None:
