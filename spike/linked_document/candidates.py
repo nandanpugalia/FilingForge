@@ -15,6 +15,10 @@ _QUARTER_END_RE = re.compile(
     r"\b(march|june|september|december)\s+(?:3[01]|[12]?\d)(?:st|nd|rd|th)?\s*,?\s*(20\d{2})",
     re.IGNORECASE,
 )
+_QUARTER_END_DAY_FIRST_RE = re.compile(
+    r"\b(?:3[01]|[12]?\d)(?:st|nd|rd|th)?\s+(march|june|september|december)\s*,?\s*(20\d{2})",
+    re.IGNORECASE,
+)
 _TYPE_TERMS = {
     "annual-reports": ("annual report",),
     "concalls": ("transcript", "concall", "conference call", "earnings call"),
@@ -91,9 +95,12 @@ def infer_period_tokens(context: DocumentContext, cover_text: str) -> frozenset[
         tokens.update(_fy_tokens(start_year, end_year))
 
     quarter_by_month = {"june": 1, "september": 2, "december": 3, "march": 4}
-    for match in _QUARTER_END_RE.finditer(source):
-        month = match.group(1).lower()
-        calendar_year = int(match.group(2))
+    quarter_ends = [
+        (match.group(1).lower(), int(match.group(2)))
+        for pattern in (_QUARTER_END_RE, _QUARTER_END_DAY_FIRST_RE)
+        for match in pattern.finditer(source)
+    ]
+    for month, calendar_year in quarter_ends:
         quarter = quarter_by_month[month]
         fy_end = calendar_year if month == "march" else calendar_year + 1
         fy_start = fy_end - 1

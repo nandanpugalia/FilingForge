@@ -29,6 +29,7 @@ _DELEGATION_SIGNALS = (
     "link below",
 )
 _URL_RE = re.compile(r"https://[^\s<>()\"'\]]+", re.IGNORECASE)
+_URL_CONTINUATION_RE = re.compile(r"[A-Za-z0-9%/?=&._~:+-]+")
 _EXCHANGE_HOSTS = ("bseindia.com", "nseindia.com")
 _MAX_TEXT_CHARS = 30_000
 
@@ -51,7 +52,7 @@ def extract_pdf_evidence(pdf: bytes, *, max_pages: int = 4) -> PdfEvidence:
                 links.append(str(uri))
 
     text = "\n".join(text_parts)[:_MAX_TEXT_CHARS]
-    links.extend(match.rstrip(".,;:)]}") for match in _URL_RE.findall(text))
+    links.extend(visible_https_links(text))
     return PdfEvidence(
         page_count=len(reader.pages),
         text=text,
@@ -71,7 +72,29 @@ def is_linked_cover_letter(context: DocumentContext, evidence: PdfEvidence) -> b
 
 
 def external_https_links(evidence: PdfEvidence) -> tuple[str, ...]:
-    return tuple(link for link in evidence.links if _is_external_https_link(link))
+    links = tuple(dict.fromkeys(link for link in evidence.links if _is_external_https_link(link)))
+    return tuple(
+        link
+        for link in links
+        if not any(other != link and other.startswith(link) for other in links)
+    )
+
+
+def visible_https_links(text: str) -> tuple[str, ...]:
+    lines = text.splitlines()
+    links: list[str] = []
+    for index, line in enumerate(lines):
+        for match in _URL_RE.findall(line):
+            url = match.rstrip(".,;:)]}")
+            next_index = index + 1
+            while url.endswith("-") and next_index < len(lines):
+                continuation = lines[next_index].strip()
+                if not _URL_CONTINUATION_RE.fullmatch(continuation):
+                    break
+                url += continuation.rstrip(".,;:)]}")
+                next_index += 1
+            links.append(url)
+    return tuple(dict.fromkeys(links))
 
 
 def _is_external_https_link(url: str) -> bool:

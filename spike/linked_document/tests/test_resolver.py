@@ -101,6 +101,29 @@ def test_resolves_direct_link_to_substantive_pdf_in_one_request():
     assert calls == [(target, "pdf")]
 
 
+def test_prefers_one_direct_pdf_over_generic_homepage_link():
+    resolver = import_module("spike.linked_document.resolver")
+    target = "https://investor.example.com/Transcript_Q1FY27.pdf"
+    homepage = "https://investor.example.com/"
+    replacement = make_pdf("Moderator Analyst Management transcript", pages=10)
+    original = make_pdf(
+        "BSE Limited pursuant to Regulation transcript is available at the following link",
+        pages=1,
+        links=(target, homepage),
+    )
+    fetch, calls = fake_fetch({target: HttpDocument(target, "application/pdf", replacement)})
+
+    result = resolver.resolve_document(
+        context("concalls", "Earnings Call Transcript Q1 FY2026-27"),
+        original,
+        fetch=fetch,
+        validate=allow_public,
+    )
+
+    assert result.status == "resolved"
+    assert calls == [(target, "pdf")]
+
+
 def test_resolves_static_landing_page_then_substantive_pdf():
     resolver = import_module("spike.linked_document.resolver")
     landing = "https://investor.example.com/annual-reports/"

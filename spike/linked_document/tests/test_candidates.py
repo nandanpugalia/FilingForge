@@ -64,6 +64,15 @@ def test_maps_march_quarter_end_to_q4_of_same_financial_year():
     assert {"q4fy26", "q4fy202526"} <= tokens
 
 
+def test_maps_indian_day_first_quarter_end_to_fiscal_quarter():
+    candidates = import_module("spike.linked_document.candidates")
+    ctx = context("concalls", "Earnings Call Transcript")
+
+    tokens = candidates.infer_period_tokens(ctx, "for the quarter ended on 30th September 2025")
+
+    assert {"q2fy26", "q2fy202526"} <= tokens
+
+
 def test_selects_unique_candidate_with_matching_type_and_period():
     candidates = import_module("spike.linked_document.candidates")
     choices = (

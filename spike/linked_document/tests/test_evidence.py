@@ -86,3 +86,34 @@ def test_extracts_page_count_and_uri_annotation_from_pdf():
 
     assert extracted.page_count == 2
     assert extracted.links == ("https://investor.example.com/report.pdf",)
+
+
+def test_external_links_drop_truncated_prefix_duplicate():
+    evidence = import_module("spike.linked_document.evidence")
+    extracted = PdfEvidence(
+        page_count=1,
+        text="",
+        links=(
+            "https://investor.kfintech.com/annual-reports/",
+            "https://investor.kfintech.com/annual",
+        ),
+    )
+
+    assert evidence.external_https_links(extracted) == (
+        "https://investor.kfintech.com/annual-reports/",
+    )
+
+
+def test_reconstructs_a_visible_https_url_wrapped_at_path_hyphens():
+    evidence = import_module("spike.linked_document.evidence")
+    text = """The presentation is available at:
+https://www.hdfcbank.com/content/repositories/723fb80a-
+7ae1be57/?path=/Investor/pdf/Q4FY25-
+Earnings-Presentation.pdf
+This is for your information.
+"""
+
+    assert evidence.visible_https_links(text) == (
+        "https://www.hdfcbank.com/content/repositories/723fb80a-7ae1be57/"
+        "?path=/Investor/pdf/Q4FY25-Earnings-Presentation.pdf",
+    )
