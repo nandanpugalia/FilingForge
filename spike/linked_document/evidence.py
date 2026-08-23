@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from io import BytesIO
-from urllib.parse import urlsplit
+from urllib.parse import parse_qs, urlsplit
 
 from pypdf import PdfReader
 
@@ -72,7 +72,13 @@ def is_linked_cover_letter(context: DocumentContext, evidence: PdfEvidence) -> b
 
 
 def external_https_links(evidence: PdfEvidence) -> tuple[str, ...]:
-    links = tuple(dict.fromkeys(link for link in evidence.links if _is_external_https_link(link)))
+    links = tuple(
+        dict.fromkeys(
+            _unwrap_safe_link(link)
+            for link in evidence.links
+            if _is_external_https_link(link)
+        )
+    )
     return tuple(
         link
         for link in links
@@ -95,6 +101,16 @@ def visible_https_links(text: str) -> tuple[str, ...]:
                 next_index += 1
             links.append(url)
     return tuple(dict.fromkeys(links))
+
+
+def _unwrap_safe_link(url: str) -> str:
+    parsed = urlsplit(url)
+    host = (parsed.hostname or "").lower().rstrip(".")
+    if host == "safelinks.protection.outlook.com" or host.endswith(".safelinks.protection.outlook.com"):
+        embedded = parse_qs(parsed.query).get("url", [None])[0]
+        if isinstance(embedded, str) and _is_external_https_link(embedded):
+            return embedded
+    return url
 
 
 def _is_external_https_link(url: str) -> bool:

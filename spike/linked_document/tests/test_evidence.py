@@ -117,3 +117,20 @@ This is for your information.
         "https://www.hdfcbank.com/content/repositories/723fb80a-7ae1be57/"
         "?path=/Investor/pdf/Q4FY25-Earnings-Presentation.pdf",
     )
+
+
+def test_unwraps_outlook_safe_link_before_removing_generic_homepage():
+    evidence = import_module("spike.linked_document.evidence")
+    target = "https://www.adanienterprises.com/investors/Q4-FY25-Transcript.pdf"
+    safe_link = (
+        "https://ind01.safelinks.protection.outlook.com/"
+        "?url=https%3A%2F%2Fwww.adanienterprises.com%2Finvestors%2FQ4-FY25-Transcript.pdf"
+        "&data=public-wrapper-metadata"
+    )
+    extracted = PdfEvidence(
+        page_count=1,
+        text="",
+        links=(safe_link, "https://www.adanienterprises.com/"),
+    )
+
+    assert evidence.external_https_links(extracted) == (target,)
