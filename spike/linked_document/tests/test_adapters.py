@@ -47,6 +47,7 @@ def test_parses_maruti_transcript_candidates_and_selects_q4():
     assert len(candidates) == 3
     assert selected is not None
     assert selected.source == "adapter"
+    assert selected.url.startswith("https://www.marutisuzuki.com/content/dam/")
     assert "Q4_FY_26.pdf" in selected.url
 
 

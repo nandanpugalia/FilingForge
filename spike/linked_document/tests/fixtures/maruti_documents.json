@@ -8,7 +8,7 @@
           "year": "2026",
           "yearRange": "2025-2026",
           "date": null,
-          "pdfLink": {"_publishUrl": "https://prod-nexa.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/company-reports/2025-2026/Transcript_earnings_call_Maruti_Suzuki_Q3_FY_26.pdf"}
+          "pdfLink": {"_path": "/content/dam/arena-eds/corporate/pdf/company-reports/2025-2026/Transcript_earnings_call_Maruti_Suzuki_Q3_FY_26.pdf", "_publishUrl": "https://prod-nexa.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/company-reports/2025-2026/Transcript_earnings_call_Maruti_Suzuki_Q3_FY_26.pdf"}
         },
         {
           "title": "4th Quarter",
@@ -16,7 +16,7 @@
           "year": "2026",
           "yearRange": "2025-2026",
           "date": null,
-          "pdfLink": {"_publishUrl": "https://prod-nexa.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/company-reports/2025-2026/Transcript_earnings_call_Maruti_Suzuki_Q4_FY_26.pdf"}
+          "pdfLink": {"_path": "/content/dam/arena-eds/corporate/pdf/company-reports/2025-2026/Transcript_earnings_call_Maruti_Suzuki_Q4_FY_26.pdf", "_publishUrl": "https://prod-nexa.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/company-reports/2025-2026/Transcript_earnings_call_Maruti_Suzuki_Q4_FY_26.pdf"}
         },
         {
           "title": "1st Quarter",
@@ -24,7 +24,7 @@
           "year": "2026",
           "yearRange": "2026-2027",
           "date": "2026-08-06T14:17:00.000+05:30",
-          "pdfLink": {"_publishUrl": "https://prod-nexa.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/company-reports/2026-2027/Transcript_earnings_call_Maruti_Suzuki_Q1_FY_27.pdf"}
+          "pdfLink": {"_path": "/content/dam/arena-eds/corporate/pdf/company-reports/2026-2027/Transcript_earnings_call_Maruti_Suzuki_Q1_FY_27.pdf", "_publishUrl": "https://prod-nexa.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/company-reports/2026-2027/Transcript_earnings_call_Maruti_Suzuki_Q1_FY_27.pdf"}
         }
       ]
     }

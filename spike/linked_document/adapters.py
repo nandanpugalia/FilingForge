@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from collections.abc import Callable, Mapping
-from urllib.parse import urlsplit
+from urllib.parse import urljoin, urlsplit
 
 from .models import Candidate, HttpDocument
 
@@ -19,7 +19,9 @@ def maruti_candidates(document: HttpDocument) -> tuple[Candidate, ...]:
     for item in items:
         pdf_link = item.get("pdfLink")
         if isinstance(pdf_link, dict):
-            url = pdf_link.get("_publishUrl") or pdf_link.get("_path")
+            path = pdf_link.get("_path")
+            url = urljoin("https://www.marutisuzuki.com", path) if isinstance(path, str) else None
+            url = url or pdf_link.get("_publishUrl")
         else:
             url = pdf_link
         if not isinstance(url, str) or not url.startswith("https://"):

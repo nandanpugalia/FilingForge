@@ -174,7 +174,7 @@ def test_resolves_maruti_through_public_json_adapter():
     adapters = import_module("spike.linked_document.adapters")
     landing = "https://www.marutisuzuki.com/corporate/investors/company-reports"
     target = (
-        "https://prod-nexa.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/"
+        "https://www.marutisuzuki.com/content/dam/arena-eds/corporate/pdf/"
         "company-reports/2025-2026/Transcript_earnings_call_Maruti_Suzuki_Q4_FY_26.pdf"
     )
     replacement = make_pdf("Moderator Analyst Management transcript", pages=15)
