@@ -126,7 +126,9 @@ def score_candidate(
         type_score = 0
 
     period_tokens = infer_period_tokens(context, cover_text)
-    period_score = 5 if any(token in compact for token in period_tokens) else 0
+    quarter_tokens = {token for token in period_tokens if token.startswith("q")}
+    exact_tokens = quarter_tokens or period_tokens
+    period_score = 5 if any(token in compact for token in exact_tokens) else 0
     context_years = set(re.findall(r"20\d{2}", f"{context.headline} {cover_text}"))
     date_score = 2 if context_years and any(year in compact for year in context_years) else 0
     return CandidateScore(type_score=type_score, period_score=period_score, date_score=date_score)
