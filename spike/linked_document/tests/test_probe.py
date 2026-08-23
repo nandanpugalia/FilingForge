@@ -138,3 +138,26 @@ def test_unreviewed_or_small_corpus_is_reported_as_insufficient():
     )
 
     assert metrics["verdict"] == "INSUFFICIENT CORPUS"
+
+
+def test_applies_explicit_manual_review_manifest_by_news_id():
+    probe = import_module("spike.linked_document.probe")
+    payload = {
+        "records": [
+            {"news_id": "cover-id", "reviewed_label": None, "review_note": ""},
+            {"news_id": "control-id", "reviewed_label": None, "review_note": ""},
+        ]
+    }
+    reviews = {
+        "cover_news_ids": ["cover-id"],
+        "control_news_ids": ["control-id"],
+        "cover_note": "Manually confirmed link-only cover letter.",
+        "control_note": "Manually confirmed substantive document.",
+    }
+
+    probe.apply_reviews(payload, reviews)
+
+    assert payload["records"][0]["reviewed_label"] == "cover"
+    assert payload["records"][0]["review_note"] == reviews["cover_note"]
+    assert payload["records"][1]["reviewed_label"] == "control"
+    assert payload["records"][1]["review_note"] == reviews["control_note"]

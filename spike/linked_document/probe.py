@@ -124,6 +124,23 @@ def compute_gate(
     }
 
 
+def apply_reviews(payload: dict[str, Any], reviews: dict[str, Any]) -> None:
+    records = {record["news_id"]: record for record in payload["records"]}
+    cover_ids = set(reviews.get("cover_news_ids", []))
+    control_ids = set(reviews.get("control_news_ids", []))
+    if cover_ids & control_ids:
+        raise ValueError("review manifest labels the same filing twice")
+    unknown = (cover_ids | control_ids) - records.keys()
+    if unknown:
+        raise ValueError(f"review manifest contains unknown NEWSIDs: {sorted(unknown)}")
+    for news_id in cover_ids:
+        records[news_id]["reviewed_label"] = "cover"
+        records[news_id]["review_note"] = reviews["cover_note"]
+    for news_id in control_ids:
+        records[news_id]["reviewed_label"] = "control"
+        records[news_id]["review_note"] = reviews["control_note"]
+
+
 def _attachment_urls(filing: Filing) -> tuple[str, ...]:
     if filing.attachment.startswith(("https://", "http://")):
         return (filing.attachment,)
@@ -456,11 +473,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--output", type=Path, default=Path("spike/downloads/linked-document-results.json"))
     parser.add_argument("--markdown", type=Path, default=Path("spike/LINKED_DOCUMENT_FINDINGS.md"))
     parser.add_argument("--report-only", type=Path)
+    parser.add_argument("--reviews", type=Path)
     args = parser.parse_args(argv)
 
     if args.report_only:
         payload = json.loads(args.report_only.read_text(encoding="utf-8"))
-        _write_outputs(payload, args.report_only, args.markdown)
     else:
         payload = scan(
             from_date=date.fromisoformat(args.from_date),
@@ -470,7 +487,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             minimum_categories=args.minimum_categories,
             controls=args.controls,
         )
-        _write_outputs(payload, args.output, args.markdown)
+    if args.reviews:
+        apply_reviews(payload, json.loads(args.reviews.read_text(encoding="utf-8")))
+    _write_outputs(payload, args.report_only or args.output, args.markdown)
     print(render_markdown(payload).splitlines()[2], flush=True)
     return 0
 
