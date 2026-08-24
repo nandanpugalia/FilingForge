@@ -45,6 +45,23 @@ describe("flow reducer", () => {
     const ignored = reducer({ ...initialState, phase: "search" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0, pending: [] } });
     expect(ignored.phase).toBe("search");
   });
+  it("PENDING_IMPORTED increments ready count and replaces remaining slots", () => {
+    const done: State = {
+      ...initialState,
+      phase: "done",
+      result: { downloaded: 1, skipped: 0, failed: 0, pending: [{
+        news_id: "news-1", date: "2026-07-28", headline: "Annual Report",
+        folder: "annual-reports", category: "Annual Reports", expected_type: "Annual report",
+        expected_period: "FY 2025-26", bse_url: "https://www.bseindia.com/notice.pdf",
+        issuer_url: null, reason: "missing link",
+      }] },
+    };
+
+    const next = reducer(done, { type: "PENDING_IMPORTED", pending: [] });
+
+    expect(next.result?.downloaded).toBe(2);
+    expect(next.result?.pending).toEqual([]);
+  });
   it("FAIL → error with message", () => {
     const s = reducer(initialState, { type: "FAIL", message: "BSE isn't responding." });
     expect(s.phase).toBe("error"); expect(s.error).toBe("BSE isn't responding.");

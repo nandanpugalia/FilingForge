@@ -1,10 +1,10 @@
 import { useReducer, useState, useEffect, useRef } from "react";
 import "./theme.css";
 import { reducer, initialState } from "./flow";
-import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, resolve, cancelBuild, reportUrl, engineInfo } from "./api";
+import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, resolve, cancelBuild, reportUrl, engineInfo, importPendingPdf } from "./api";
 import { loadSettings, saveSettings, isFirstRun } from "./settings";
 import { tickerFor } from "./lib/ticker";
-import type { BuildScope, BuildResult, Settings } from "./types";
+import type { BuildScope, BuildResult, PendingDocument, Settings } from "./types";
 import { TitleBar } from "./components/TitleBar";
 import { SearchField } from "./components/SearchField";
 import { ConfigPanel } from "./components/ConfigPanel";
@@ -18,6 +18,8 @@ import { SkillsOverlay } from "./components/SkillsOverlay";
 import { FirstRunOverlay } from "./components/FirstRunOverlay";
 import { UpdateBanner } from "./components/UpdateBanner";
 import { useUpdate } from "./lib/useUpdate";
+import { pickPdfFile } from "./lib/pickPdfFile";
+import { openExternal } from "./lib/openExternal";
 
 export default function App() {
   const [state, dispatch] = useReducer(reducer, initialState);
@@ -33,6 +35,8 @@ export default function App() {
   const [starting, setStarting] = useState(false);
   const [stopping, setStopping] = useState(false);
   const [breakdown, setBreakdown] = useState<Record<string, number> | undefined>(undefined);
+  const [importingPendingId, setImportingPendingId] = useState<string | null>(null);
+  const [pendingErrors, setPendingErrors] = useState<Record<string, string>>({});
   // settingsRef gives the long-lived async callbacks (subscribeBuildEvents.onEnd, refreshLibrary)
   // the latest settings without going stale. JSX/inline handlers below use `settings` directly —
   // they're recreated every render, so the ref is only for closures that outlive their render.
@@ -52,6 +56,7 @@ export default function App() {
     lastScope.current = scope;
     setStarting(true);
     setStopping(false);
+    setPendingErrors({});
     try {
       const jobId = await startBuild(scope);
       dispatch({ type: "START_BUILD", jobId });
@@ -71,12 +76,15 @@ export default function App() {
           setStopping(false);
           if (status === "error") dispatch({ type: "FAIL", message: error || "Build failed. Please try again." });
           else if (result) {
-            dispatch({ type: "BUILD_DONE", result });
+            const completeResult = { ...result, pending: result.pending ?? [] };
+            dispatch({ type: "BUILD_DONE", result: completeResult });
             setBreakdown(undefined);
             getLibrary(scope.dest)
               .then((items) => { const hit = items.find((i) => i.ticker === scope.ticker); setBreakdown(hit?.counts); })
               .catch(() => setBreakdown(undefined));
-            if (settingsRef.current.openWhenDone) openFolder(`${scope.dest}/${scope.ticker}`).catch(() => {});
+            if (settingsRef.current.openWhenDone && completeResult.pending.length === 0) {
+              openFolder(`${scope.dest}/${scope.ticker}`).catch(() => {});
+            }
             refreshLibrary();
           } else dispatch({ type: "FAIL", message: "Build ended unexpectedly. Please try again." });
         },
@@ -95,6 +103,29 @@ export default function App() {
       const { open } = await import("@tauri-apps/plugin-shell");
       await open(url);
     } catch (e) { console.error("open report failed", e); }
+  };
+
+  const completePendingDocument = async (item: PendingDocument) => {
+    if (!state.company || importingPendingId) return;
+    const selected = await pickPdfFile();
+    if (!selected) return;
+    setImportingPendingId(item.news_id);
+    setPendingErrors((current) => {
+      const next = { ...current }; delete next[item.news_id]; return next;
+    });
+    try {
+      const ticker = tickerFor(state.company);
+      const completed = await importPendingPdf(settings.dest, ticker, item.news_id, selected);
+      dispatch({ type: "PENDING_IMPORTED", pending: completed.pending });
+      refreshLibrary();
+      getLibrary(settings.dest)
+        .then((items) => { const hit = items.find((entry) => entry.ticker === ticker); setBreakdown(hit?.counts); })
+        .catch(() => {});
+    } catch (error) {
+      setPendingErrors((current) => ({ ...current, [item.news_id]: (error as Error).message }));
+    } finally {
+      setImportingPendingId(null);
+    }
   };
 
   return (
@@ -138,6 +169,9 @@ export default function App() {
           <DoneView ticker={tickerFor(state.company)} name={state.company.company} dest={settings.dest}
             result={state.result} breakdown={breakdown}
             onOpen={() => openFolder(`${settings.dest}/${tickerFor(state.company!)}`).catch(() => {})}
+            onOpenPendingSource={(item) => openExternal(item.issuer_url || item.bse_url).catch(() => {})}
+            onUsePendingPdf={completePendingDocument} importingPendingId={importingPendingId}
+            pendingErrors={pendingErrors}
             onReset={() => dispatch({ type: "RESET" })} />
         )}
         {state.phase === "error" && (

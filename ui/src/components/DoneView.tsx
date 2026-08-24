@@ -1,5 +1,6 @@
 import { useState } from "react";
-import type { BuildResult } from "../types";
+import type { BuildResult, PendingDocument } from "../types";
+import { PendingDocuments } from "./PendingDocuments";
 
 // Folder-slug → friendly label (slugs come from the engine's library counts).
 const FOLDER_LABELS: Record<string, string> = {
@@ -24,13 +25,20 @@ function labelFor(slug: string): string {
   return words ? words.charAt(0).toUpperCase() + words.slice(1) : slug;
 }
 
-export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onReset }: {
+export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onReset,
+  onOpenPendingSource, onUsePendingPdf, importingPendingId, pendingErrors }: {
   ticker: string; name?: string; dest?: string; result: BuildResult;
   breakdown?: Record<string, number>; onOpen: () => void; onReset: () => void;
+  onOpenPendingSource?: (item: PendingDocument) => void;
+  onUsePendingPdf?: (item: PendingDocument) => void;
+  importingPendingId?: string | null;
+  pendingErrors?: Record<string, string>;
 }) {
   const [copied, setCopied] = useState(false);
   const skipNote = result.skipped ? ` · ${result.skipped} had no attached PDF` : "";
   const failNote = result.failed ? ` · ${result.failed} failed` : "";
+  const pending = result.pending ?? [];
+  const hasPending = pending.length > 0;
   const rows = breakdown
     ? Object.entries(breakdown).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     : [];
@@ -51,11 +59,14 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
     <div className="done">
       <h2 className="ready">{result.cancelled
         ? `Stopped — your ${name || ticker} library was saved.`
-        : `Your ${name || ticker} library is ready.`}</h2>
+        : hasPending
+          ? `Your ${name || ticker} library is almost ready.`
+          : `Your ${name || ticker} library is ready.`}</h2>
       <div className="saved-as">Saved in the <code>{ticker}/</code> folder</div>
       <div className="summary">
-        {result.cancelled && "Stopped early — "}
-        {result.downloaded} document{result.downloaded === 1 ? "" : "s"} added{skipNote}{failNote}
+        {hasPending
+          ? `${result.downloaded} document${result.downloaded === 1 ? "" : "s"} ready · ${pending.length} awaiting source PDF${pending.length === 1 ? "" : "s"}`
+          : <>{result.cancelled && "Stopped early — "}{result.downloaded} document{result.downloaded === 1 ? "" : "s"} added{skipNote}{failNote}</>}
         {result.cancelled && " · everything saved is complete and indexed"}
       </div>
       {rows.length > 0 && (
@@ -71,8 +82,12 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
           </ul>
         </div>
       )}
-      <div className="ai-hook">An INDEX.md sits in the folder — point the Claude desktop app or Codex at it to read the entire company.</div>
-      <div className="ai-prompt">
+      {hasPending && <PendingDocuments items={pending}
+        importingId={importingPendingId ?? null} errors={pendingErrors ?? {}}
+        onOpenSource={onOpenPendingSource ?? (() => {})}
+        onUsePdf={onUsePendingPdf ?? (() => {})} />}
+      {!hasPending && <div className="ai-hook">An INDEX.md sits in the folder — point the Claude desktop app or Codex at it to read the entire company.</div>}
+      {!hasPending && <div className="ai-prompt">
         <div className="ai-prompt-head">
           <span className="ai-prompt-label">Paste this to your AI ↓</span>
           <button type="button" className="ai-prompt-copy" onClick={copyPrompt}>
@@ -80,7 +95,7 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
           </button>
         </div>
         <pre className="ai-prompt-body">{promptText}</pre>
-      </div>
+      </div>}
       <button className="primary" onClick={onOpen}>Open folder ▸</button>
       <button className="link" onClick={onReset}>‹ Back to home</button>
     </div>

@@ -4,6 +4,14 @@ import userEvent from "@testing-library/user-event";
 import { ProgressView } from "../components/ProgressView";
 import { DoneView } from "../components/DoneView";
 import { ErrorView } from "../components/ErrorView";
+import type { PendingDocument } from "../types";
+
+const pending: PendingDocument = {
+  news_id: "news-1", date: "2026-07-28", headline: "Annual Report FY 2025-26",
+  folder: "annual-reports", category: "Annual Reports", expected_type: "Annual report",
+  expected_period: "FY 2025-26", bse_url: "https://www.bseindia.com/notice.pdf",
+  issuer_url: "https://investor.kfintech.com/annual-reports/", reason: "The issuer page was ambiguous.",
+};
 
 it("ProgressView shows current item, percent, count, log feed, a11y, and a Back affordance", async () => {
   const onBack = vi.fn();
@@ -79,6 +87,37 @@ it("DoneView renders gracefully with no breakdown (just the summary)", () => {
   render(<DoneView ticker="TANLA" result={{ downloaded: 9, skipped: 0, failed: 0, pending: [] }} onOpen={() => {}} onReset={() => {}} />);
   expect(screen.getByText(/9 documents added/)).toBeInTheDocument();
   expect(screen.queryByText(/By type/i)).not.toBeInTheDocument();
+});
+
+it("DoneView makes pending source PDFs explicit and actionable", async () => {
+  const onOpenSource = vi.fn(), onUsePdf = vi.fn();
+  render(<DoneView ticker="KFINTECH" name="KFin Technologies" dest="/lib"
+    result={{ downloaded: 12, skipped: 0, failed: 0, pending: [pending] }}
+    onOpen={() => {}} onReset={() => {}} onOpenPendingSource={onOpenSource}
+    onUsePendingPdf={onUsePdf} importingPendingId={null} pendingErrors={{}} />);
+
+  expect(screen.getByText(/12 documents ready · 1 awaiting source PDF/i)).toBeInTheDocument();
+  expect(screen.getByText("Annual report")).toBeInTheDocument();
+  expect(screen.getByText("FY 2025-26")).toBeInTheDocument();
+  expect(screen.getByText(/investor\.kfintech\.com/)).toBeInTheDocument();
+  expect(screen.getByText(/place it in the right folder, convert it to Markdown, and update the index/i)).toBeInTheDocument();
+
+  await userEvent.click(screen.getByRole("button", { name: /Get document/i }));
+  expect(onOpenSource).toHaveBeenCalledWith(pending);
+  await userEvent.click(screen.getByRole("button", { name: /Use downloaded PDF/i }));
+  expect(onUsePdf).toHaveBeenCalledWith(pending);
+});
+
+it("DoneView uses the BSE notice fallback and keeps an import error inline", () => {
+  const noticeOnly = { ...pending, issuer_url: null };
+  render(<DoneView ticker="KFINTECH" result={{ downloaded: 0, skipped: 0, failed: 0, pending: [noticeOnly] }}
+    onOpen={() => {}} onReset={() => {}} onOpenPendingSource={() => {}}
+    onUsePendingPdf={() => {}} importingPendingId={null}
+    pendingErrors={{ "news-1": "That is another cover letter." }} />);
+
+  expect(screen.getByRole("button", { name: /View BSE notice/i })).toBeInTheDocument();
+  expect(screen.getByText("That is another cover letter.")).toBeInTheDocument();
+  expect(screen.queryByText(/library is ready/i)).not.toBeInTheDocument();
 });
 
 it("ErrorView shows the friendly message, retries, opens the report form, and Back when given", async () => {
