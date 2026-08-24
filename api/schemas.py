@@ -66,3 +66,29 @@ class ImportSkillRequest(BaseModel):
 class InstallSkillRequest(BaseModel):
     name: str = Field(min_length=1, max_length=200)   # display name → slug; cap keeps the filename under NAME_MAX (422 not 500)
     content: str = Field(min_length=1)       # the .md text (e.g. a paid pack from the Worker)
+
+
+class PendingDocumentOut(BaseModel):
+    news_id: str
+    date: str
+    headline: str
+    folder: str
+    category: str
+    expected_type: str
+    expected_period: Optional[str] = None
+    bse_url: str
+    issuer_url: Optional[str] = None
+    reason: str
+
+
+class PendingImportRequest(BaseModel):
+    root: str = Field(min_length=1)
+    ticker: str = Field(min_length=1)
+    news_id: str = Field(min_length=1)
+    path: str = Field(min_length=1)
+
+
+class PendingImportOut(BaseModel):
+    news_id: str
+    destination: str
+    pending: list[PendingDocumentOut]
