@@ -166,3 +166,10 @@ def download_filing(filing: Filing, client: BSEClient) -> bytes:
         if content[:5] == b"%PDF-":
             return content
     raise DownloadError(filing.headline or filing.attachment)
+
+
+def filing_attachment_url(filing: Filing) -> str:
+    """Canonical URL for provenance and for opening the original BSE notice."""
+    if filing.attachment.startswith(("http://", "https://")):
+        return filing.attachment
+    return _PDF_BASES[0] + filing.attachment

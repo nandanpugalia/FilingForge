@@ -103,11 +103,12 @@ class LibraryResult:
     downloaded: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
+    pending: list[PendingDocument] = field(default_factory=list)
     cancelled: bool = False                 # user pressed Stop; library left consistent
 
     @property
     def total_attempted(self) -> int:
-        return len(self.downloaded) + len(self.skipped) + len(self.failed)
+        return len(self.downloaded) + len(self.skipped) + len(self.failed) + len(self.pending)
 
     @property
     def ok(self) -> bool:
