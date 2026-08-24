@@ -60,6 +60,14 @@ describe("startBuild / getStatus / getLibrary / openFolder", () => {
       root: "/lib", ticker: "KFINTECH", news_id: "news-1", path: "/Users/np/Downloads/report.pdf",
     });
   });
+  it("getPending returns resumable slots for one company", async () => {
+    const item = { news_id: "news-1", expected_type: "Annual report" };
+    const f = mockFetch(200, { pending: [item] });
+    vi.stubGlobal("fetch", f);
+
+    expect(await api.getPending("/lib", "KFINTECH")).toEqual([item]);
+    expect(f.mock.calls[0][0]).toContain("/pending?root=%2Flib&ticker=KFINTECH");
+  });
 });
 
 describe("payments worker: startCheckout / redeem / redeemFallback / installSkillMd", () => {

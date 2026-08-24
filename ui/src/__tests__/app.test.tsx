@@ -109,3 +109,32 @@ it("completes one pending source PDF through the native picker and local API", a
   expect(await screen.findByText(/Your KFin Technologies library is ready/i)).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Use downloaded PDF/i })).not.toBeInTheDocument();
 });
+
+it("resumes a persisted pending PDF from the library after an app restart", async () => {
+  const pending = {
+    news_id: "news-1", date: "2026-07-28", headline: "Annual Report FY 2025-26",
+    folder: "annual-reports", category: "Annual Reports", expected_type: "Annual report",
+    expected_period: "FY 2025-26", bse_url: "https://www.bseindia.com/notice.pdf",
+    issuer_url: "https://investor.kfintech.com/annual-reports/", reason: "source PDF needed",
+  };
+  vi.mocked(api.getLibrary).mockResolvedValue([
+    { ticker: "KFINTECH", total: 12, counts: { "annual-reports": 12 }, pending: 1, hasReport: false, reportRel: null },
+  ]);
+  vi.spyOn(api, "getPending").mockResolvedValue([pending]);
+  vi.spyOn(picker, "pickPdfFile").mockResolvedValue("/Users/np/Downloads/report.pdf");
+  const importPdf = vi.spyOn(api, "importPendingPdf").mockResolvedValue({
+    news_id: "news-1", destination: "/lib/KFINTECH/report.pdf", pending: [],
+  });
+
+  render(<App />);
+  await userEvent.click(await screen.findByRole("button", { name: "Library" }));
+  await userEvent.click(await screen.findByRole("button", { name: /Complete remaining/i }));
+
+  expect(await screen.findByText(/12 documents ready · 1 awaiting source PDF/i)).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: /Use downloaded PDF/i }));
+
+  expect(importPdf).toHaveBeenCalledWith(
+    "~/FilingForgeLibrary", "KFINTECH", "news-1", "/Users/np/Downloads/report.pdf",
+  );
+  expect(await screen.findByText(/Your KFINTECH library is ready/i)).toBeInTheDocument();
+});

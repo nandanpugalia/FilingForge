@@ -62,6 +62,23 @@ describe("flow reducer", () => {
     expect(next.result?.downloaded).toBe(2);
     expect(next.result?.pending).toEqual([]);
   });
+  it("RESUME_PENDING restores a persisted completion flow after reopening", () => {
+    const pending = [{
+      news_id: "news-1", date: "2026-07-28", headline: "Annual Report",
+      folder: "annual-reports", category: "Annual Reports", expected_type: "Annual report",
+      expected_period: "FY 2025-26", bse_url: "https://www.bseindia.com/notice.pdf",
+      issuer_url: null, reason: "source PDF needed",
+    }];
+
+    const next = reducer(initialState, {
+      type: "RESUME_PENDING", candidate: { ...cand, company: "KFINTECH", symbol: "KFINTECH" },
+      result: { downloaded: 12, skipped: 0, failed: 0, pending },
+    });
+
+    expect(next.phase).toBe("done");
+    expect(next.company?.symbol).toBe("KFINTECH");
+    expect(next.result?.pending).toEqual(pending);
+  });
   it("FAIL → error with message", () => {
     const s = reducer(initialState, { type: "FAIL", message: "BSE isn't responding." });
     expect(s.phase).toBe("error"); expect(s.error).toBe("BSE isn't responding.");

@@ -1,7 +1,7 @@
 import { useReducer, useState, useEffect, useRef } from "react";
 import "./theme.css";
 import { reducer, initialState } from "./flow";
-import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, resolve, cancelBuild, reportUrl, engineInfo, importPendingPdf } from "./api";
+import { startBuild, subscribeBuildEvents, getStatus, openFolder, getLibrary, getPending, resolve, cancelBuild, reportUrl, engineInfo, importPendingPdf } from "./api";
 import { loadSettings, saveSettings, isFirstRun } from "./settings";
 import { tickerFor } from "./lib/ticker";
 import type { BuildScope, BuildResult, PendingDocument, Settings } from "./types";
@@ -186,6 +186,20 @@ export default function App() {
       {overlay === "library" && <LibraryOverlay root={settings.dest}
         onOpen={(t) => openFolder(`${settings.dest}/${t}`).catch(() => {})} onClose={() => setOverlay(null)}
         onOpenReport={openReport}
+        onCompletePending={async (item) => {
+          setOverlay(null);
+          setPendingErrors({});
+          try {
+            const pending = await getPending(settings.dest, item.ticker);
+            if (!pending.length) { refreshLibrary(); return; }
+            setBreakdown(item.counts);
+            dispatch({
+              type: "RESUME_PENDING",
+              candidate: { scrip_code: item.ticker, company: item.ticker, is_primary: true, symbol: item.ticker },
+              result: { downloaded: item.total, skipped: 0, failed: 0, pending },
+            });
+          } catch (e) { dispatch({ type: "FAIL", message: (e as Error).message }); }
+        }}
         onAddCompany={() => { setOverlay(null); dispatch({ type: "RESET" }); }}
         onRefresh={async (ticker) => {
           setOverlay(null);

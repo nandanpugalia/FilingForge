@@ -22,6 +22,7 @@ export type Action =
   | { type: "START_BUILD"; jobId: string }
   | { type: "PROGRESS"; progress: ProgressEvent }
   | { type: "BUILD_DONE"; result: BuildResult }
+  | { type: "RESUME_PENDING"; candidate: Candidate; result: BuildResult }
   | { type: "PENDING_IMPORTED"; pending: PendingDocument[] }
   | { type: "FAIL"; message: string }
   | { type: "BACK_TO_CONFIGURE" }
@@ -39,6 +40,8 @@ export function reducer(s: State, a: Action): State {
         ? { ...s, progress: a.progress, progressLog: [...s.progressLog, a.progress.message].slice(-LOG_CAP) }
         : s;
     case "BUILD_DONE": return s.phase === "building" ? { ...s, phase: "done", result: a.result } : s;
+    case "RESUME_PENDING":
+      return { ...initialState, phase: "done", company: a.candidate, result: a.result };
     case "PENDING_IMPORTED":
       return s.phase === "done" && s.result
         ? { ...s, result: { ...s.result, downloaded: s.result.downloaded + 1, pending: a.pending } }

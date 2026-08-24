@@ -1,7 +1,7 @@
 import * as self from "./api";
 import { isTauri } from "./components/ReadyGate";
 import { WORKER_URL } from "./config";
-import type { Candidate, BuildScope, JobStatus, LibraryItem, ProgressEvent, ImportedSkill, PreviewResult, PendingImportResult } from "./types";
+import type { Candidate, BuildScope, JobStatus, LibraryItem, ProgressEvent, ImportedSkill, PreviewResult, PendingDocument, PendingImportResult } from "./types";
 
 // ── Source of truth for the engine URL ──────────────────────────────────────
 // The Rust shell picks a free port at launch (8765, or 8766 if taken …) and
@@ -163,6 +163,13 @@ export async function importPendingPdf(
   }));
   if (!res.ok) return friendly(res);
   return (await res.json()) as PendingImportResult;
+}
+
+export async function getPending(root: string, ticker: string): Promise<PendingDocument[]> {
+  const query = `root=${encodeURIComponent(root)}&ticker=${encodeURIComponent(ticker)}`;
+  const res = await safeFetch(`${await apiBase()}/pending?${query}`);
+  if (!res.ok) return friendly(res);
+  return (await res.json()).pending as PendingDocument[];
 }
 
 export interface BuildSubscription { close(): void; }
