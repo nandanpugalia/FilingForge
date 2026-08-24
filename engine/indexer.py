@@ -27,6 +27,12 @@ def _company_counts(company: Path) -> dict[str, int]:
     return counts
 
 
+def count_documents(company: Path) -> int:
+    """Number of completed PDFs currently present in one company library."""
+    company = Path(company)
+    return sum(_company_counts(company).values()) if company.exists() else 0
+
+
 def build_index(company: Path, ticker: str) -> Path:
     lines = [f"# {ticker}", "", "_AI-ready filing library built by FilingForge. "
              "Each document has a clean `.md` sibling for your AI to read._", ""]

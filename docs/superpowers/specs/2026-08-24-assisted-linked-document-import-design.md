@@ -1,7 +1,7 @@
 # Assisted linked-document import design
 
-**Date:** 2026-08-24  
-**Status:** Approved in conversation; awaiting written-spec review  
+**Date:** 2026-08-24
+**Status:** Approved in conversation; awaiting written-spec review
 **Parent design:** `2026-08-23-linked-document-fallback-design.md`
 
 This amendment supersedes the parent design's unresolved-item user experience and its 80%

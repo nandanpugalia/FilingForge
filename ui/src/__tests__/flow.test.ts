@@ -49,7 +49,7 @@ describe("flow reducer", () => {
     const done: State = {
       ...initialState,
       phase: "done",
-      result: { downloaded: 1, skipped: 0, failed: 0, pending: [{
+      result: { downloaded: 1, ready: 12, skipped: 0, failed: 0, pending: [{
         news_id: "news-1", date: "2026-07-28", headline: "Annual Report",
         folder: "annual-reports", category: "Annual Reports", expected_type: "Annual report",
         expected_period: "FY 2025-26", bse_url: "https://www.bseindia.com/notice.pdf",
@@ -60,6 +60,7 @@ describe("flow reducer", () => {
     const next = reducer(done, { type: "PENDING_IMPORTED", pending: [] });
 
     expect(next.result?.downloaded).toBe(2);
+    expect(next.result?.ready).toBe(13);
     expect(next.result?.pending).toEqual([]);
   });
   it("RESUME_PENDING restores a persisted completion flow after reopening", () => {

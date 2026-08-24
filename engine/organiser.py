@@ -52,14 +52,18 @@ def _year_folder(filing: Filing) -> str:
     return y if y.isdigit() and len(y) == 4 else "undated"
 
 
+def filing_destination(company: Path, filing: Filing) -> Path:
+    """Deterministic final PDF path without touching disk."""
+    return Path(company) / filing.folder / _year_folder(filing) / _safe_name(filing)
+
+
 def save_filing(company: Path, filing: Filing, pdf_bytes: bytes) -> Path:
     # NEW layout: <company>/<category-folder>/<YYYY>/<file>.pdf (year-nested for
     # navigability). pathlib keeps this cross-platform; the year is numeric so it is
     # a valid dir name on Windows too. The .md sibling (written by the caller) lands
     # in the same year folder via path.with_suffix(".md").
-    folder = company / filing.folder / _year_folder(filing)
-    folder.mkdir(parents=True, exist_ok=True)
-    path = folder / _safe_name(filing)
+    path = filing_destination(company, filing)
+    path.parent.mkdir(parents=True, exist_ok=True)
     _atomic_write_bytes(path, pdf_bytes)
     return path
 

@@ -13,7 +13,7 @@ export interface PendingDocument {
   issuer_url: string | null;
   reason: string;
 }
-export interface BuildResult { downloaded: number; skipped: number; failed: number; pending: PendingDocument[]; cancelled?: boolean; }
+export interface BuildResult { downloaded: number; ready?: number; skipped: number; failed: number; pending: PendingDocument[]; cancelled?: boolean; }
 export interface PendingImportResult { news_id: string; destination: string; pending: PendingDocument[]; }
 export interface JobStatus { job_id: string; status: "queued" | "running" | "done" | "cancelled" | "error"; progress: ProgressEvent | null; result: BuildResult | null; error: string | null; }
 export interface PreviewCategory { label: string; count: number; }

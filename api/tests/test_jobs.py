@@ -106,12 +106,13 @@ def test_run_build_serializes_pending_documents(monkeypatch, tmp_path):
     monkeypatch.setattr(bse, "BSEClient", lambda: type("Client", (), {"close": lambda self: None})())
     monkeypatch.setattr(
         library, "build_library",
-        lambda *_args, **_kwargs: LibraryResult(downloaded=["done"], pending=[pending]),
+        lambda *_args, **_kwargs: LibraryResult(downloaded=["done"], pending=[pending], ready=12),
     )
 
     result = run_build("1", "KFINTECH", str(tmp_path), False, ["annual_report"], 2)(lambda _event: None)
 
     assert result["downloaded"] == 1
+    assert result["ready"] == 12
     assert result["pending"] == [{
         "news_id": "news-1", "date": "2026-07-28", "headline": "Annual Report FY 2025-26",
         "folder": "annual-reports", "category": "Annual Reports", "expected_type": "Annual report",

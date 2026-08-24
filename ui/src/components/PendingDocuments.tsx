@@ -51,4 +51,3 @@ export function PendingDocuments({ items, importingId, errors, onOpenSource, onU
     </section>
   );
 }
-

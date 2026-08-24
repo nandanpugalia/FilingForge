@@ -44,7 +44,8 @@ export function reducer(s: State, a: Action): State {
       return { ...initialState, phase: "done", company: a.candidate, result: a.result };
     case "PENDING_IMPORTED":
       return s.phase === "done" && s.result
-        ? { ...s, result: { ...s.result, downloaded: s.result.downloaded + 1, pending: a.pending } }
+        ? { ...s, result: { ...s.result, downloaded: s.result.downloaded + 1,
+            ready: s.result.ready === undefined ? undefined : s.result.ready + 1, pending: a.pending } }
         : s;
     case "FAIL": return { ...s, phase: "error", error: a.message };
     case "BACK_TO_CONFIGURE":

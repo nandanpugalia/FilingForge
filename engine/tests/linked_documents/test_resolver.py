@@ -7,6 +7,7 @@ from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, RectangleObject
 
 from engine.linked_documents.models import DocumentContext, HttpDocument
+from engine.linked_documents.safety import ResponseTooLarge, TooManyRedirects, UnsafeUrl
 
 MARUTI_FIXTURE = Path(__file__).parent / "fixtures" / "maruti_documents.json"
 
@@ -99,6 +100,26 @@ def test_resolves_direct_link_to_substantive_pdf_in_one_request():
     assert result.status == "resolved"
     assert result.pdf == replacement
     assert calls == [(target, "pdf")]
+
+
+def test_bounded_replacement_fetch_failures_degrade_to_guided_import():
+    resolver = import_module("engine.linked_documents.resolver")
+    target = "https://investor.example.com/Annual_Report_FY_2025-26.pdf"
+
+    for error in (
+        ResponseTooLarge("too large"),
+        TooManyRedirects("redirect loop"),
+        UnsafeUrl("redirect became private"),
+    ):
+        def failed_fetch(_url: str, _expected: str, error=error):
+            raise error
+
+        result = resolver.resolve_document(
+            context(), cover_pdf(target), fetch=failed_fetch, validate=allow_public,
+        )
+
+        assert result.status == "unresolved"
+        assert result.action_url == target
 
 
 def test_treats_repository_query_path_ending_in_pdf_as_direct_pdf():

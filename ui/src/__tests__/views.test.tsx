@@ -108,6 +108,15 @@ it("DoneView makes pending source PDFs explicit and actionable", async () => {
   expect(onUsePdf).toHaveBeenCalledWith(pending);
 });
 
+it("DoneView reports total ready documents rather than only this refresh's additions", () => {
+  render(<DoneView ticker="KFINTECH"
+    result={{ downloaded: 1, ready: 12, skipped: 0, failed: 0, pending: [pending] }}
+    onOpen={() => {}} onReset={() => {}} />);
+
+  expect(screen.getByText(/12 documents ready · 1 awaiting source PDF/i)).toBeInTheDocument();
+  expect(screen.queryByText(/1 document ready ·/i)).not.toBeInTheDocument();
+});
+
 it("DoneView uses the BSE notice fallback and keeps an import error inline", () => {
   const noticeOnly = { ...pending, issuer_url: null };
   render(<DoneView ticker="KFINTECH" result={{ downloaded: 0, skipped: 0, failed: 0, pending: [noticeOnly] }}

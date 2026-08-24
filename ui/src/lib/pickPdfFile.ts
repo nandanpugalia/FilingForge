@@ -23,6 +23,6 @@ export async function pickPdfFile(): Promise<string | null> {
     });
     return typeof selected === "string" ? selected : null;
   } catch {
-    return null;
+    throw new Error("FilingForge couldn't open the PDF picker. Please try again.");
   }
 }

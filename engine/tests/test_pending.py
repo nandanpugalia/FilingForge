@@ -6,7 +6,8 @@ import pytest
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, RectangleObject
 
-from engine.models import PendingDocument
+from engine.models import Filing, PendingDocument
+from engine.organiser import record_seen
 from engine.pending import (PendingImportError, import_pending_pdf, list_pending,
                             remove_pending, upsert_pending)
 
@@ -90,6 +91,19 @@ def test_news_id_is_data_not_a_path(tmp_path):
     upsert_pending(company, dangerous)
 
     assert list_pending(company)[0].news_id == "../../outside"
+    assert not (tmp_path / "outside").exists()
+
+
+def test_tampered_pending_folder_is_rejected_without_escaping_company(tmp_path):
+    company = tmp_path / "KFINTECH"
+    company.mkdir()
+    dangerous = {**item().__dict__, "folder": "../../outside"}
+    ledger = company / ".filingforge_pending.json"
+    ledger.write_text(json.dumps({"version": 1, "items": [dangerous]}), encoding="utf-8")
+    before = ledger.read_bytes()
+
+    assert list_pending(company) == []
+    assert ledger.read_bytes() == before
     assert not (tmp_path / "outside").exists()
 
 
@@ -185,6 +199,25 @@ def test_import_rejects_file_above_limit_without_reading_it(tmp_path, monkeypatc
     assert list_pending(company) == [item()]
 
 
+def test_import_reads_from_one_bounded_open_handle_not_path_read_bytes(tmp_path, monkeypatch):
+    company = tmp_path / "library" / "KFINTECH"
+    upsert_pending(company, item())
+    source = tmp_path / "report.pdf"
+    source.write_bytes(make_pdf())
+    original_read_bytes = Path.read_bytes
+
+    def reject_unbounded_read(path: Path):
+        if path == source:
+            raise AssertionError("source.read_bytes is an unbounded second path lookup")
+        return original_read_bytes(path)
+
+    monkeypatch.setattr(Path, "read_bytes", reject_unbounded_read)
+
+    destination = import_pending_pdf(company, "news-1", source)
+
+    assert destination.exists()
+
+
 def test_conversion_failure_rolls_back_library_and_keeps_source_and_slot(tmp_path, monkeypatch):
     import engine.pending as pending
     company = tmp_path / "library" / "KFINTECH"
@@ -233,3 +266,94 @@ def test_unknown_pending_id_does_not_touch_source_or_library(tmp_path):
 
     assert source.read_bytes() == original
     assert list(company.rglob("*.pdf")) == []
+
+
+def test_seen_filing_prunes_stale_pending_and_cannot_be_manually_overwritten(tmp_path):
+    company = tmp_path / "library" / "KFINTECH"
+    pending = item()
+    upsert_pending(company, pending)
+    filing = Filing(
+        news_id=pending.news_id, date=pending.date, headline=pending.headline,
+        attachment=pending.bse_url, folder=pending.folder, category=pending.category,
+    )
+    record_seen(company, filing)
+    source = tmp_path / "replacement.pdf"
+    source.write_bytes(make_pdf())
+
+    assert list_pending(company) == []
+    with pytest.raises(PendingImportError, match="no longer pending"):
+        import_pending_pdf(company, pending.news_id, source)
+
+
+def test_existing_destination_is_never_overwritten_by_assisted_import(tmp_path):
+    company = tmp_path / "library" / "KFINTECH"
+    upsert_pending(company, item())
+    destination = (
+        company / "annual-reports" / "2026" /
+        "2026-07-28_Annual_Report_FY_2025-26__news-1.pdf"
+    )
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(b"%PDF-existing-correct-document")
+    source = tmp_path / "replacement.pdf"
+    source.write_bytes(make_pdf())
+
+    with pytest.raises(PendingImportError, match="already exists"):
+        import_pending_pdf(company, "news-1", source)
+
+    assert destination.read_bytes() == b"%PDF-existing-correct-document"
+    assert list_pending(company) == [item()]
+
+
+def test_interrupted_commit_rolls_forward_on_next_pending_read(tmp_path):
+    company = tmp_path / "library" / "KFINTECH"
+    upsert_pending(company, item())
+    destination = (
+        company / "annual-reports" / "2026" /
+        "2026-07-28_Annual_Report_FY_2025-26__news-1.pdf"
+    )
+    destination.parent.mkdir(parents=True)
+    destination.write_bytes(make_pdf())
+    md_destination = destination.with_suffix(".md")
+    md_stage = md_destination.with_name(md_destination.name + ".part")
+    md_stage.write_text("# recovered markdown\n", encoding="utf-8")
+    marker = company / ".filingforge_import_txn.json"
+    marker.write_text(json.dumps({
+        "version": 1,
+        "news_id": "news-1",
+        "pdf_rel": destination.relative_to(company).as_posix(),
+        "md_rel": md_destination.relative_to(company).as_posix(),
+    }), encoding="utf-8")
+
+    assert list_pending(company) == []
+    assert md_destination.read_text(encoding="utf-8") == "# recovered markdown\n"
+    assert json.loads((company / ".filingforge_index.json").read_text()) == ["news-1"]
+    assert not marker.exists()
+    assert destination.name in (company / "INDEX.md").read_text(encoding="utf-8")
+
+
+def test_process_interruption_after_pdf_commit_is_recovered(tmp_path, monkeypatch):
+    import engine.pending as pending_module
+
+    company = tmp_path / "library" / "KFINTECH"
+    upsert_pending(company, item())
+    source = tmp_path / "report.pdf"
+    source.write_bytes(make_pdf())
+    real_replace = pending_module.os.replace
+    interrupted = False
+
+    def interrupt_after_pdf(source_path, destination_path):
+        nonlocal interrupted
+        real_replace(source_path, destination_path)
+        if str(destination_path).endswith(".pdf") and not interrupted:
+            interrupted = True
+            raise KeyboardInterrupt("simulated process termination")
+
+    monkeypatch.setattr(pending_module.os, "replace", interrupt_after_pdf)
+    with pytest.raises(KeyboardInterrupt, match="simulated process termination"):
+        import_pending_pdf(company, "news-1", source)
+
+    monkeypatch.setattr(pending_module.os, "replace", real_replace)
+    assert list_pending(company) == []
+    destination = next(company.rglob("*.pdf"))
+    assert destination.with_suffix(".md").exists()
+    assert json.loads((company / ".filingforge_index.json").read_text()) == ["news-1"]

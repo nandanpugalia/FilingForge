@@ -36,6 +36,26 @@ def test_everything_keeps_all_rows_with_attachment_foldered_by_category():
     assert noise.category == "Insider Trading / SAST"
 
 
+def test_everything_keeps_linked_document_categories_in_canonical_folders():
+    rows = {"Table": [
+        {"NEWSID": "ar", "DissemDT": "2026-07-01", "HEADLINE": "Annual Report",
+         "ATTACHMENTNAME": "ar.pdf", "CATEGORYNAME": "Others", "SUBCATNAME": "Reg. 34 (1) Annual Report"},
+        {"NEWSID": "res", "DissemDT": "2026-07-02", "HEADLINE": "Financial Results",
+         "ATTACHMENTNAME": "res.pdf", "CATEGORYNAME": "Result", "SUBCATNAME": "Financial Results"},
+        {"NEWSID": "ppt", "DissemDT": "2026-07-03", "HEADLINE": "Investor Presentation",
+         "ATTACHMENTNAME": "ppt.pdf", "CATEGORYNAME": "Company Update", "SUBCATNAME": "Investor Presentation"},
+        {"NEWSID": "cc", "DissemDT": "2026-07-04", "HEADLINE": "Earnings Call Transcript",
+         "ATTACHMENTNAME": "cc.pdf", "CATEGORYNAME": "Company Update", "SUBCATNAME": "Earnings Call Transcript"},
+    ]}
+
+    out = list_filings("543210", [], years=1, client=_paged_client([rows]), everything=True)
+
+    assert {f.news_id: f.folder for f in out} == {
+        "ar": "annual-reports", "res": "quarterly",
+        "ppt": "investor-ppts", "cc": "concalls",
+    }
+
+
 def test_wildcard_spec_matches_any_subcat():
     rows = {"Table": [
         {"NEWSID": "d1", "DissemDT": "2025-05-01T10:00:00", "HEADLINE": "Dividend",

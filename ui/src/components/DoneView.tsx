@@ -39,6 +39,7 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
   const failNote = result.failed ? ` · ${result.failed} failed` : "";
   const pending = result.pending ?? [];
   const hasPending = pending.length > 0;
+  const ready = result.ready ?? result.downloaded;
   const rows = breakdown
     ? Object.entries(breakdown).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     : [];
@@ -65,7 +66,7 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
       <div className="saved-as">Saved in the <code>{ticker}/</code> folder</div>
       <div className="summary">
         {hasPending
-          ? `${result.downloaded} document${result.downloaded === 1 ? "" : "s"} ready · ${pending.length} awaiting source PDF${pending.length === 1 ? "" : "s"}`
+          ? `${ready} document${ready === 1 ? "" : "s"} ready · ${pending.length} awaiting source PDF${pending.length === 1 ? "" : "s"}`
           : <>{result.cancelled && "Stopped early — "}{result.downloaded} document{result.downloaded === 1 ? "" : "s"} added{skipNote}{failNote}</>}
         {result.cancelled && " · everything saved is complete and indexed"}
       </div>

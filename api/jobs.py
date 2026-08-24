@@ -97,6 +97,7 @@ def run_build(scrip_code: str, ticker: str, dest: str, everything: bool, categor
                                 on_progress=bridge, everything=everything, should_cancel=should_cancel)
             return {"downloaded": len(res.downloaded), "skipped": len(res.skipped),
                     "failed": len(res.failed),
+                    "ready": res.ready,
                     "pending": [asdict(item) for item in res.pending],
                     "cancelled": res.cancelled}
         finally:

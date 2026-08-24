@@ -13,7 +13,7 @@ from .fetcher import list_all_filings, download_filing, filing_attachment_url
 from .organiser import (company_dir, save_filing, save_markdown, clean_partials,
                         already_have, record_seen, save_library_config)
 from .converter import pdf_to_markdown
-from .indexer import build_index, build_master_index
+from .indexer import build_index, build_master_index, count_documents
 from .report_helper import write_report_helper
 from .progress import ProgressEvent, ProgressCallback, emit
 from .errors import FilingForgeError
@@ -22,7 +22,7 @@ from .linked_documents.evidence import (SUPPORTED_FOLDERS, extract_pdf_evidence,
 from .linked_documents.models import DocumentContext
 from .linked_documents.resolver import resolve_document
 from .linked_documents.safety import fetch_public_document, validate_public_https_url
-from .pending import upsert_pending
+from .pending import list_pending, recover_pending_import, upsert_pending
 
 CancelFn = Optional[Callable[[], bool]]
 IssuerFetch = Callable[[str, str], object]
@@ -80,6 +80,7 @@ def _process(company, scrip_code, ticker, specs, years, client, on_progress, eve
              should_cancel: CancelFn = None, issuer_fetch=None,
              link_validator: LinkValidator = validate_public_https_url):
     res = LibraryResult()
+    recover_pending_import(company)
     clean_partials(company)   # clear any *.part left by a prior interrupted run
     emit(on_progress, ProgressEvent("list", 0, 1, "Finding filings on BSE…"))
     filings = list_all_filings(scrip_code, specs, years, client, everything=everything)
@@ -156,6 +157,10 @@ def _process(company, scrip_code, ticker, specs, years, client, on_progress, eve
     # (not a fresh set of smart defaults that would silently drop filings). everything=True →
     # record [] so the loader's None-vs-[] distinction stays clean.
     save_library_config(company, [s.key for s in specs] if not everything else [], everything)
+    # Report the complete persisted state, not just what happened to be inside
+    # this build's year/category scope. This keeps refreshes and restarts honest.
+    res.pending = list_pending(company)
+    res.ready = count_documents(company)
     return res
 
 

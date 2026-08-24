@@ -1,15 +1,23 @@
 from io import BytesIO
 
+import pytest
 from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, RectangleObject
 
 import engine.library as library
 from engine.linked_documents.models import HttpDocument
-from engine.models import CURATED_BY_KEY, Filing
-from engine.pending import list_pending
+from engine.models import CURATED_BY_KEY, Filing, PendingDocument
+from engine.pending import list_pending, upsert_pending
 
 
 AR = CURATED_BY_KEY["annual_report"]
+
+SUPPORTED_LINKED_TYPES = (
+    ("annual-reports", "Annual Reports", "Annual Report FY 2025-26", "Annual report"),
+    ("concalls", "Concall Transcripts", "Earnings Call Transcript Q1 FY 2025-26", "Concall transcript"),
+    ("investor-ppts", "Investor Presentations", "Investor Presentation Q1 FY 2025-26", "Investor presentation"),
+    ("quarterly", "Financial Results", "Financial Results Q1 FY 2025-26", "Financial results"),
+)
 
 
 def make_pdf(text: str = "Complete annual report with substantive financial discussion", *,
@@ -175,3 +183,77 @@ def test_unresolved_cover_does_not_block_substantive_sibling(tmp_path, monkeypat
     assert result.downloaded == ["substantive"]
     assert [pending.news_id for pending in result.pending] == ["cover"]
     assert result.failed == []
+
+
+def test_build_result_reconciles_all_persisted_pending_and_actual_ready_total(tmp_path, monkeypatch):
+    company = tmp_path / "KFINTECH"
+    older = PendingDocument(
+        news_id="older-cover", date="2025-07-01", headline="Annual Report FY 2024-25",
+        folder="annual-reports", category="Annual Reports", expected_type="Annual report",
+        expected_period="FY 2024-25", bse_url="https://www.bseindia.com/older.pdf",
+        issuer_url=None, reason="source PDF needed",
+    )
+    upsert_pending(company, older)
+    current = filing("current")
+    arrange(monkeypatch, [current], {"current": make_pdf()})
+
+    result = library.build_library(
+        "543210", "KFINTECH", tmp_path, [AR], 1, object(),
+        issuer_fetch=lambda *_args: (_ for _ in ()).throw(AssertionError("no issuer request")),
+        link_validator=allow_public,
+    )
+
+    assert result.pending == [older]
+    assert result.ready == 1
+
+
+@pytest.mark.parametrize(
+    ("folder", "category", "headline", "expected_type"),
+    SUPPORTED_LINKED_TYPES,
+)
+def test_everything_mode_detects_cover_letters_for_each_supported_document_type(
+        tmp_path, monkeypatch, folder, category, headline, expected_type):
+    current = Filing(
+        news_id=f"cover-{folder}", date="2026-07-28", headline=headline,
+        attachment=f"{folder}.pdf", folder=folder, category=category,
+    )
+    arrange(monkeypatch, [current], {current.news_id: make_pdf(
+        f"BSE Limited pursuant to Regulation {headline} is available on the "
+        "company website at the following link",
+        pages=2,
+    )})
+
+    result = library.build_library(
+        "543210", "KFINTECH", tmp_path, [], 1, object(), everything=True,
+        issuer_fetch=lambda *_args: (_ for _ in ()).throw(AssertionError("no issuer request")),
+        link_validator=allow_public,
+    )
+
+    assert result.downloaded == []
+    assert len(result.pending) == 1
+    assert result.pending[0].folder == folder
+    assert result.pending[0].expected_type == expected_type
+
+
+def test_successful_automatic_download_clears_stale_pending_for_same_filing(tmp_path, monkeypatch):
+    company = tmp_path / "KFINTECH"
+    stale = PendingDocument(
+        news_id="same-filing", date="2026-07-28", headline="Annual Report FY 2025-26",
+        folder="annual-reports", category="Annual Reports", expected_type="Annual report",
+        expected_period="FY 2025-26", bse_url="https://www.bseindia.com/notice.pdf",
+        issuer_url=None, reason="source PDF needed",
+    )
+    upsert_pending(company, stale)
+    current = filing("same-filing")
+    arrange(monkeypatch, [current], {current.news_id: make_pdf()})
+
+    result = library.build_library(
+        "543210", "KFINTECH", tmp_path, [AR], 1, object(),
+        issuer_fetch=lambda *_args: (_ for _ in ()).throw(AssertionError("no issuer request")),
+        link_validator=allow_public,
+    )
+
+    assert result.downloaded == ["same-filing"]
+    assert result.pending == []
+    assert list_pending(company) == []
+    assert not (company / ".filingforge_pending.json").exists()

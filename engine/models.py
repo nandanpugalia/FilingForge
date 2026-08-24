@@ -104,6 +104,7 @@ class LibraryResult:
     skipped: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
     pending: list[PendingDocument] = field(default_factory=list)
+    ready: int = 0
     cancelled: bool = False                 # user pressed Stop; library left consistent
 
     @property

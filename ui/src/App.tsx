@@ -107,13 +107,13 @@ export default function App() {
 
   const completePendingDocument = async (item: PendingDocument) => {
     if (!state.company || importingPendingId) return;
-    const selected = await pickPdfFile();
-    if (!selected) return;
     setImportingPendingId(item.news_id);
     setPendingErrors((current) => {
       const next = { ...current }; delete next[item.news_id]; return next;
     });
     try {
+      const selected = await pickPdfFile();
+      if (!selected) return;
       const ticker = tickerFor(state.company);
       const completed = await importPendingPdf(settings.dest, ticker, item.news_id, selected);
       dispatch({ type: "PENDING_IMPORTED", pending: completed.pending });
@@ -196,7 +196,7 @@ export default function App() {
             dispatch({
               type: "RESUME_PENDING",
               candidate: { scrip_code: item.ticker, company: item.ticker, is_primary: true, symbol: item.ticker },
-              result: { downloaded: item.total, skipped: 0, failed: 0, pending },
+              result: { downloaded: 0, ready: item.total, skipped: 0, failed: 0, pending },
             });
           } catch (e) { dispatch({ type: "FAIL", message: (e as Error).message }); }
         }}

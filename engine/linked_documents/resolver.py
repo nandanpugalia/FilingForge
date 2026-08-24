@@ -83,7 +83,7 @@ def resolve_document(
 def _fetch_and_validate_pdf(context: DocumentContext, url: str, fetch: Fetch) -> Resolution:
     try:
         document = fetch(url, "pdf")
-    except httpx.HTTPError as exc:
+    except (httpx.HTTPError, ValueError) as exc:
         return Resolution(status="unresolved", reason=f"replacement download failed: {type(exc).__name__}", action_url=url)
     if not document.body.startswith(b"%PDF-"):
         return Resolution(status="unresolved", reason="replacement is not a PDF", action_url=url)

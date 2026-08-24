@@ -123,4 +123,3 @@ def test_unknown_pending_id_returns_friendly_client_error(client, tmp_path):
 
     assert response.status_code == 400
     assert "no longer pending" in response.json()["user_message"]
-

@@ -49,3 +49,15 @@ it("still opens the picker when the Downloads directory cannot be resolved", asy
 
   expect(open).toHaveBeenCalledWith(expect.not.objectContaining({ defaultPath: expect.anything() }));
 });
+
+it("surfaces a native dialog failure instead of treating it as cancellation", async () => {
+  vi.doMock("../components/ReadyGate", () => ({ isTauri: () => true }));
+  vi.doMock("@tauri-apps/api/path", () => ({ downloadDir: vi.fn().mockResolvedValue("/Downloads") }));
+  vi.doMock("@tauri-apps/plugin-dialog", () => ({
+    open: vi.fn().mockRejectedValue(new Error("native dialog unavailable")),
+  }));
+
+  const { pickPdfFile } = await import("../lib/pickPdfFile");
+
+  await expect(pickPdfFile()).rejects.toThrow(/couldn't open the PDF picker/i);
+});
