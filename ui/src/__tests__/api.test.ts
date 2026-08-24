@@ -47,6 +47,19 @@ describe("startBuild / getStatus / getLibrary / openFolder", () => {
     await api.openFolder("/root/TANLA");
     expect(f).toHaveBeenCalledWith(expect.stringContaining("/open-folder"), expect.anything());
   });
+  it("importPendingPdf posts the exact slot and returns remaining pending items", async () => {
+    const f = mockFetch(200, { news_id: "news-1", destination: "/lib/KFINTECH/report.pdf", pending: [] });
+    vi.stubGlobal("fetch", f);
+
+    const out = await api.importPendingPdf("/lib", "KFINTECH", "news-1", "/Users/np/Downloads/report.pdf");
+
+    expect(out.destination).toBe("/lib/KFINTECH/report.pdf");
+    const [url, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/pending/import");
+    expect(JSON.parse(init.body as string)).toEqual({
+      root: "/lib", ticker: "KFINTECH", news_id: "news-1", path: "/Users/np/Downloads/report.pdf",
+    });
+  });
 });
 
 describe("payments worker: startCheckout / redeem / redeemFallback / installSkillMd", () => {

@@ -40,9 +40,9 @@ describe("flow reducer", () => {
     expect(s.progressLog[s.progressLog.length - 1]).toBe("item 249");
   });
   it("BUILD_DONE → done (only from building; ignored otherwise)", () => {
-    const ok = reducer({ ...initialState, phase: "building" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0 } });
+    const ok = reducer({ ...initialState, phase: "building" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0, pending: [] } });
     expect(ok.phase).toBe("done"); expect(ok.result?.downloaded).toBe(9);
-    const ignored = reducer({ ...initialState, phase: "search" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0 } });
+    const ignored = reducer({ ...initialState, phase: "search" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0, pending: [] } });
     expect(ignored.phase).toBe("search");
   });
   it("FAIL → error with message", () => {

@@ -32,7 +32,7 @@ it("ProgressView maps stage + percent to friendly copy and milestone words", () 
 
 it("DoneView shows counts, skip note, AI hook, open + reset", async () => {
   const onOpen = vi.fn(), onReset = vi.fn();
-  render(<DoneView ticker="TANLA" result={{ downloaded: 9, skipped: 1, failed: 0 }} onOpen={onOpen} onReset={onReset} />);
+  render(<DoneView ticker="TANLA" result={{ downloaded: 9, skipped: 1, failed: 0, pending: [] }} onOpen={onOpen} onReset={onReset} />);
   expect(screen.getByText(/9 documents added/)).toBeInTheDocument();
   expect(screen.getByText(/had no attached PDF/)).toBeInTheDocument();
   expect(screen.getByText(/An INDEX.md sits in the folder/)).toBeInTheDocument();
@@ -41,7 +41,7 @@ it("DoneView shows counts, skip note, AI hook, open + reset", async () => {
 });
 
 it("DoneView renders the category breakdown (mapped labels, sorted, zero-filtered)", () => {
-  render(<DoneView ticker="TANLA" result={{ downloaded: 229, skipped: 0, failed: 0 }}
+  render(<DoneView ticker="TANLA" result={{ downloaded: 229, skipped: 0, failed: 0, pending: [] }}
     breakdown={{ "company-update": 188, "agm-egm": 13, "board-meeting": 11, "quarterly": 6, "press": 0, "weird-slug": 2 }}
     onOpen={() => {}} onReset={() => {}} />);
   expect(screen.getByText(/By type/i)).toBeInTheDocument();
@@ -57,7 +57,7 @@ it("DoneView renders a copyable AI prompt block with company + INDEX paths, Copy
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
   const { container } = render(<DoneView ticker="TANLA" name="Tanla Platforms Ltd" dest="/Users/np/Filings"
-    result={{ downloaded: 9, skipped: 0, failed: 0 }} onOpen={() => {}} onReset={() => {}} />);
+    result={{ downloaded: 9, skipped: 0, failed: 0, pending: [] }} onOpen={() => {}} onReset={() => {}} />);
   // block is labelled and its body contains the company + both index paths
   expect(screen.getByText(/Paste this to your AI/i)).toBeInTheDocument();
   const body = container.querySelector(".ai-prompt-body")!;
@@ -76,7 +76,7 @@ it("DoneView renders a copyable AI prompt block with company + INDEX paths, Copy
 });
 
 it("DoneView renders gracefully with no breakdown (just the summary)", () => {
-  render(<DoneView ticker="TANLA" result={{ downloaded: 9, skipped: 0, failed: 0 }} onOpen={() => {}} onReset={() => {}} />);
+  render(<DoneView ticker="TANLA" result={{ downloaded: 9, skipped: 0, failed: 0, pending: [] }} onOpen={() => {}} onReset={() => {}} />);
   expect(screen.getByText(/9 documents added/)).toBeInTheDocument();
   expect(screen.queryByText(/By type/i)).not.toBeInTheDocument();
 });
