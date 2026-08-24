@@ -1,76 +1,72 @@
 import { test, expect } from "@playwright/test";
 
-test("search → configure → build → done (mocked API + injected EventSource)", async ({ page }) => {
-  // Inject a controllable fake EventSource BEFORE the app loads (R10 — page.route SSE is unreliable).
+declare global {
+  interface Window {
+    __happyEs?: { emit(data: string): void; end(): void };
+  }
+}
+
+test("search → configure → preview → build → done", async ({ page }) => {
   await page.addInitScript(() => {
-    class FakeES {
-      onmessage: ((e: any) => void) | null = null;
-      onerror: ((e: any) => void) | null = null;
-      private L: Record<string, Function[]> = {};
+    localStorage.setItem("filingforge.settings", JSON.stringify({
+      dest: "/Users/test/FilingForgeLibrary", years: 1, everything: true,
+      categories: ["annual_report", "results", "investor_ppt", "concall"],
+      openWhenDone: false, beta: false,
+    }));
+
+    class FakeEventSource {
+      onmessage: ((event: MessageEvent<string>) => void) | null = null;
+      onerror: ((event: Event) => void) | null = null;
+      private listeners: Record<string, Array<() => void>> = {};
       constructor(public url: string) {
-        (window as any).__es = this;
+        window.__happyEs = {
+          emit: (data: string) => this.onmessage?.(new MessageEvent("message", { data })),
+          end: () => (this.listeners.end || []).forEach((callback) => callback()),
+        };
       }
-      addEventListener(t: string, cb: Function) {
-        (this.L[t] ||= []).push(cb);
+      addEventListener(type: string, callback: () => void) {
+        (this.listeners[type] ||= []).push(callback);
       }
       close() {}
-      _emit(d: string) {
-        this.onmessage?.({ data: d });
-      }
-      _end() {
-        (this.L["end"] || []).forEach((c) => c({}));
-      }
     }
-    (window as any).EventSource = FakeES as any;
+
+    Object.defineProperty(window, "EventSource", {
+      configurable: true,
+      value: FakeEventSource as unknown as typeof EventSource,
+    });
   });
 
-  await page.route("**/resolve", (r) =>
-    r.fulfill({
-      json: {
-        candidates: [
-          {
-            scrip_code: "532790",
-            company: "Tanla Platforms Ltd",
-            is_primary: true,
-            isin: "INE483C01032",
-            symbol: "TANLA",
-          },
-        ],
-      },
-    }),
-  );
-  await page.route("**/build", (r) => r.fulfill({ status: 202, json: { job_id: "j1" } }));
-  await page.route("**/build/j1", (r) =>
-    r.fulfill({
-      json: {
-        job_id: "j1",
-        status: "done",
-        progress: null,
-        result: { downloaded: 1, skipped: 0, failed: 0 },
-        error: null,
-      },
-    }),
-  );
-  await page.route("**/library**", (r) => r.fulfill({ json: { companies: [] } }));
-  await page.route("**/open-folder", (r) => r.fulfill({ json: { ok: true } }));
+  await page.route("**/resolve", (route) => route.fulfill({ json: { candidates: [{
+    scrip_code: "532790", company: "Tanla Platforms Ltd", is_primary: true,
+    isin: "INE483C01032", symbol: "TANLA",
+  }] } }));
+  await page.route("**/preview", (route) => route.fulfill({ json: {
+    total: 1, new: 1, have: 0, by_category: [{ label: "Annual Reports", count: 1 }],
+  } }));
+  await page.route("**/build", (route) => route.fulfill({ status: 202, json: { job_id: "j1" } }));
+  await page.route("**/build/j1", (route) => route.fulfill({ json: {
+    job_id: "j1", status: "done", progress: null,
+    result: { downloaded: 1, skipped: 0, failed: 0, pending: [] }, error: null,
+  } }));
+  await page.route("**/library**", (route) => route.fulfill({ json: { companies: [] } }));
+  await page.route("**/open-folder", (route) => route.fulfill({ json: { ok: true } }));
 
   await page.goto("/");
-  await page.getByPlaceholder(/name or BSE code/i).fill("tan");
-  // Pick from the dropdown row specifically (the name also re-appears in the config header).
+  await page.getByPlaceholder(/look up a company/i).fill("tan");
   await page.getByRole("option").filter({ hasText: "Tanla Platforms Ltd" }).click();
-  await page.getByRole("button", { name: /Get the filings/i }).click();
+  await page.getByRole("button", { name: /Build library/i }).click();
+  await page.getByRole("button", { name: /Download 1/i }).click();
 
-  // Wait until the app has constructed the (fake) EventSource, then drive it:
-  // one progress frame, then the terminal frame + the named "end" event.
-  await page.waitForFunction(() => Boolean((window as any).__es));
+  await page.waitForFunction(() => Boolean(window.__happyEs));
   await page.evaluate(() => {
-    const es: any = (window as any).__es;
-    es._emit(
-      JSON.stringify({ stage: "download", current: 1, total: 1, message: "Annual Report", percent: 100 }),
-    );
-    es._emit(JSON.stringify({ status: "done", result: { downloaded: 1, skipped: 0, failed: 0 }, error: null }));
-    es._end();
+    window.__happyEs?.emit(JSON.stringify({
+      stage: "download", current: 1, total: 1, message: "Annual Report", percent: 100,
+    }));
+    window.__happyEs?.emit(JSON.stringify({
+      status: "done", result: { downloaded: 1, skipped: 0, failed: 0, pending: [] }, error: null,
+    }));
+    window.__happyEs?.end();
   });
 
-  await expect(page.getByText(/Your TANLA library is ready/)).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText(/Your Tanla Platforms Ltd library is ready/)).toBeVisible({ timeout: 5000 });
 });

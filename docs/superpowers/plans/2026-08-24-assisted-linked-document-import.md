@@ -40,10 +40,12 @@ Out of scope: arbitrary web crawling, browser automation in the sidecar, Downloa
 
 - [ ] **Step 1: Copy the proven prototype tests into the production test namespace and change imports only**
 
-Move the 67 unit tests and the small Maruti fixture from `spike/linked_document/tests/` to
-`engine/tests/linked_documents/`. Change imports from `spike.linked_document` to
-`engine.linked_documents`. Do not weaken assertions or remove the live-audit artifacts from
-`spike/`.
+Move the 59 product-facing detector/resolver tests and the small Maruti fixture from
+`spike/linked_document/tests/` to `engine/tests/linked_documents/`. Keep the eight `probe.py`
+audit-harness tests under `spike/`; the live corpus runner and 45-company registry are validation
+tools, not code that should ship in every desktop sidecar. Change product-test imports from
+`spike.linked_document` to `engine.linked_documents`. Do not weaken assertions or remove the
+live-audit artifacts from `spike/`.
 
 - [ ] **Step 2: Run the promoted tests and verify RED**
 

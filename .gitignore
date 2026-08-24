@@ -67,6 +67,7 @@ release/feed/
 
 # --- Playwright MCP scratch (screenshots/snapshots) ---
 .playwright-mcp/
+output/playwright/
 
 # internal maintainer-only (not for public repo)
 docs/RELEASING.md
