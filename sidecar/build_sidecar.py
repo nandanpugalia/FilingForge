@@ -45,6 +45,12 @@ def main() -> int:
         "--collect-submodules", "uvicorn",
         "--collect-submodules", "engine",
         "--collect-submodules", "api",
+        # Recursive collection is needed for runtime-selected adapters, but
+        # must not drag the repository's pytest suites into the desktop app.
+        "--exclude-module", "engine.tests",
+        "--exclude-module", "api.tests",
+        "--exclude-module", "pytest",
+        "--exclude-module", "_pytest",
         "--hidden-import", "uvicorn.lifespan.on",
         "--hidden-import", "uvicorn.loops.auto",
         "--hidden-import", "uvicorn.protocols.http.auto",

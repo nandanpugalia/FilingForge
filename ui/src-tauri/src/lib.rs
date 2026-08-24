@@ -66,9 +66,44 @@ fn spawn_engine(app: tauri::AppHandle, attempt: u32) {
     });
 }
 
+// Idempotent so it is safe to call from both the window lifecycle and the app
+// event loop. macOS Cmd+Q can exit the application without delivering the
+// window Destroyed event, so cleanup must not live only in on_window_event.
+fn stop_engine(app: &tauri::AppHandle) {
+    let state = app.state::<EngineState>();
+    state.shutting_down.store(true, Ordering::SeqCst);
+    let taken = state.child.lock().unwrap().take();
+    if let Some(child) = taken {
+        // child.kill() only terminates the DIRECT sidecar process. PyInstaller's
+        // one-file bootloader spawns a worker child that runs uvicorn and holds
+        // the port — terminate the whole process tree.
+        let pid = child.pid();
+        #[cfg(target_os = "windows")]
+        {
+            use std::os::windows::process::CommandExt;
+            const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+            let _ = std::process::Command::new("taskkill")
+                .args(["/PID", &pid.to_string(), "/T", "/F"])
+                .creation_flags(CREATE_NO_WINDOW)
+                .status();
+            let _ = child;
+        }
+        #[cfg(not(target_os = "windows"))]
+        {
+            // A uvicorn worker can keep handling SIGTERM while its PyInstaller
+            // parent exits and is reparented to launchd. Force-stop that exact
+            // direct child before terminating the bootloader.
+            let _ = std::process::Command::new("pkill")
+                .args(["-KILL", "-P", &pid.to_string()])
+                .status();
+            let _ = child.kill();
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    let result = tauri::Builder::default()
+    let app = tauri::Builder::default()
         // Single-instance MUST be the first plugin registered. When a 2nd copy of the
         // app launches, this callback fires in the ALREADY-running instance (the 2nd
         // process exits immediately) — so we never spawn a competing engine sidecar on
@@ -109,48 +144,23 @@ pub fn run() {
         })
         .on_window_event(|window, event| {
             if let tauri::WindowEvent::Destroyed = event {
-                // Kill the engine sidecar when the window is destroyed so we don't
-                // leave an orphaned process holding 127.0.0.1:8765.
-                let app = window.app_handle();
-                let state = app.state::<EngineState>();
-                // Flag shutdown FIRST so the crash-monitor treats this termination as
-                // intentional and does not respawn the engine we're about to kill.
-                state.shutting_down.store(true, Ordering::SeqCst);
-                // Take the child out under a short-lived lock so the MutexGuard is dropped
-                // before we run the (blocking) kill below.
-                let taken = state.child.lock().unwrap().take();
-                if let Some(child) = taken {
-                    // child.kill() only terminates the DIRECT sidecar process. PyInstaller's
-                    // one-file bootloader spawns a worker child that runs uvicorn and holds
-                    // the port — it would orphan. So kill the whole process tree.
-                    let pid = child.pid();
-                    #[cfg(target_os = "windows")]
-                    {
-                        use std::os::windows::process::CommandExt;
-                        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
-                        let _ = std::process::Command::new("taskkill")
-                            .args(["/PID", &pid.to_string(), "/T", "/F"])
-                            .creation_flags(CREATE_NO_WINDOW)
-                            .status();
-                        let _ = child; // already terminated by taskkill /T
-                    }
-                    #[cfg(not(target_os = "windows"))]
-                    {
-                        // uvicorn runs single-process (no workers/reload), so the bootloader's
-                        // one direct worker child is the only descendant: kill it, then the
-                        // bootloader itself.
-                        let _ = std::process::Command::new("pkill")
-                            .args(["-P", &pid.to_string()])
-                            .status();
-                        let _ = child.kill();
-                    }
-                }
+                stop_engine(window.app_handle());
             }
         })
-        .run(tauri::generate_context!());
+        .build(tauri::generate_context!());
 
-    if let Err(e) = result {
-        // Don't panic on a runtime event-loop error — log and exit cleanly.
-        eprintln!("FilingForge exited with an error: {e}");
+    match app {
+        Ok(app) => app.run(|app, event| {
+            // Cmd+Q on macOS requests application exit without necessarily
+            // destroying the main window first. Clean up at the app lifecycle
+            // boundary as well as the window boundary.
+            if matches!(event, tauri::RunEvent::ExitRequested { .. } | tauri::RunEvent::Exit) {
+                stop_engine(app);
+            }
+        }),
+        Err(e) => {
+            // Don't panic on a setup error — log and exit cleanly.
+            eprintln!("FilingForge failed to start: {e}");
+        }
     }
 }
