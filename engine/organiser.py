@@ -102,7 +102,24 @@ def record_seen(company: Path, filing: Filing) -> None:
     company.mkdir(parents=True, exist_ok=True)
     seen = load_seen(company)
     seen.add(filing.news_id)
-    (company / _SEEN_FILE).write_text(json.dumps(sorted(seen)))
+    _atomic_write_text(company / _SEEN_FILE, json.dumps(sorted(seen)))
+
+
+def remove_seen(company: Path, news_id: str) -> None:
+    """Remove one dedup identity during rollback of a failed assisted import."""
+    company = Path(company)
+    seen = load_seen(company)
+    if news_id not in seen:
+        return
+    seen.remove(news_id)
+    path = company / _SEEN_FILE
+    if seen:
+        _atomic_write_text(path, json.dumps(sorted(seen)))
+    else:
+        try:
+            path.unlink()
+        except FileNotFoundError:
+            pass
 
 
 def already_have(company: Path, filing: Filing) -> bool:

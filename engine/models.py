@@ -79,6 +79,25 @@ class Filing:
     category: str
 
 
+@dataclass(frozen=True)
+class PendingDocument:
+    """A substantive filing whose BSE attachment was only a cover letter.
+
+    The original BSE identity is retained so a user-selected PDF can enter the
+    ordinary organiser/converter/dedup path without becoming a second filing.
+    """
+    news_id: str
+    date: str
+    headline: str
+    folder: str
+    category: str
+    expected_type: str
+    expected_period: Optional[str]
+    bse_url: str
+    issuer_url: Optional[str]
+    reason: str
+
+
 @dataclass
 class LibraryResult:
     downloaded: list[str] = field(default_factory=list)
