@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { pickFolder } from "../lib/pickFolder";
-import { isTauri } from "./ReadyGate";
+import { isTauri } from "../lib/isTauri";
 
 // One-time setup, shown on first launch only. Asks a single thing — where the
 // library is stored — and saves it as the global destination. Every build and the

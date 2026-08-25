@@ -1,4 +1,4 @@
-import { isTauri } from "../components/ReadyGate";
+import { isTauri } from "./isTauri";
 
 /** Pick one user-downloaded PDF without asking where it belongs in the library. */
 export async function pickPdfFile(): Promise<string | null> {

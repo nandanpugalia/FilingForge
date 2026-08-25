@@ -1,4 +1,4 @@
-import { isTauri } from "../components/ReadyGate";
+import { isTauri } from "./isTauri";
 
 /**
  * Open an external URL in the user's real system browser.

@@ -121,13 +121,13 @@ describe("payments worker: startCheckout / redeem / redeemFallback / installSkil
 describe("apiBase uses the runtime engine port", () => {
   beforeEach(() => { vi.resetModules(); });
   afterEach(() => {
-    vi.doUnmock("../components/ReadyGate");
+    vi.doUnmock("../lib/isTauri");
     vi.doUnmock("@tauri-apps/api/core");
     vi.unstubAllGlobals();
     vi.resetModules();
   });
   it("routes calls to the port engine_info reports (8766), not hardcoded 8765", async () => {
-    vi.doMock("../components/ReadyGate", () => ({ isTauri: () => true }));
+    vi.doMock("../lib/isTauri", () => ({ isTauri: () => true }));
     vi.doMock("@tauri-apps/api/core", () => ({ invoke: vi.fn().mockResolvedValue({ port: 8766, token: "tok" }) }));
     const freshApi = await import("../api");
     const f = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ companies: [] }) } as Response);

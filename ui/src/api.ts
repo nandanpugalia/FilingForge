@@ -1,5 +1,5 @@
 import * as self from "./api";
-import { isTauri } from "./components/ReadyGate";
+import { isTauri } from "./lib/isTauri";
 import { WORKER_URL } from "./config";
 import type { Candidate, BuildScope, JobStatus, LibraryItem, ProgressEvent, ImportedSkill, PreviewResult, PendingDocument, PendingImportResult } from "./types";
 

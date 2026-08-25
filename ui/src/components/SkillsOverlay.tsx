@@ -123,10 +123,10 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
   // Resume banner: a pending session exists AND that skill isn't owned yet.
   useEffect(() => {
     const p = getPending();
-    setResume(p && !pendingOwned ? p : null);
     if (pendingOwned) clearPending();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imported]);
+    const update = window.setTimeout(() => setResume(p && !pendingOwned ? p : null), 0);
+    return () => window.clearTimeout(update);
+  }, [pendingOwned]);
 
   // Stop the poll loop on unmount.
   useEffect(() => () => { if (pollTimer.current) clearInterval(pollTimer.current); }, []);
@@ -200,9 +200,10 @@ export function SkillsOverlay({ root, onClose }: { root: string; onClose: () => 
     stopPoll();
     setPolling(true);
     setBuyMsg("Waiting for your payment to confirm — this unlocks automatically.");
-    const started = Date.now();
+    let attempts = 0;
     pollTimer.current = setInterval(async () => {
-      if (Date.now() - started > 3 * 60 * 1000) {
+      attempts += 1;
+      if (attempts > 60) {
         stopPoll();
         setBuyMsg("Your purchase is safe — paste the code from your email below to unlock it.");
         return;

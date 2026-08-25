@@ -1,4 +1,4 @@
-import { isTauri } from "../components/ReadyGate";
+import { isTauri } from "./isTauri";
 
 /**
  * Open the native OS file picker for a Skill's Markdown file (the .md a user
