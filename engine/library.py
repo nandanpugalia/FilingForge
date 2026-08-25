@@ -11,7 +11,7 @@ from .bse_client import BSEClient
 from .models import CategorySpec, LibraryResult, PendingDocument
 from .fetcher import list_all_filings, download_filing, filing_attachment_url
 from .organiser import (company_dir, save_filing, save_markdown, clean_partials,
-                        already_have, record_seen, save_library_config)
+                        already_have, filing_label, record_seen, save_library_config)
 from .converter import pdf_to_markdown
 from .indexer import build_index, build_master_index, count_documents
 from .report_helper import write_report_helper
@@ -99,10 +99,10 @@ def _process(company, scrip_code, ticker, specs, years, client, on_progress, eve
             if should_cancel and should_cancel():   # checked BEFORE each filing → recorded ones are whole
                 res.cancelled = True
                 break
-            label = f.headline or f.attachment
+            label = filing_label(f)
             if already_have(company, f):
                 res.skipped.append(f.news_id)
-                emit(on_progress, ProgressEvent("download", i, total, f"Already have: {label}"))
+                emit(on_progress, ProgressEvent("download", i, total, f"Already in your library: {label}"))
                 continue
             big = any(h in label.lower() for h in _LARGE_DOC_HINTS)
             hint = " — large file, this can take a moment" if big else ""

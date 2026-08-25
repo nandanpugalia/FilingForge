@@ -16,7 +16,7 @@ def test_index_lists_every_saved_doc_grouped_by_real_folder(tmp_path):
     text = build_index(root, "TANLA").read_text()
     assert "# TANLA" in text
     assert "Annual Reports" in text and "Corp Actions" in text
-    assert "Annual Report 2024-25" in text and "2026-04-24" in text
+    assert "Annual report FY 2024-25" in text and "2026-04-24" in text
     # relative link still embeds the category folder (now year-nested too)
     assert "annual-reports/" in text and "corp-actions/" in text
 

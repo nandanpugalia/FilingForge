@@ -4,7 +4,7 @@ import httpx
 import pytest
 from engine.bse_client import BSEClient
 from engine.library import build_library, refresh_library
-from engine.models import CURATED_BY_KEY
+from engine.models import CURATED_BY_KEY, Filing
 from engine.errors import CompanyNotFoundError
 
 AR = CURATED_BY_KEY["annual_report"]
@@ -45,6 +45,37 @@ def test_build_downloads_converts_and_indexes(tmp_path):
     assert list((company / "annual-reports").rglob("*.md"))
     assert (company / "INDEX.md").exists()
     assert any(e.stage == "download" for e in events)   # progress emitted
+
+
+def test_progress_uses_document_type_and_period_not_bse_boilerplate(tmp_path, monkeypatch):
+    import engine.library as library
+
+    filing = Filing(
+        news_id="ppt-1",
+        date="2026-02-05",
+        headline=("Please find attached Investor Presentation and Factsheet on performance "
+                  "for the quarter and nine months ended December 31, 2025"),
+        attachment="notice.pdf",
+        folder="investor-ppts",
+        category="Investor Presentations",
+    )
+    monkeypatch.setattr(library, "list_all_filings", lambda *_args, **_kwargs: [filing])
+    monkeypatch.setattr(library, "download_filing", lambda *_args, **_kwargs: b"%PDF-1.7 full")
+    events = []
+
+    build_library("543210", "KFINTECH", tmp_path, [CURATED_BY_KEY["investor_ppt"]],
+                  years=1, client=object(), on_progress=events.append)
+
+    messages = [event.message for event in events if event.stage == "download"]
+    assert any("Downloading Investor presentation — quarter and nine months ended 31 Dec 2025" in message
+               for message in messages)
+    assert all("Downloading Please find attached" not in message for message in messages)
+
+    refresh_events = []
+    refresh_library(tmp_path / "KFINTECH", "543210", [CURATED_BY_KEY["investor_ppt"]],
+                    years=1, client=object(), on_progress=refresh_events.append)
+    assert any("Already in your library: Investor presentation" in event.message
+               for event in refresh_events)
 
 
 def test_partial_failure_keeps_folder_valid(tmp_path):
