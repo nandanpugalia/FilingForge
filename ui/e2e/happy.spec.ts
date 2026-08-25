@@ -1,3 +1,5 @@
+import { mkdirSync } from "node:fs";
+import path from "node:path";
 import { test, expect } from "@playwright/test";
 
 declare global {
@@ -6,7 +8,7 @@ declare global {
   }
 }
 
-test("search → configure → preview → build → done", async ({ page }) => {
+test("search → configure → preview → build → done", async ({ page }, testInfo) => {
   await page.addInitScript(() => {
     localStorage.setItem("filingforge.settings", JSON.stringify({
       dest: "/Users/test/FilingForgeLibrary", years: 1, everything: true,
@@ -72,4 +74,13 @@ test("search → configure → preview → build → done", async ({ page }) => 
   await expect(page.getByText("Tanla Platforms Ltd")).toBeVisible();
   await expect(page.getByRole("button", { name: "Copy AI instructions" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Open library" })).toBeVisible();
+
+  if (testInfo.project.name === "chromium") {
+    const artifactDir = path.resolve(process.cwd(), "../output/playwright");
+    mkdirSync(artifactDir, { recursive: true });
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await page.screenshot({ path: path.join(artifactDir, "complete-desktop-1440x900.png"), fullPage: true });
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.screenshot({ path: path.join(artifactDir, "complete-mobile-390x844.png"), fullPage: true });
+  }
 });
