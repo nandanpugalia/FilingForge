@@ -2,7 +2,7 @@ import { useState } from "react";
 import type { Settings } from "../types";
 import { DONATE, APP_VERSION } from "../config";
 import { pickFolder } from "../lib/pickFolder";
-import { isTauri } from "./ReadyGate";
+import { isTauri } from "../lib/isTauri";
 import { useEscapeClose } from "../lib/useEscapeClose";
 import type { UpdateController } from "../lib/useUpdate";
 export function SettingsOverlay({ settings, onSave, onClose, updater }: {

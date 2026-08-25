@@ -1,8 +1,9 @@
 import threading
 import time
 import pytest
-from api.jobs import JobManager, JOB_DONE_SENTINEL
+from api.jobs import JobManager, JOB_DONE_SENTINEL, run_build
 from engine.errors import BSEUnavailableError
+from engine.models import LibraryResult, PendingDocument
 
 
 def _wait(job, status, timeout=2.0):
@@ -91,3 +92,30 @@ def test_get_returns_none_for_unknown_job():
 def test_create_assigns_unique_ids():
     mgr = JobManager()
     assert mgr.create().id != mgr.create().id
+
+
+def test_run_build_serializes_pending_documents(monkeypatch, tmp_path):
+    import engine.bse_client as bse
+    import engine.library as library
+    pending = PendingDocument(
+        news_id="news-1", date="2026-07-28", headline="Annual Report FY 2025-26",
+        folder="annual-reports", category="Annual Reports", expected_type="Annual report",
+        expected_period="FY 2025-26", bse_url="https://www.bseindia.com/notice.pdf",
+        issuer_url="https://investor.example.com/reports/", reason="ambiguous",
+    )
+    monkeypatch.setattr(bse, "BSEClient", lambda: type("Client", (), {"close": lambda self: None})())
+    monkeypatch.setattr(
+        library, "build_library",
+        lambda *_args, **_kwargs: LibraryResult(downloaded=["done"], pending=[pending], ready=12),
+    )
+
+    result = run_build("1", "KFINTECH", str(tmp_path), False, ["annual_report"], 2)(lambda _event: None)
+
+    assert result["downloaded"] == 1
+    assert result["ready"] == 12
+    assert result["pending"] == [{
+        "news_id": "news-1", "date": "2026-07-28", "headline": "Annual Report FY 2025-26",
+        "folder": "annual-reports", "category": "Annual Reports", "expected_type": "Annual report",
+        "expected_period": "FY 2025-26", "bse_url": "https://www.bseindia.com/notice.pdf",
+        "issuer_url": "https://investor.example.com/reports/", "reason": "ambiguous",
+    }]

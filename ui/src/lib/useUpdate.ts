@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { isTauri } from "../components/ReadyGate";
+import { isTauri } from "./isTauri";
 
 // How often the app auto-checks for updates. We throttle to once/24h (rather than every
 // launch) so the updater's latest.json fetch — which GitHub counts as our privacy-clean
@@ -57,7 +57,10 @@ export function useUpdate(beta: boolean): UpdateController {
     }
   }, [beta]);
 
-  useEffect(() => { void runCheck(false); }, [runCheck]);   // auto, throttled, on launch
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void runCheck(false); }, 0);
+    return () => window.clearTimeout(timer);
+  }, [runCheck]);   // auto, throttled, on launch
 
   const install = useCallback(async () => {
     if (!isTauri()) return;

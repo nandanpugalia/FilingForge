@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import date, timedelta
 from .bse_client import BSEClient
 from .errors import DownloadError, FilingForgeError
-from .models import Filing, CategorySpec, slug
+from .models import Filing, CategorySpec, CURATED_BY_KEY, slug
 
 ANN_URL = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
 _PDF_BASES = [   # SPIKE FINDING: AttachHis serves real %PDF; AttachLive is stale (HTML). Try both.
@@ -11,6 +11,9 @@ _PDF_BASES = [   # SPIKE FINDING: AttachHis serves real %PDF; AttachLive is stal
     "https://www.bseindia.com/xml-data/corpfiling/AttachLive/",
 ]
 _MAX_PAGES = 50
+_LINKED_DOCUMENT_SPECS = tuple(
+    CURATED_BY_KEY[key] for key in ("annual_report", "results", "investor_ppt", "concall")
+)
 
 # BSE's SECOND filing source. Annual reports only reach the announcements feed
 # from 2015, when LODR Reg. 34(1) started requiring them; this archive carries
@@ -24,6 +27,12 @@ def _classify(row: dict, specs: list[CategorySpec], everything: bool):
     cat = (row.get("CATEGORYNAME") or "").strip()
     sub = (row.get("SUBCATNAME") or "").strip()
     if everything:
+        # Keep the four substantive linked-document types in their canonical
+        # folders even when every other filing is grouped by BSE category. The
+        # library's cover-letter detector is deliberately scoped by these folders.
+        for spec in _LINKED_DOCUMENT_SPECS:
+            if spec.matches(cat, sub):
+                return (spec.folder, spec.label)
         return (slug(cat), cat or "Other")
     for spec in specs:
         if spec.matches(cat, sub):
@@ -166,3 +175,10 @@ def download_filing(filing: Filing, client: BSEClient) -> bytes:
         if content[:5] == b"%PDF-":
             return content
     raise DownloadError(filing.headline or filing.attachment)
+
+
+def filing_attachment_url(filing: Filing) -> str:
+    """Canonical URL for provenance and for opening the original BSE notice."""
+    if filing.attachment.startswith(("http://", "https://")):
+        return filing.attachment
+    return _PDF_BASES[0] + filing.attachment

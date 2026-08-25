@@ -79,16 +79,37 @@ class Filing:
     category: str
 
 
+@dataclass(frozen=True)
+class PendingDocument:
+    """A substantive filing whose BSE attachment was only a cover letter.
+
+    The original BSE identity is retained so a user-selected PDF can enter the
+    ordinary organiser/converter/dedup path without becoming a second filing.
+    """
+    news_id: str
+    date: str
+    headline: str
+    folder: str
+    category: str
+    expected_type: str
+    expected_period: Optional[str]
+    bse_url: str
+    issuer_url: Optional[str]
+    reason: str
+
+
 @dataclass
 class LibraryResult:
     downloaded: list[str] = field(default_factory=list)
     skipped: list[str] = field(default_factory=list)
     failed: list[str] = field(default_factory=list)
+    pending: list[PendingDocument] = field(default_factory=list)
+    ready: int = 0
     cancelled: bool = False                 # user pressed Stop; library left consistent
 
     @property
     def total_attempted(self) -> int:
-        return len(self.downloaded) + len(self.skipped) + len(self.failed)
+        return len(self.downloaded) + len(self.skipped) + len(self.failed) + len(self.pending)
 
     @property
     def ok(self) -> bool:

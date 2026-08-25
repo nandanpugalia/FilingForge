@@ -62,3 +62,20 @@ pub async fn install_update(app: tauri::AppHandle, beta: bool) -> Result<(), Str
     // so it is the function's tail — nothing after it runs.
     app.restart()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::{feed, BETA, STABLE};
+
+    #[test]
+    fn stable_installs_never_read_the_prerelease_feed() {
+        assert_eq!(feed(false), STABLE);
+        assert_ne!(feed(false), BETA);
+    }
+
+    #[test]
+    fn opted_in_installs_read_only_the_prerelease_feed() {
+        assert_eq!(feed(true), BETA);
+        assert_ne!(feed(true), STABLE);
+    }
+}

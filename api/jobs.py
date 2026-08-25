@@ -5,7 +5,7 @@ from __future__ import annotations
 import queue
 import threading
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Callable, Optional
 from engine.errors import FilingForgeError
@@ -96,7 +96,10 @@ def run_build(scrip_code: str, ticker: str, dest: str, everything: bool, categor
             res = build_library(scrip_code, ticker, Path(dest).expanduser(), specs, years, client,
                                 on_progress=bridge, everything=everything, should_cancel=should_cancel)
             return {"downloaded": len(res.downloaded), "skipped": len(res.skipped),
-                    "failed": len(res.failed), "cancelled": res.cancelled}
+                    "failed": len(res.failed),
+                    "ready": res.ready,
+                    "pending": [asdict(item) for item in res.pending],
+                    "cancelled": res.cancelled}
         finally:
             client.close()
 

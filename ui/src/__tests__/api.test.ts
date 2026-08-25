@@ -47,6 +47,27 @@ describe("startBuild / getStatus / getLibrary / openFolder", () => {
     await api.openFolder("/root/TANLA");
     expect(f).toHaveBeenCalledWith(expect.stringContaining("/open-folder"), expect.anything());
   });
+  it("importPendingPdf posts the exact slot and returns remaining pending items", async () => {
+    const f = mockFetch(200, { news_id: "news-1", destination: "/lib/KFINTECH/report.pdf", pending: [] });
+    vi.stubGlobal("fetch", f);
+
+    const out = await api.importPendingPdf("/lib", "KFINTECH", "news-1", "/Users/np/Downloads/report.pdf");
+
+    expect(out.destination).toBe("/lib/KFINTECH/report.pdf");
+    const [url, init] = f.mock.calls[0] as [string, RequestInit];
+    expect(url).toContain("/pending/import");
+    expect(JSON.parse(init.body as string)).toEqual({
+      root: "/lib", ticker: "KFINTECH", news_id: "news-1", path: "/Users/np/Downloads/report.pdf",
+    });
+  });
+  it("getPending returns resumable slots for one company", async () => {
+    const item = { news_id: "news-1", expected_type: "Annual report" };
+    const f = mockFetch(200, { pending: [item] });
+    vi.stubGlobal("fetch", f);
+
+    expect(await api.getPending("/lib", "KFINTECH")).toEqual([item]);
+    expect(f.mock.calls[0][0]).toContain("/pending?root=%2Flib&ticker=KFINTECH");
+  });
 });
 
 describe("payments worker: startCheckout / redeem / redeemFallback / installSkillMd", () => {
@@ -100,13 +121,13 @@ describe("payments worker: startCheckout / redeem / redeemFallback / installSkil
 describe("apiBase uses the runtime engine port", () => {
   beforeEach(() => { vi.resetModules(); });
   afterEach(() => {
-    vi.doUnmock("../components/ReadyGate");
+    vi.doUnmock("../lib/isTauri");
     vi.doUnmock("@tauri-apps/api/core");
     vi.unstubAllGlobals();
     vi.resetModules();
   });
   it("routes calls to the port engine_info reports (8766), not hardcoded 8765", async () => {
-    vi.doMock("../components/ReadyGate", () => ({ isTauri: () => true }));
+    vi.doMock("../lib/isTauri", () => ({ isTauri: () => true }));
     vi.doMock("@tauri-apps/api/core", () => ({ invoke: vi.fn().mockResolvedValue({ port: 8766, token: "tok" }) }));
     const freshApi = await import("../api");
     const f = vi.fn().mockResolvedValue({ ok: true, status: 200, json: async () => ({ companies: [] }) } as Response);

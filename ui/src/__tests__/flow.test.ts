@@ -40,10 +40,45 @@ describe("flow reducer", () => {
     expect(s.progressLog[s.progressLog.length - 1]).toBe("item 249");
   });
   it("BUILD_DONE → done (only from building; ignored otherwise)", () => {
-    const ok = reducer({ ...initialState, phase: "building" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0 } });
+    const ok = reducer({ ...initialState, phase: "building" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0, pending: [] } });
     expect(ok.phase).toBe("done"); expect(ok.result?.downloaded).toBe(9);
-    const ignored = reducer({ ...initialState, phase: "search" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0 } });
+    const ignored = reducer({ ...initialState, phase: "search" }, { type: "BUILD_DONE", result: { downloaded: 9, skipped: 1, failed: 0, pending: [] } });
     expect(ignored.phase).toBe("search");
+  });
+  it("PENDING_IMPORTED increments ready count and replaces remaining slots", () => {
+    const done: State = {
+      ...initialState,
+      phase: "done",
+      result: { downloaded: 1, ready: 12, skipped: 0, failed: 0, pending: [{
+        news_id: "news-1", date: "2026-07-28", headline: "Annual Report",
+        folder: "annual-reports", category: "Annual Reports", expected_type: "Annual report",
+        expected_period: "FY 2025-26", bse_url: "https://www.bseindia.com/notice.pdf",
+        issuer_url: null, reason: "missing link",
+      }] },
+    };
+
+    const next = reducer(done, { type: "PENDING_IMPORTED", pending: [] });
+
+    expect(next.result?.downloaded).toBe(2);
+    expect(next.result?.ready).toBe(13);
+    expect(next.result?.pending).toEqual([]);
+  });
+  it("RESUME_PENDING restores a persisted completion flow after reopening", () => {
+    const pending = [{
+      news_id: "news-1", date: "2026-07-28", headline: "Annual Report",
+      folder: "annual-reports", category: "Annual Reports", expected_type: "Annual report",
+      expected_period: "FY 2025-26", bse_url: "https://www.bseindia.com/notice.pdf",
+      issuer_url: null, reason: "source PDF needed",
+    }];
+
+    const next = reducer(initialState, {
+      type: "RESUME_PENDING", candidate: { ...cand, company: "KFINTECH", symbol: "KFINTECH" },
+      result: { downloaded: 12, skipped: 0, failed: 0, pending },
+    });
+
+    expect(next.phase).toBe("done");
+    expect(next.company?.symbol).toBe("KFINTECH");
+    expect(next.result?.pending).toEqual(pending);
   });
   it("FAIL → error with message", () => {
     const s = reducer(initialState, { type: "FAIL", message: "BSE isn't responding." });

@@ -49,6 +49,8 @@ echo ">> Target triple: $TRIPLE"
 "$PYINSTALLER" --noconfirm --onefile --name filingforge-api \
   --paths . \
   --collect-submodules uvicorn --collect-submodules engine --collect-submodules api \
+  --exclude-module engine.tests --exclude-module api.tests \
+  --exclude-module pytest --exclude-module _pytest \
   --hidden-import uvicorn.lifespan.on --hidden-import uvicorn.loops.auto \
   --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto \
   --hidden-import uvicorn.logging \

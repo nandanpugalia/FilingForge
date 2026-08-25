@@ -6,7 +6,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // Generated artifacts may contain minified/binary JS that is not project source.
+  // Keep every authored file (including tests) inside the lint boundary.
+  globalIgnores(['dist', 'src-tauri/target', 'test-results', 'playwright-report']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

@@ -63,9 +63,11 @@ release/feed/
 
 # --- Local agent / audit scratch (never commit) ---
 .kimchi/
+.worktrees/
 
 # --- Playwright MCP scratch (screenshots/snapshots) ---
 .playwright-mcp/
+output/playwright/
 
 # internal maintainer-only (not for public repo)
 docs/RELEASING.md

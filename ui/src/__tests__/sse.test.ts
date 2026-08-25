@@ -1,5 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import * as api from "../api";
+import type { JobStatus, ProgressEvent } from "../types";
+
+type EventTail = { status?: string; result?: unknown; error?: string | null };
 
 class FakeES {
   static last: FakeES; url: string;
@@ -22,14 +25,14 @@ const flush = () => new Promise<void>((r) => setTimeout(r, 0));
 
 describe("subscribeBuildEvents", () => {
   it("delivers progress, resolves on event:end with the terminal frame, closes once", async () => {
-    const events: any[] = []; let ended: any = undefined;
+    const events: ProgressEvent[] = []; let ended: EventTail | undefined;
     api.subscribeBuildEvents("j1", { onProgress: e => events.push(e), onEnd: t => { ended = t; } });
     await flush();
     FakeES.last.emit(JSON.stringify({ stage: "download", current: 1, total: 2, message: "a", percent: 50 }));
     FakeES.last.emit(JSON.stringify({ status: "done", result: { downloaded: 2, skipped: 0, failed: 0 }, error: null }));
     FakeES.last.fireEnd();
     expect(events[0].current).toBe(1);
-    expect(ended.status).toBe("done");
+    expect(ended?.status).toBe("done");
     expect(FakeES.last.closed).toBe(true);
   });
 
@@ -43,12 +46,13 @@ describe("subscribeBuildEvents", () => {
   });
 
   it("on transient onerror (status still running) does NOT resolve; resolves when status becomes done", async () => {
-    const statuses = [
+    const statuses: JobStatus[] = [
       { job_id: "j1", status: "running", progress: null, result: null, error: null },
-      { job_id: "j1", status: "done", progress: null, result: { downloaded: 1, skipped: 0, failed: 0 }, error: null },
+      { job_id: "j1", status: "done", progress: null,
+        result: { downloaded: 1, skipped: 0, failed: 0, pending: [] }, error: null },
     ];
-    vi.spyOn(api, "getStatus").mockImplementation(async () => statuses.shift() as any);
-    let ended: any = undefined;
+    vi.spyOn(api, "getStatus").mockImplementation(async () => statuses.shift()!);
+    let ended: EventTail | undefined;
     api.subscribeBuildEvents("j1", { onProgress: () => {}, onEnd: t => { ended = t; } });
     await flush();
     await FakeES.last.fireError();      // status=running → no resolve

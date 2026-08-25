@@ -16,7 +16,7 @@ def test_index_lists_every_saved_doc_grouped_by_real_folder(tmp_path):
     text = build_index(root, "TANLA").read_text()
     assert "# TANLA" in text
     assert "Annual Reports" in text and "Corp Actions" in text
-    assert "Annual Report 2024-25" in text and "2026-04-24" in text
+    assert "Annual report FY 2024-25" in text and "2026-04-24" in text
     # relative link still embeds the category folder (now year-nested too)
     assert "annual-reports/" in text and "corp-actions/" in text
 
@@ -169,6 +169,26 @@ def test_read_library_counts_year_nested_pdfs(tmp_path):
     # counts keyed by CATEGORY folder, summed across year subfolders
     assert row["counts"] == {"annual-reports": 1, "quarterly": 2}
     assert row["total"] == 3
+
+
+def test_read_library_surfaces_persisted_pending_document_count(tmp_path):
+    from engine.models import PendingDocument
+    from engine.pending import upsert_pending
+
+    company = company_dir(tmp_path, "KFINTECH")
+    company.mkdir(parents=True)
+    build_index(company, "KFINTECH")
+    upsert_pending(company, PendingDocument(
+        news_id="news-1", date="2026-07-28", headline="Annual Report",
+        folder="annual-reports", category="Annual Reports",
+        expected_type="Annual report", expected_period="FY 2025-26",
+        bse_url="https://www.bseindia.com/notice.pdf", issuer_url=None,
+        reason="source PDF needed",
+    ))
+
+    row = read_library(tmp_path)[0]
+
+    assert row["pending"] == 1
 
 
 def test_is_company_dir_detects_year_nested(tmp_path):

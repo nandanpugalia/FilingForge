@@ -1,7 +1,7 @@
 from pathlib import Path
 from engine.organiser import (
     company_dir, save_filing, save_markdown, clean_partials,
-    already_have, load_seen, record_seen,
+    already_have, filing_label, load_seen, record_seen,
 )
 from engine.models import Filing
 
@@ -24,6 +24,55 @@ def test_save_filing_writes_into_type_folder_with_readable_name(tmp_path):
     assert path.suffix == ".pdf"
     assert "2025-07-01" in path.name
     assert path.read_bytes().startswith(b"%PDF-")
+
+
+def test_supported_filing_uses_semantic_filename_not_bse_boilerplate(tmp_path):
+    root = company_dir(tmp_path, "KFINTECH")
+    filing = Filing(
+        news_id="news-1",
+        date="2026-02-05",
+        headline=("Please find attached Investor Presentation and Factsheet on performance "
+                  "for the quarter and nine months ended December 31, 2025"),
+        attachment="notice.pdf",
+        folder="investor-ppts",
+        category="Investor Presentations",
+    )
+
+    path = save_filing(root, filing, b"%PDF-1.7 data")
+
+    assert "Investor_presentation" in path.name
+    assert "2025-12-31" in path.name
+    assert "Please_find_attached" not in path.name
+    assert path.name.endswith("__news-1.pdf")
+
+
+def test_supported_filing_without_period_uses_type_and_filing_date(tmp_path):
+    root = company_dir(tmp_path, "KFINTECH")
+    filing = Filing(
+        news_id="news-2",
+        date="2026-02-05",
+        headline="Please find attached the transcript",
+        attachment="notice.pdf",
+        folder="concalls",
+        category="Concall Transcripts",
+    )
+
+    path = save_filing(root, filing, b"%PDF-1.7 data")
+
+    assert path.name == "2026-02-05_Concall_transcript__news-2.pdf"
+
+
+def test_progress_label_does_not_guess_fiscal_year_without_fy_evidence():
+    filing = Filing(
+        news_id="results-1",
+        date="2025-05-08",
+        headline="Financial Results for Q1 2025",
+        attachment="results.pdf",
+        folder="quarterly",
+        category="Financial Results",
+    )
+
+    assert filing_label(filing) == "Financial results — filed 8 May 2025"
 
 
 def test_save_filing_nests_pdf_and_md_under_year(tmp_path):

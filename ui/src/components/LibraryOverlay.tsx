@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { getLibrary } from "../api";
 import type { LibraryItem } from "../types";
 import { useEscapeClose } from "../lib/useEscapeClose";
-export function LibraryOverlay({ root, onOpen, onRefresh, onAddCompany, onOpenReport, onClose }: {
+export function LibraryOverlay({ root, onOpen, onRefresh, onAddCompany, onOpenReport, onCompletePending, onClose }: {
   root: string; onOpen: (ticker: string) => void; onRefresh: (ticker: string) => void;
-  onAddCompany: () => void; onOpenReport?: (reportRel: string) => void; onClose: () => void;
+  onAddCompany: () => void; onOpenReport?: (reportRel: string) => void;
+  onCompletePending?: (item: LibraryItem) => void; onClose: () => void;
 }) {
   const [items, setItems] = useState<LibraryItem[]>([]);
   const [err, setErr] = useState<string | null>(null);
@@ -32,8 +33,13 @@ export function LibraryOverlay({ root, onOpen, onRefresh, onAddCompany, onOpenRe
           {shown.map((it) => (
             <li key={it.ticker}>
               <span className="t">{it.ticker}</span>
-              <span className="n">{it.total} docs</span>
+              <span className="n">{it.total} docs{(it.pending ?? 0) > 0
+                ? ` · ${it.pending} source PDF${it.pending === 1 ? "" : "s"} pending`
+                : ""}</span>
               <span className="lib-actions">
+                {(it.pending ?? 0) > 0 && onCompletePending && (
+                  <button className="link" onClick={() => onCompletePending(it)}>Complete remaining ▸</button>
+                )}
                 <button className="link" onClick={() => onRefresh(it.ticker)} title="Pull new filings">Refresh ↻</button>
                 {it.hasReport && it.reportRel && onOpenReport && (
                   <button className="link" onClick={() => onOpenReport(it.reportRel!)}>open report ▸</button>

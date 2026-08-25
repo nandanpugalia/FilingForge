@@ -88,6 +88,19 @@ it("LibraryOverlay: Refresh + Add company are wired", async () => {
   expect(onAddCompany).toHaveBeenCalled();
 });
 
+it("LibraryOverlay surfaces persisted source PDFs and resumes the exact company", async () => {
+  const item = { ticker: "KFINTECH", total: 12, counts: {}, pending: 1, hasReport: false, reportRel: null };
+  vi.spyOn(api, "getLibrary").mockResolvedValue([item]);
+  const onCompletePending = vi.fn();
+
+  render(<LibraryOverlay root="/root" onOpen={() => {}} onRefresh={() => {}}
+    onAddCompany={() => {}} onCompletePending={onCompletePending} onClose={() => {}} />);
+
+  expect(await screen.findByText(/1 source PDF pending/i)).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: /Complete remaining/i }));
+  expect(onCompletePending).toHaveBeenCalledWith(item);
+});
+
 it("SkillsOverlay: Business Model Brief is free, Concall Decoder is the priced premium pack", async () => {
   vi.spyOn(api, "getLibrary").mockResolvedValue([]);
   vi.spyOn(api, "getSkills").mockResolvedValue([]);

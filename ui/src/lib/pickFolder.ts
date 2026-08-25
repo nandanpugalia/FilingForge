@@ -1,4 +1,4 @@
-import { isTauri } from "../components/ReadyGate";
+import { isTauri } from "./isTauri";
 
 /**
  * Open the native OS directory picker when running inside the Tauri desktop app.

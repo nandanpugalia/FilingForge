@@ -4,6 +4,27 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.18] — 2026-08-25
+
+### Added
+- **FilingForge now follows cover-letter links for the documents that matter.** When a BSE
+  attachment is only a short notice pointing elsewhere, FilingForge safely retrieves the real
+  annual report, concall transcript, investor presentation, or financial result when there is
+  one unambiguous official PDF. If the issuer page cannot be resolved safely, the app keeps an
+  actionable source-PDF slot and files, converts, and indexes the PDF after you choose it.
+
+### Changed
+- Build progress and new filenames use concise document types and periods instead of BSE's
+  long “Please find attached…” announcement prose. Existing library files are never renamed.
+- The completion screen now leads with the useful next steps: copy ready-to-use AI instructions
+  or open the library, while clearly separating total ready, newly added, already present,
+  failed, and source-PDF-pending documents.
+
+### Fixed
+- Cover letters are no longer saved as though they were full research documents.
+- Clipboard permission failures are shown inline instead of silently doing nothing.
+- Release builds now fail early if the Git tag, Tauri version, and Rust package version drift.
+
 ## [0.1.17] — 2026-08-09
 
 ### Added

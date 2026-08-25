@@ -7,12 +7,14 @@ from engine.errors import (
     FilingForgeError, CompanyNotFoundError, BSEUnavailableError, DownloadError,
     SkillImportError,
 )
+from engine.pending import PendingImportError
 
 _STATUS = {
     CompanyNotFoundError: 404,
     BSEUnavailableError: 503,
     DownloadError: 502,
     SkillImportError: 400,
+    PendingImportError: 400,
 }
 
 

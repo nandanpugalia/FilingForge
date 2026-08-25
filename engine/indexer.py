@@ -27,6 +27,12 @@ def _company_counts(company: Path) -> dict[str, int]:
     return counts
 
 
+def count_documents(company: Path) -> int:
+    """Number of completed PDFs currently present in one company library."""
+    company = Path(company)
+    return sum(_company_counts(company).values()) if company.exists() else 0
+
+
 def build_index(company: Path, ticker: str) -> Path:
     lines = [f"# {ticker}", "", "_AI-ready filing library built by FilingForge. "
              "Each document has a clean `.md` sibling for your AI to read._", ""]
@@ -111,8 +117,13 @@ def read_library(root: Path) -> list[dict]:
         return []
     out: list[dict] = []
     for c in sorted(p for p in root.iterdir() if _is_company_dir(p)):
+        # Imported lazily to avoid the pending module's build_index dependency
+        # forming an import cycle. The count lets the desktop app restore the
+        # completion card after an app restart.
+        from .pending import list_pending
         counts = _company_counts(c)
         report_rel = _find_report(c, root)
         out.append({"ticker": c.name, "counts": counts, "total": sum(counts.values()),
+                    "pending": len(list_pending(c)),
                     "hasReport": report_rel is not None, "reportRel": report_rel})
     return out

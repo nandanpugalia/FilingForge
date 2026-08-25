@@ -10,11 +10,14 @@ from engine import __version__ as engine_version
 from engine.bse_client import BSEClient
 from engine.resolver import resolve
 from engine.indexer import read_library
+from engine.organiser import company_dir
+from engine.pending import import_pending_pdf, list_pending
 from engine.skills import list_imported_skills, import_skill, save_skill_content, skills_dir
 from .jobs import run_build, JOB_DONE_SENTINEL
 from .osutil import open_folder
 from .schemas import (ResolveRequest, CandidateOut, BuildRequest, JobCreated, JobStatusOut,
-                      OpenFolderRequest, ImportSkillRequest, InstallSkillRequest)
+                      OpenFolderRequest, ImportSkillRequest, InstallSkillRequest,
+                      PendingDocumentOut, PendingImportRequest, PendingImportOut)
 
 router = APIRouter()
 
@@ -140,3 +143,24 @@ def open_result_folder(req: OpenFolderRequest) -> dict:
     except NotADirectoryError:
         raise HTTPException(status_code=400, detail="That path isn't a folder.")
     return {"ok": True}
+
+
+@router.get("/pending")
+def pending_documents(root: str, ticker: str) -> dict:
+    company = company_dir(Path(root).expanduser(), ticker)
+    return {
+        "pending": [PendingDocumentOut(**item.__dict__).model_dump()
+                    for item in list_pending(company)]
+    }
+
+
+@router.post("/pending/import")
+def pending_import(req: PendingImportRequest) -> dict:
+    company = company_dir(Path(req.root).expanduser(), req.ticker)
+    destination = import_pending_pdf(company, req.news_id, Path(req.path).expanduser())
+    remaining = [PendingDocumentOut(**item.__dict__) for item in list_pending(company)]
+    return PendingImportOut(
+        news_id=req.news_id,
+        destination=str(destination),
+        pending=remaining,
+    ).model_dump()
