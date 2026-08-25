@@ -7,7 +7,7 @@ from pypdf import PdfWriter
 from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject, RectangleObject
 
 from engine.models import Filing, PendingDocument
-from engine.organiser import record_seen
+from engine.organiser import filing_destination, record_seen
 from engine.pending import (PendingImportError, import_pending_pdf, list_pending,
                             remove_pending, upsert_pending)
 
@@ -287,10 +287,18 @@ def test_seen_filing_prunes_stale_pending_and_cannot_be_manually_overwritten(tmp
 
 def test_existing_destination_is_never_overwritten_by_assisted_import(tmp_path):
     company = tmp_path / "library" / "KFINTECH"
-    upsert_pending(company, item())
-    destination = (
-        company / "annual-reports" / "2026" /
-        "2026-07-28_Annual_Report_FY_2025-26__news-1.pdf"
+    pending = item()
+    upsert_pending(company, pending)
+    destination = filing_destination(
+        company,
+        Filing(
+            news_id=pending.news_id,
+            date=pending.date,
+            headline=pending.headline,
+            attachment=pending.bse_url,
+            folder=pending.folder,
+            category=pending.category,
+        ),
     )
     destination.parent.mkdir(parents=True)
     destination.write_bytes(b"%PDF-existing-correct-document")
