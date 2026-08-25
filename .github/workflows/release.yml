@@ -59,6 +59,15 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Verify app version matches the release tag
+        shell: bash
+        run: |
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            python scripts/check_release_version.py --tag "${{ github.ref_name }}"
+          else
+            python scripts/check_release_version.py
+          fi
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
         with:
