@@ -59,6 +59,9 @@ jobs:
       - name: Install UI deps
         working-directory: ui
         run: npm ci
+      - name: Lint UI
+        working-directory: ui
+        run: npm run lint
       - name: Typecheck + build UI
         working-directory: ui
         run: npm run build

@@ -1,7 +1,7 @@
 # Linked-document release polish design
 
-**Date:** 2026-08-25  
-**Status:** Approved in conversation  
+**Date:** 2026-08-25
+**Status:** Approved in conversation
 **Parent:** `2026-08-24-assisted-linked-document-import-design.md`
 
 ## Outcome
