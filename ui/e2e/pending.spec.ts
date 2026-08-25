@@ -108,7 +108,9 @@ test("pending issuer document stays guided through PDF and Markdown completion",
     window.__ffEs?.end();
   }, pending);
 
-  await expect(page.getByText("12 documents ready · 1 awaiting source PDF")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Library almost ready" })).toBeVisible();
+  await expect(page.getByText("12 official filings ready")).toBeVisible();
+  await expect(page.getByText("1 needs its source PDF")).toBeVisible();
   await expect(page.getByText("investor.kfintech.com")).toBeVisible();
 
   if (testInfo.project.name === "chromium") {
@@ -140,7 +142,8 @@ test("pending issuer document stays guided through PDF and Markdown completion",
   });
 
   await page.getByRole("button", { name: "Use downloaded PDF" }).click();
-  await expect(page.getByText("Your KFin Technologies library is ready.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Library ready" })).toBeVisible();
+  await expect(page.getByText("KFin Technologies")).toBeVisible();
   await expect(page.getByRole("button", { name: "Use downloaded PDF" })).toHaveCount(0);
   expect(consoleErrors).toEqual([]);
 });

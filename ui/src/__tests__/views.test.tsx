@@ -38,14 +38,30 @@ it("ProgressView maps stage + percent to friendly copy and milestone words", () 
   expect(screen.getByText(/^Done$/i)).toBeInTheDocument();
 });
 
-it("DoneView shows counts, skip note, AI hook, open + reset", async () => {
+it("DoneView leads with the complete library outcome and both actions", async () => {
   const onOpen = vi.fn(), onReset = vi.fn();
-  render(<DoneView ticker="TANLA" result={{ downloaded: 9, skipped: 1, failed: 0, pending: [] }} onOpen={onOpen} onReset={onReset} />);
-  expect(screen.getByText(/9 documents added/)).toBeInTheDocument();
-  expect(screen.getByText(/had no attached PDF/)).toBeInTheDocument();
-  expect(screen.getByText(/An INDEX.md sits in the folder/)).toBeInTheDocument();
-  await userEvent.click(screen.getByRole("button", { name: /Open folder/i })); expect(onOpen).toHaveBeenCalled();
+  render(<DoneView ticker="KFINTECH" name="KFin Technologies Ltd"
+    result={{ downloaded: 28, ready: 28, skipped: 0, failed: 0, pending: [] }}
+    onOpen={onOpen} onReset={onReset} />);
+  expect(screen.getByRole("heading", { name: "Library ready" })).toBeInTheDocument();
+  expect(screen.getByText("KFin Technologies Ltd")).toBeInTheDocument();
+  expect(screen.getByText(/28 official filings ready for your AI/i)).toBeInTheDocument();
+  expect(screen.getByText(/28 added/i)).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: /Copy AI instructions/i })).toHaveClass("primary");
+  await userEvent.click(screen.getByRole("button", { name: /Open library/i })); expect(onOpen).toHaveBeenCalled();
   await userEvent.click(screen.getByRole("button", { name: /back to home/i })); expect(onReset).toHaveBeenCalled();
+});
+
+it("DoneView describes refresh facts without calling already-present files missing", () => {
+  render(<DoneView ticker="KFINTECH" name="KFin Technologies Ltd"
+    result={{ downloaded: 2, ready: 28, skipped: 26, failed: 1, pending: [] }}
+    onOpen={() => {}} onReset={() => {}} />);
+
+  expect(screen.getByText(/28 official filings ready for your AI/i)).toBeInTheDocument();
+  expect(screen.getByText(/2 new/i)).toBeInTheDocument();
+  expect(screen.getByText(/26 already in your library/i)).toBeInTheDocument();
+  expect(screen.getByText(/1 couldn't be added/i)).toBeInTheDocument();
+  expect(screen.queryByText(/had no attached PDF/i)).not.toBeInTheDocument();
 });
 
 it("DoneView renders the category breakdown (mapped labels, sorted, zero-filtered)", () => {
@@ -61,31 +77,45 @@ it("DoneView renders the category breakdown (mapped labels, sorted, zero-filtere
   expect(screen.queryByText("Press releases")).not.toBeInTheDocument(); // zero count filtered out
 });
 
-it("DoneView renders a copyable AI prompt block with company + INDEX paths, Copy writes to clipboard", async () => {
+it("DoneView copies the approved company-index handoff only after a click", async () => {
   const writeText = vi.fn().mockResolvedValue(undefined);
   Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
-  const { container } = render(<DoneView ticker="TANLA" name="Tanla Platforms Ltd" dest="/Users/np/Filings"
-    result={{ downloaded: 9, skipped: 0, failed: 0, pending: [] }} onOpen={() => {}} onReset={() => {}} />);
-  // block is labelled and its body contains the company + both index paths
-  expect(screen.getByText(/Paste this to your AI/i)).toBeInTheDocument();
-  const body = container.querySelector(".ai-prompt-body")!;
-  expect(body.textContent).toContain("Tanla Platforms Ltd");
-  expect(body.textContent).toContain("/Users/np/Filings/TANLA/INDEX.md");
-  expect(body.textContent).toContain("/Users/np/Filings/INDEX.md");
-  // Copy button copies the full prompt text and flips to "Copied ✓"
-  const copyBtn = screen.getByRole("button", { name: /^Copy$/i });
+  render(<DoneView ticker="TANLA" name="Tanla Platforms Ltd" dest="/Users/np/Filings"
+    result={{ downloaded: 9, ready: 9, skipped: 0, failed: 0, pending: [] }} onOpen={() => {}} onReset={() => {}} />);
+  expect(writeText).not.toHaveBeenCalled();
+  expect(screen.queryByText(/\/Users\/np\/Filings/)).not.toBeInTheDocument();
+
+  const copyBtn = screen.getByRole("button", { name: /Copy AI instructions/i });
   await userEvent.click(copyBtn);
   expect(writeText).toHaveBeenCalledTimes(1);
   const arg = writeText.mock.calls[0][0] as string;
-  expect(arg).toContain("Tanla Platforms Ltd");
-  expect(arg).toContain("/Users/np/Filings/TANLA/INDEX.md");
-  expect(arg).toContain("/Users/np/Filings/INDEX.md");
+  expect(arg).toBe(
+    "I've built a local filings library for Tanla Platforms Ltd.\n" +
+    "Read its index first: /Users/np/Filings/TANLA/INDEX.md\n" +
+    "Use only the official filings in that library and cite the filenames you rely on.\n" +
+    "Tell me when you've read the index and are ready, then wait for my question."
+  );
+  expect(arg).not.toContain("Other companies");
+  expect(arg).not.toContain("/Users/np/Filings/INDEX.md");
   expect(await screen.findByRole("button", { name: /Copied/i })).toBeInTheDocument();
 });
 
+it("DoneView keeps clipboard failures visible and retryable", async () => {
+  const writeText = vi.fn().mockRejectedValue(new Error("permission denied"));
+  Object.defineProperty(navigator, "clipboard", { value: { writeText }, configurable: true });
+  render(<DoneView ticker="TANLA" dest="/lib"
+    result={{ downloaded: 9, ready: 9, skipped: 0, failed: 0, pending: [] }}
+    onOpen={() => {}} onReset={() => {}} />);
+
+  await userEvent.click(screen.getByRole("button", { name: /Copy AI instructions/i }));
+
+  expect(await screen.findByRole("alert")).toHaveTextContent(/couldn't copy/i);
+  expect(screen.getByRole("button", { name: /Copy AI instructions/i })).toBeEnabled();
+});
+
 it("DoneView renders gracefully with no breakdown (just the summary)", () => {
-  render(<DoneView ticker="TANLA" result={{ downloaded: 9, skipped: 0, failed: 0, pending: [] }} onOpen={() => {}} onReset={() => {}} />);
-  expect(screen.getByText(/9 documents added/)).toBeInTheDocument();
+  render(<DoneView ticker="TANLA" result={{ downloaded: 9, ready: 9, skipped: 0, failed: 0, pending: [] }} onOpen={() => {}} onReset={() => {}} />);
+  expect(screen.getByText(/9 official filings ready for your AI/i)).toBeInTheDocument();
   expect(screen.queryByText(/By type/i)).not.toBeInTheDocument();
 });
 
@@ -96,7 +126,10 @@ it("DoneView makes pending source PDFs explicit and actionable", async () => {
     onOpen={() => {}} onReset={() => {}} onOpenPendingSource={onOpenSource}
     onUsePendingPdf={onUsePdf} importingPendingId={null} pendingErrors={{}} />);
 
-  expect(screen.getByText(/12 documents ready · 1 awaiting source PDF/i)).toBeInTheDocument();
+  expect(screen.getByRole("heading", { name: /Library almost ready/i })).toBeInTheDocument();
+  expect(screen.getByText(/12 official filings ready/i)).toBeInTheDocument();
+  expect(screen.getByText(/1 needs its source PDF/i)).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: /Copy AI instructions/i })).not.toBeInTheDocument();
   expect(screen.getByText("Annual report")).toBeInTheDocument();
   expect(screen.getByText("FY 2025-26")).toBeInTheDocument();
   expect(screen.getByText(/investor\.kfintech\.com/)).toBeInTheDocument();
@@ -113,8 +146,8 @@ it("DoneView reports total ready documents rather than only this refresh's addit
     result={{ downloaded: 1, ready: 12, skipped: 0, failed: 0, pending: [pending] }}
     onOpen={() => {}} onReset={() => {}} />);
 
-  expect(screen.getByText(/12 documents ready · 1 awaiting source PDF/i)).toBeInTheDocument();
-  expect(screen.queryByText(/1 document ready ·/i)).not.toBeInTheDocument();
+  expect(screen.getByText(/12 official filings ready/i)).toBeInTheDocument();
+  expect(screen.queryByText(/1 official filing ready/i)).not.toBeInTheDocument();
 });
 
 it("DoneView uses the BSE notice fallback and keeps an import error inline", () => {
@@ -127,6 +160,15 @@ it("DoneView uses the BSE notice fallback and keeps an import error inline", () 
   expect(screen.getByRole("button", { name: /View BSE notice/i })).toBeInTheDocument();
   expect(screen.getByText("That is another cover letter.")).toBeInTheDocument();
   expect(screen.queryByText(/library is ready/i)).not.toBeInTheDocument();
+});
+
+it("DoneView describes a cancelled build as safely saved rather than fully completed", () => {
+  render(<DoneView ticker="TANLA"
+    result={{ downloaded: 2, ready: 7, skipped: 5, failed: 0, pending: [], cancelled: true }}
+    onOpen={() => {}} onReset={() => {}} />);
+
+  expect(screen.getByRole("heading", { name: /Saved safely/i })).toBeInTheDocument();
+  expect(screen.getByText(/7 complete official filings are ready/i)).toBeInTheDocument();
 });
 
 it("ErrorView shows the friendly message, retries, opens the report form, and Back when given", async () => {

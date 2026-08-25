@@ -68,5 +68,8 @@ test("search → configure → preview → build → done", async ({ page }) => 
     window.__happyEs?.end();
   });
 
-  await expect(page.getByText(/Your Tanla Platforms Ltd library is ready/)).toBeVisible({ timeout: 5000 });
+  await expect(page.getByRole("heading", { name: "Library ready" })).toBeVisible({ timeout: 5000 });
+  await expect(page.getByText("Tanla Platforms Ltd")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Copy AI instructions" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open library" })).toBeVisible();
 });

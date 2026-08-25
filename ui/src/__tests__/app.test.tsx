@@ -50,8 +50,9 @@ it("walks search → configure → preview → building → done", async () => {
   await userEvent.click(await screen.findByRole("button", { name: /Build library/i }));
   // preview gate → approve
   await userEvent.click(await screen.findByRole("button", { name: /Download 1/i }));
-  expect(await screen.findByText(/Your Tanla Platforms Ltd library is ready/)).toBeInTheDocument();
-  expect(screen.getByText(/1 document added/)).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Library ready" })).toBeInTheDocument();
+  expect(screen.getByText("Tanla Platforms Ltd")).toBeInTheDocument();
+  expect(screen.getByText(/1 added/)).toBeInTheDocument();
 });
 
 it("shows a friendly error if startBuild fails, and Retry re-runs", async () => {
@@ -70,7 +71,7 @@ it("shows a friendly error if startBuild fails, and Retry re-runs", async () => 
   vi.spyOn(api, "subscribeBuildEvents").mockImplementation((_id, h) => {
     h.onEnd({ status: "done", result: { downloaded: 0, skipped: 0, failed: 0 } }); return { close: () => {} }; });
   await userEvent.click(screen.getByRole("button", { name: /Retry/i }));
-  expect(await screen.findByText(/library is ready/i)).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Library ready" })).toBeInTheDocument();
 });
 
 it("completes one pending source PDF through the native picker and local API", async () => {
@@ -106,7 +107,8 @@ it("completes one pending source PDF through the native picker and local API", a
   await userEvent.click(screen.getByRole("button", { name: /Use downloaded PDF/i }));
 
   expect(importPdf).toHaveBeenCalledWith("~/FilingForgeLibrary", "KFINTECH", "news-1", "/Users/np/Downloads/report.pdf");
-  expect(await screen.findByText(/Your KFin Technologies library is ready/i)).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Library ready" })).toBeInTheDocument();
+  expect(screen.getByText("KFin Technologies")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: /Use downloaded PDF/i })).not.toBeInTheDocument();
 });
 
@@ -130,11 +132,13 @@ it("resumes a persisted pending PDF from the library after an app restart", asyn
   await userEvent.click(await screen.findByRole("button", { name: "Library" }));
   await userEvent.click(await screen.findByRole("button", { name: /Complete remaining/i }));
 
-  expect(await screen.findByText(/12 documents ready · 1 awaiting source PDF/i)).toBeInTheDocument();
+  expect(await screen.findByText(/12 official filings ready/i)).toBeInTheDocument();
+  expect(screen.getByText(/1 needs its source PDF/i)).toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: /Use downloaded PDF/i }));
 
   expect(importPdf).toHaveBeenCalledWith(
     "~/FilingForgeLibrary", "KFINTECH", "news-1", "/Users/np/Downloads/report.pdf",
   );
-  expect(await screen.findByText(/Your KFINTECH library is ready/i)).toBeInTheDocument();
+  expect(await screen.findByRole("heading", { name: "Library ready" })).toBeInTheDocument();
+  expect(screen.getByText("KFINTECH")).toBeInTheDocument();
 });

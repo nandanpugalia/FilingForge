@@ -1075,7 +1075,44 @@ a { color: var(--dim); text-decoration: none; }
   margin: 0;
   line-height: 1.15;
 }
-.done .summary { color: var(--ink); font-size: 14px; letter-spacing: 0.01em; }
+.done-head { display: flex; flex-direction: column; gap: 5px; }
+.done-company {
+  color: var(--dim);
+  font-size: 14px;
+  letter-spacing: 0.01em;
+}
+.done-total {
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 22px;
+  line-height: 1.25;
+  margin-top: 5px;
+}
+.done .summary { color: var(--dim); font-size: 13px; letter-spacing: 0.01em; }
+.done-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.done-open {
+  appearance: none;
+  color: var(--ember);
+  background: transparent;
+  border: 1px solid rgba(255, 106, 61, 0.45);
+  border-radius: var(--radius);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 12px 18px;
+  cursor: pointer;
+}
+.done-open:hover { background: var(--ember-soft); border-color: var(--ember); }
+.copy-error {
+  color: var(--bad);
+  background: rgba(217, 108, 95, 0.08);
+  border-left: 2px solid var(--bad);
+  padding: 8px 10px;
+  font-size: 11.5px;
+  line-height: 1.5;
+}
 /* "What you got" category breakdown (Done screen) */
 .done .breakdown {
   width: 100%;

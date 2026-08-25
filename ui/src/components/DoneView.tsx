@@ -34,9 +34,7 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
   importingPendingId?: string | null;
   pendingErrors?: Record<string, string>;
 }) {
-  const [copied, setCopied] = useState(false);
-  const skipNote = result.skipped ? ` · ${result.skipped} had no attached PDF` : "";
-  const failNote = result.failed ? ` · ${result.failed} failed` : "";
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "error">("idle");
   const pending = result.pending ?? [];
   const hasPending = pending.length > 0;
   const ready = result.ready ?? result.downloaded;
@@ -44,31 +42,70 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
     ? Object.entries(breakdown).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1])
     : [];
 
-  const root = dest ?? ".";
+  const root = (dest ?? ".").replace(/[\\/]+$/, "") || ".";
   const promptText =
     `I've built a local filings library for ${name || ticker}.\n` +
-    `Read its index first:  ${root}/${ticker}/INDEX.md\n` +
-    `Then answer from its official filings. Other companies I have: ${root}/INDEX.md`;
+    `Read its index first: ${root}/${ticker}/INDEX.md\n` +
+    `Use only the official filings in that library and cite the filenames you rely on.\n` +
+    `Tell me when you've read the index and are ready, then wait for my question.`;
 
-  const copyPrompt = () => {
-    navigator.clipboard.writeText(promptText).then(
-      () => { setCopied(true); setTimeout(() => setCopied(false), 2000); },
-      () => {},
-    );
+  const runFacts: string[] = [];
+  if (result.downloaded) runFacts.push(
+    `${result.downloaded} ${result.skipped ? "new" : "added"}`,
+  );
+  if (result.skipped) runFacts.push(`${result.skipped} already in your library`);
+  if (result.failed) runFacts.push(
+    `${result.failed} couldn't be added`,
+  );
+
+  const filingNoun = (count: number) => `official filing${count === 1 ? "" : "s"}`;
+  const readyText = result.cancelled
+    ? `${ready} complete ${filingNoun(ready)} ${ready === 1 ? "is" : "are"} ready`
+    : hasPending
+      ? `${ready} ${filingNoun(ready)} ready`
+      : `${ready} ${filingNoun(ready)} ready for your AI`;
+
+  const pendingText = pending.length === 1
+    ? "1 needs its source PDF"
+    : `${pending.length} need their source PDFs`;
+
+  const copyPrompt = async () => {
+    setCopyState("idle");
+    try {
+      if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+      await navigator.clipboard.writeText(promptText);
+      setCopyState("copied");
+      window.setTimeout(() => setCopyState("idle"), 2000);
+    } catch {
+      setCopyState("error");
+    }
   };
+
   return (
     <div className="done">
-      <h2 className="ready">{result.cancelled
-        ? `Stopped — your ${name || ticker} library was saved.`
-        : hasPending
-          ? `Your ${name || ticker} library is almost ready.`
-          : `Your ${name || ticker} library is ready.`}</h2>
-      <div className="saved-as">Saved in the <code>{ticker}/</code> folder</div>
+      <div className="done-head">
+        <h2 className="ready">{result.cancelled
+          ? "Saved safely"
+          : hasPending ? "Library almost ready" : "Library ready"}</h2>
+        <div className="done-company">{name || ticker}</div>
+        <div className="done-total">{readyText}</div>
+      </div>
+      <div className="saved-as">Saved in <code>{ticker}/</code></div>
+
+      {!hasPending && !result.cancelled && <div className="done-actions">
+        <button type="button" className="primary" onClick={copyPrompt}>
+          {copyState === "copied" ? "Copied ✓" : "Copy AI instructions"}
+        </button>
+        <button type="button" className="done-open" onClick={onOpen}>Open library</button>
+      </div>}
+      {copyState === "error" && <div className="copy-error" role="alert">
+        Couldn't copy the instructions. Check clipboard permission and try again.
+      </div>}
+
       <div className="summary">
-        {hasPending
-          ? `${ready} document${ready === 1 ? "" : "s"} ready · ${pending.length} awaiting source PDF${pending.length === 1 ? "" : "s"}`
-          : <>{result.cancelled && "Stopped early — "}{result.downloaded} document{result.downloaded === 1 ? "" : "s"} added{skipNote}{failNote}</>}
-        {result.cancelled && " · everything saved is complete and indexed"}
+        {hasPending && <span>{pendingText}</span>}
+        {hasPending && runFacts.length > 0 && <span> · </span>}
+        {runFacts.length > 0 ? runFacts.join(" · ") : !hasPending && "Everything is already up to date"}
       </div>
       {rows.length > 0 && (
         <div className="breakdown">
@@ -87,17 +124,9 @@ export function DoneView({ ticker, name, dest, result, breakdown, onOpen, onRese
         importingId={importingPendingId ?? null} errors={pendingErrors ?? {}}
         onOpenSource={onOpenPendingSource ?? (() => {})}
         onUsePdf={onUsePendingPdf ?? (() => {})} />}
-      {!hasPending && <div className="ai-hook">An INDEX.md sits in the folder — point the Claude desktop app or Codex at it to read the entire company.</div>}
-      {!hasPending && <div className="ai-prompt">
-        <div className="ai-prompt-head">
-          <span className="ai-prompt-label">Paste this to your AI ↓</span>
-          <button type="button" className="ai-prompt-copy" onClick={copyPrompt}>
-            {copied ? "Copied ✓" : "Copy"}
-          </button>
-        </div>
-        <pre className="ai-prompt-body">{promptText}</pre>
-      </div>}
-      <button className="primary" onClick={onOpen}>Open folder ▸</button>
+      {(hasPending || result.cancelled) && <button type="button" className="done-open" onClick={onOpen}>
+        Open library
+      </button>}
       <button className="link" onClick={onReset}>‹ Back to home</button>
     </div>
   );
