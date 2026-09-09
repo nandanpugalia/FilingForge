@@ -183,7 +183,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 10
     permissions:
-      contents: read
+      contents: write  # The new installer is still in a draft release.
     steps:
       - uses: actions/checkout@v4
       - name: Verify previous stable installer upgrades to this build
