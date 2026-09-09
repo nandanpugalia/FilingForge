@@ -4,6 +4,16 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.19] — 2026-09-09
+
+### Fixed
+- Multi-year searches now retrieve announcements in yearly windows. BSE silently returned
+  no announcements for longer date ranges, leaving some libraries with only annual reports.
+- History requests cover every selected date, paginate each window, and count overlapping
+  filings once. A failed window reports an error instead of presenting incomplete history.
+- Refresh an existing company after updating to discover the missing filings. Already-saved
+  documents retain their identities and are not downloaded again.
+
 ## [0.1.18] — 2026-08-25
 
 ### Added
