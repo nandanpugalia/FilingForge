@@ -178,8 +178,30 @@ jobs:
 
   # Flip the draft release live as soon as BOTH installers exist. Windows is fully ready;
   # the Mac DMG is codesigned and notarizing in the background (staple-mac finishes it).
-  publish:
+  windows-upgrade-smoke:
     needs: build
+    runs-on: windows-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write  # The new installer is still in a draft release.
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify previous stable installer upgrades to this build
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          New-Item -ItemType Directory -Force old-installer,new-installer | Out-Null
+          gh release download --repo $env:GITHUB_REPOSITORY --pattern FilingForge-Setup.exe --dir old-installer
+          if ($LASTEXITCODE -ne 0) { throw 'Could not download previous stable installer' }
+          gh release download '${{ github.ref_name }}' --repo $env:GITHUB_REPOSITORY --pattern FilingForge-Setup.exe --dir new-installer
+          if ($LASTEXITCODE -ne 0) { throw 'Could not download new installer' }
+          $version = (Get-Content ui/src-tauri/tauri.conf.json | ConvertFrom-Json).version
+          ./scripts/windows_upgrade_smoke.ps1 -PreviousInstaller "$PWD/old-installer/FilingForge-Setup.exe" -NewInstaller "$PWD/new-installer/FilingForge-Setup.exe" -ExpectedVersion $version
+
+  publish:
+    needs: [build, windows-upgrade-smoke]
     runs-on: ubuntu-latest
     permissions:
       contents: write

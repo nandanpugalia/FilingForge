@@ -40,10 +40,31 @@ def _classify(row: dict, specs: list[CategorySpec], everything: bool):
     return None
 
 
+_WINDOW_DAYS = 365  # Longer requests can silently return no BSE announcements.
+
+
 def list_filings(scrip_code: str, specs: list[CategorySpec], years: int, client: BSEClient,
                  *, everything: bool = False) -> list[Filing]:
+    """Fetch the selected history in BSE-safe windows, newest first.
+
+    Inclusive windows share their boundary day so no date is skipped. BSE news
+    IDs deduplicate that overlap and preserve existing-library refresh identity.
+    A failed window propagates its error rather than returning incomplete history.
+    """
     end = date.today()
-    start = end - timedelta(days=365 * years)
+    floor = end - timedelta(days=365 * years)
+    filings: dict[str, Filing] = {}
+    while end > floor:
+        start = max(floor, end - timedelta(days=_WINDOW_DAYS))
+        for filing in _list_window(scrip_code, specs, start, end, client,
+                                   everything=everything):
+            filings.setdefault(filing.news_id, filing)
+        end = start
+    return sorted(filings.values(), key=lambda f: f.date, reverse=True)
+
+
+def _list_window(scrip_code: str, specs: list[CategorySpec], start: date, end: date,
+                 client: BSEClient, *, everything: bool) -> list[Filing]:
     base = {"strCat": "-1", "subcategory": "-1", "strSearch": "P", "strType": "C",
             "strScrip": str(scrip_code),
             "strPrevDate": start.strftime("%Y%m%d"), "strToDate": end.strftime("%Y%m%d")}
