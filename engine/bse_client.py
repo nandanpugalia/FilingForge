@@ -6,11 +6,23 @@ from typing import Optional
 import httpx
 from .errors import BSEUnavailableError
 
+# What a browser on bseindia.com sends with each data call. Since BSE's new website (24 Sep 2026)
+# its data service answers "Access Denied" to anything less — the referer alone was enough before.
+# The platform hint agrees with the user agent.
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
     "Referer": "https://www.bseindia.com/",
+    "Origin": "https://www.bseindia.com",
     "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "en-US,en;q=0.9",
+    "Accept-Encoding": "gzip, deflate",
+    "sec-ch-ua": '"Chromium";v="124", "Google Chrome";v="124", "Not-A.Brand";v="99"',
+    "sec-ch-ua-mobile": "?0",
+    "sec-ch-ua-platform": '"Windows"',
+    "sec-fetch-dest": "empty",
+    "sec-fetch-mode": "cors",
+    "sec-fetch-site": "same-site",
 }
 RATE_DELAY = 0.3   # confirmed polite in spike (40+ reqs, zero blocks)
 MAX_RETRIES = 2    # 1 initial attempt + this many retries on a transient blip

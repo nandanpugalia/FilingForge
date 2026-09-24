@@ -17,6 +17,25 @@ def test_get_json_sends_browser_headers_and_returns_table():
     assert data["Table"][0]["NEWSID"] == "abc"
 
 
+def test_sends_the_full_header_set_bses_own_pages_send():
+    """24 Sep 2026: BSE moved to a new website and its data service now answers "Access Denied"
+    unless a request carries what a browser on bseindia.com sends — the language, the fetch
+    context and the platform hint as well as the referer. Every api.bseindia.com call failed
+    (announcements, scrip search, company header); the site's PDFs and price files did not."""
+    seen = {}
+
+    def handler(req):
+        seen.update(req.headers)
+        return httpx.Response(200, json={"Table": []})
+    _client(handler).get_json("https://api.bseindia.com/x", {})
+    assert seen["origin"] == "https://www.bseindia.com"
+    assert seen["accept-language"].startswith("en")
+    assert (seen["sec-fetch-mode"], seen["sec-fetch-site"], seen["sec-fetch-dest"]) == \
+        ("cors", "same-site", "empty")
+    assert seen["sec-ch-ua-platform"] == '"Windows"'          # agrees with the user agent
+    assert "gzip" in seen["accept-encoding"]
+
+
 def test_get_json_raises_friendly_on_5xx():
     handler = lambda req: httpx.Response(503)
     with pytest.raises(BSEUnavailableError):

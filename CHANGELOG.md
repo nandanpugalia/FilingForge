@@ -4,6 +4,13 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+- BSE's new website (September 2026) refused every search with "Access Denied", so no
+  company could be found or refreshed. FilingForge now sends the same request details BSE's
+  own pages send, and searches, announcements and downloads work again.
+
 ## [0.1.19] — 2026-09-09
 
 ### Fixed
