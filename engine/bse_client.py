@@ -1,6 +1,7 @@
 """The single network seam. All BSE HTTP goes through here so every other module is pure
 logic over data, and the whole suite runs offline via an injected MockTransport."""
 from __future__ import annotations
+import os
 import ssl
 import time
 from typing import Optional
@@ -41,10 +42,17 @@ class BSEClient:
         # a dead socket — then the retry below gives a flaky network a second chance. The 30s
         # read cap also bounds how long a Stop takes to register: a threading.Event can't
         # interrupt an in-flight request, so the worst-case wait for Stop is one read timeout.
-        # Python's standard TLS setup, not httpx's narrowed cipher list: since BSE's new site
-        # (24 Sep 2026) its data service refuses httpx's default handshake even with the right
-        # headers. certifi's certificates, so the packaged app verifies BSE on every platform.
-        tls = ssl.create_default_context(cafile=certifi.where())
+        # Standard TLS restored BSE access on a server where headers alone did not.
+        # Preserve HTTPX's certificate overrides and precedence; packaged installs
+        # otherwise use certifi. Certificate and hostname verification stay enabled.
+        ca_file = os.environ.get("SSL_CERT_FILE", "")
+        ca_dir = os.environ.get("SSL_CERT_DIR", "")
+        if os.path.isfile(ca_file):
+            tls = ssl.create_default_context(cafile=ca_file)
+        elif os.path.isdir(ca_dir):
+            tls = ssl.create_default_context(capath=ca_dir)
+        else:
+            tls = ssl.create_default_context(cafile=certifi.where())
         self._client = httpx.Client(headers=HEADERS, follow_redirects=True, transport=transport,
                                     verify=tls, timeout=httpx.Timeout(30.0, connect=10.0))
         self._rate_delay = rate_delay
