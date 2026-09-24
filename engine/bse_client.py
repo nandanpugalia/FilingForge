@@ -6,9 +6,9 @@ from typing import Optional
 import httpx
 from .errors import BSEUnavailableError
 
-# What a browser on bseindia.com sends with each data call. Since BSE's new website (24 Sep 2026)
-# its data service answers "Access Denied" to anything less — the referer alone was enough before.
-# The platform hint agrees with the user agent.
+# Browser request headers verified against BSE's data service on 24 Sep 2026.
+# The previous User-Agent/Referer/Accept set now gets "Access Denied"; this set
+# restores search and announcements. Platform hints agree with the user agent.
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
