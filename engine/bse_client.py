@@ -1,14 +1,17 @@
 """The single network seam. All BSE HTTP goes through here so every other module is pure
 logic over data, and the whole suite runs offline via an injected MockTransport."""
 from __future__ import annotations
+import os
+import ssl
 import time
 from typing import Optional
+import certifi
 import httpx
 from .errors import BSEUnavailableError
 
-# What a browser on bseindia.com sends with each data call. Since BSE's new website (24 Sep 2026)
-# its data service answers "Access Denied" to anything less — the referer alone was enough before.
-# The platform hint agrees with the user agent.
+# Browser request headers verified against BSE's data service on 24 Sep 2026.
+# The previous User-Agent/Referer/Accept set now gets "Access Denied"; this set
+# restores search and announcements. Platform hints agree with the user agent.
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
                   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
@@ -39,8 +42,19 @@ class BSEClient:
         # a dead socket — then the retry below gives a flaky network a second chance. The 30s
         # read cap also bounds how long a Stop takes to register: a threading.Event can't
         # interrupt an in-flight request, so the worst-case wait for Stop is one read timeout.
+        # Standard TLS restored BSE access on a server where headers alone did not.
+        # Preserve HTTPX's certificate overrides and precedence; packaged installs
+        # otherwise use certifi. Certificate and hostname verification stay enabled.
+        ca_file = os.environ.get("SSL_CERT_FILE", "")
+        ca_dir = os.environ.get("SSL_CERT_DIR", "")
+        if os.path.isfile(ca_file):
+            tls = ssl.create_default_context(cafile=ca_file)
+        elif os.path.isdir(ca_dir):
+            tls = ssl.create_default_context(capath=ca_dir)
+        else:
+            tls = ssl.create_default_context(cafile=certifi.where())
         self._client = httpx.Client(headers=HEADERS, follow_redirects=True, transport=transport,
-                                    timeout=httpx.Timeout(30.0, connect=10.0))
+                                    verify=tls, timeout=httpx.Timeout(30.0, connect=10.0))
         self._rate_delay = rate_delay
         self._max_retries = max_retries
         self._retry_backoff = retry_backoff

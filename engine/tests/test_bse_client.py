@@ -36,6 +36,65 @@ def test_sends_the_full_header_set_bses_own_pages_send():
     assert "gzip" in seen["accept-encoding"]
 
 
+def test_the_connection_uses_the_standard_tls_setup(monkeypatch):
+    """Use the verified standard TLS setup without weakening certificate checks."""
+    import ssl
+    import engine.bse_client as mod
+    seen = {}
+    real = mod.httpx.Client
+
+    def spy(**kw):
+        seen.update(kw)
+        return real(**kw)
+    monkeypatch.setattr(mod.httpx, "Client", spy)
+    client = mod.BSEClient()
+    client.close()
+    ctx = seen["verify"]
+    assert isinstance(ctx, ssl.SSLContext) and ctx.verify_mode == ssl.CERT_REQUIRED
+    assert ctx.check_hostname
+    assert ctx.minimum_version >= ssl.TLSVersion.TLSv1_2
+    standard = {c["name"] for c in ssl.create_default_context().get_ciphers()}
+    assert {c["name"] for c in ctx.get_ciphers()} == standard
+
+
+def test_custom_ca_file_is_the_effective_trust_store(tmp_path, monkeypatch):
+    """Preserve HTTPX's custom CA support, including file precedence over directory."""
+    import re
+    import ssl
+    from pathlib import Path
+    import certifi
+
+    cert = re.search(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----",
+                     Path(certifi.where()).read_text(), re.S).group()
+    bundle = tmp_path / "custom-ca.pem"
+    bundle.write_text(cert + "\n")
+    monkeypatch.setenv("SSL_CERT_FILE", str(bundle))
+    monkeypatch.setenv("SSL_CERT_DIR", str(tmp_path))
+    client = BSEClient()
+    try:
+        ctx = client._client._transport._pool._ssl_context
+        assert ctx.get_ca_certs(binary_form=True) == [ssl.PEM_cert_to_DER_cert(cert)]
+        assert ctx.check_hostname and ctx.verify_mode == ssl.CERT_REQUIRED
+    finally:
+        client.close()
+
+
+def test_custom_ca_directory_does_not_add_certifi_roots(tmp_path, monkeypatch):
+    """An explicit trust directory must not be silently replaced by the public bundle."""
+    import ssl
+
+    monkeypatch.delenv("SSL_CERT_FILE", raising=False)
+    monkeypatch.setenv("SSL_CERT_DIR", str(tmp_path))
+    client = BSEClient()
+    try:
+        ctx = client._client._transport._pool._ssl_context
+        # Directory certificates load lazily, so an empty directory has no trusted CAs.
+        assert ctx.cert_store_stats()["x509_ca"] == 0
+        assert ctx.check_hostname and ctx.verify_mode == ssl.CERT_REQUIRED
+    finally:
+        client.close()
+
+
 def test_get_json_raises_friendly_on_5xx():
     handler = lambda req: httpx.Response(503)
     with pytest.raises(BSEUnavailableError):
