@@ -36,6 +36,27 @@ def test_sends_the_full_header_set_bses_own_pages_send():
     assert "gzip" in seen["accept-encoding"]
 
 
+def test_the_connection_uses_the_standard_tls_setup(monkeypatch):
+    """24 Sep 2026, on a server: the full headers still drew "Access Denied" through httpx's own
+    TLS setup (its narrowed cipher list), and passed every time with Python's standard one — the
+    one urllib and curl use. BSE judges the connection as well as the headers. The certificate
+    list stays certifi's, so the packaged app verifies BSE on every platform."""
+    import ssl
+    import engine.bse_client as mod
+    seen = {}
+    real = mod.httpx.Client
+
+    def spy(**kw):
+        seen.update(kw)
+        return real(**kw)
+    monkeypatch.setattr(mod.httpx, "Client", spy)
+    mod.BSEClient()
+    ctx = seen["verify"]
+    assert isinstance(ctx, ssl.SSLContext) and ctx.verify_mode == ssl.CERT_REQUIRED
+    standard = {c["name"] for c in ssl.create_default_context().get_ciphers()}
+    assert {c["name"] for c in ctx.get_ciphers()} == standard
+
+
 def test_get_json_raises_friendly_on_5xx():
     handler = lambda req: httpx.Response(503)
     with pytest.raises(BSEUnavailableError):

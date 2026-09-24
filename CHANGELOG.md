@@ -9,7 +9,9 @@ follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 - BSE's new website (September 2026) refused every search with "Access Denied", so no
   company could be found or refreshed. FilingForge now sends the same request details BSE's
-  own pages send, and searches, announcements and downloads work again.
+  own pages send, and connects with the standard secure-connection settings (BSE refused the
+  HTTP library's narrower ones even with the right request details). Searches, announcements
+  and downloads work again.
 
 ## [0.1.19] — 2026-09-09
 
