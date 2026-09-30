@@ -54,7 +54,7 @@ echo ">> Target triple: $TRIPLE"
   --hidden-import uvicorn.lifespan.on --hidden-import uvicorn.loops.auto \
   --hidden-import uvicorn.protocols.http.auto --hidden-import uvicorn.protocols.websockets.auto \
   --hidden-import uvicorn.logging \
-  --collect-all pydantic --collect-all pydantic_core \
+  --collect-all curl_cffi --collect-all pydantic --collect-all pydantic_core \
   sidecar/run_api.py
 
 # --- Place + rename as the Tauri sidecar -----------------------------------

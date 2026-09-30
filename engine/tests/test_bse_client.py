@@ -10,18 +10,13 @@ def _client(handler):
 
 def test_get_json_sends_browser_headers_and_returns_table():
     def handler(req):
-        assert "Mozilla" in req.headers["user-agent"]
         assert req.headers["referer"] == "https://www.bseindia.com/"
         return httpx.Response(200, json={"Table": [{"NEWSID": "abc"}]})
     data = _client(handler).get_json("https://api.bseindia.com/x", {"q": "1"})
     assert data["Table"][0]["NEWSID"] == "abc"
 
 
-def test_sends_the_full_header_set_bses_own_pages_send():
-    """24 Sep 2026: BSE moved to a new website and its data service now answers "Access Denied"
-    unless a request carries what a browser on bseindia.com sends — the language, the fetch
-    context and the platform hint as well as the referer. Every api.bseindia.com call failed
-    (announcements, scrip search, company header); the site's PDFs and price files did not."""
+def test_sends_the_bse_origin_and_fetch_context():
     seen = {}
 
     def handler(req):
@@ -32,65 +27,36 @@ def test_sends_the_full_header_set_bses_own_pages_send():
     assert seen["accept-language"].startswith("en")
     assert (seen["sec-fetch-mode"], seen["sec-fetch-site"], seen["sec-fetch-dest"]) == \
         ("cors", "same-site", "empty")
-    assert seen["sec-ch-ua-platform"] == '"Windows"'          # agrees with the user agent
     assert "gzip" in seen["accept-encoding"]
 
 
-def test_the_connection_uses_the_standard_tls_setup(monkeypatch):
-    """Use the verified standard TLS setup without weakening certificate checks."""
-    import ssl
-    import engine.bse_client as mod
-    seen = {}
-    real = mod.httpx.Client
-
-    def spy(**kw):
-        seen.update(kw)
-        return real(**kw)
-    monkeypatch.setattr(mod.httpx, "Client", spy)
-    client = mod.BSEClient()
-    client.close()
-    ctx = seen["verify"]
-    assert isinstance(ctx, ssl.SSLContext) and ctx.verify_mode == ssl.CERT_REQUIRED
-    assert ctx.check_hostname
-    assert ctx.minimum_version >= ssl.TLSVersion.TLSv1_2
-    standard = {c["name"] for c in ssl.create_default_context().get_ciphers()}
-    assert {c["name"] for c in ctx.get_ciphers()} == standard
-
-
 def test_custom_ca_file_is_the_effective_trust_store(tmp_path, monkeypatch):
-    """Preserve HTTPX's custom CA support, including file precedence over directory."""
-    import re
-    import ssl
-    from pathlib import Path
     import certifi
-
-    cert = re.search(r"-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----",
-                     Path(certifi.where()).read_text(), re.S).group()
+    from curl_cffi import requests as curl_requests
     bundle = tmp_path / "custom-ca.pem"
-    bundle.write_text(cert + "\n")
+    from pathlib import Path
+    bundle.write_bytes(Path(certifi.where()).read_bytes())
     monkeypatch.setenv("SSL_CERT_FILE", str(bundle))
     monkeypatch.setenv("SSL_CERT_DIR", str(tmp_path))
     client = BSEClient()
     try:
-        ctx = client._client._transport._pool._ssl_context
-        assert ctx.get_ca_certs(binary_form=True) == [ssl.PEM_cert_to_DER_cert(cert)]
-        assert ctx.check_hostname and ctx.verify_mode == ssl.CERT_REQUIRED
+        assert isinstance(client._client, curl_requests.Session)
+        assert client._client.verify == str(bundle)
+        assert not client._client.curl_options
     finally:
         client.close()
 
 
 def test_custom_ca_directory_does_not_add_certifi_roots(tmp_path, monkeypatch):
-    """An explicit trust directory must not be silently replaced by the public bundle."""
-    import ssl
-
+    from curl_cffi import CurlOpt, ffi, requests as curl_requests
     monkeypatch.delenv("SSL_CERT_FILE", raising=False)
     monkeypatch.setenv("SSL_CERT_DIR", str(tmp_path))
     client = BSEClient()
     try:
-        ctx = client._client._transport._pool._ssl_context
-        # Directory certificates load lazily, so an empty directory has no trusted CAs.
-        assert ctx.cert_store_stats()["x509_ca"] == 0
-        assert ctx.check_hostname and ctx.verify_mode == ssl.CERT_REQUIRED
+        assert isinstance(client._client, curl_requests.Session)
+        assert client._client.verify is not False
+        assert client._client.curl_options[CurlOpt.CAPATH] == str(tmp_path)
+        assert client._client.curl_options[CurlOpt.CAINFO] == ffi.NULL
     finally:
         client.close()
 
@@ -164,11 +130,12 @@ def test_get_json_retries_transient_5xx_then_succeeds():
     assert state["n"] == 3
 
 
-def test_get_json_retries_connect_error_then_succeeds():
+def test_get_json_does_not_retry_transport_errors():
     handler, state = _counting([httpx.ConnectError("blip"), httpx.Response(200, json={"ok": 2})])
     client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
-    assert client.get_json("https://api.bseindia.com/x", {})["ok"] == 2
-    assert state["n"] == 2
+    with pytest.raises(BSEUnavailableError, match="ConnectError: blip"):
+        client.get_json("https://api.bseindia.com/x", {})
+    assert state["n"] == 1
 
 
 def test_get_json_gives_up_after_max_retries():

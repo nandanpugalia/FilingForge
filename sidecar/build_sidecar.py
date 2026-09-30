@@ -56,6 +56,8 @@ def main() -> int:
         "--hidden-import", "uvicorn.protocols.http.auto",
         "--hidden-import", "uvicorn.protocols.websockets.auto",
         "--hidden-import", "uvicorn.logging",
+        # Bundle curl native libraries on both Windows and macOS.
+        "--collect-all", "curl_cffi",
         "--collect-all", "pydantic", "--collect-all", "pydantic_core",
         "sidecar/run_api.py",
     ]

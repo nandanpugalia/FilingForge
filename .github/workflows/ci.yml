@@ -29,6 +29,52 @@ jobs:
       - name: Run pytest
         run: pytest -q
 
+  desktop-bse:
+    name: BSE client + sidecar (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.11"
+      - name: Install engine and desktop build dependencies
+        run: python -m pip install -e ".[api,dev]" pyinstaller
+      - name: Test BSE client and all consumers offline
+        run: python -m pytest engine/tests/test_bse_client.py engine/tests/test_bse_impersonation.py engine/tests/test_resolver.py engine/tests/test_fetcher.py engine/tests/test_annual_reports.py engine/tests/test_sidecar_build.py
+      - name: Build the native sidecar
+        run: python sidecar/build_sidecar.py
+      - name: Verify the frozen API starts with curl native libraries
+        shell: python
+        run: |
+          import json, os, pathlib, socket, subprocess, time, urllib.request
+          with socket.socket() as sock:
+              sock.bind(("127.0.0.1", 0))
+              port = sock.getsockname()[1]
+          suffix = ".exe" if os.name == "nt" else ""
+          executable = pathlib.Path("dist", "filingforge-api" + suffix).resolve()
+          process = subprocess.Popen([str(executable)], env={**os.environ, "FF_PORT": str(port)})
+          try:
+              deadline = time.monotonic() + 45
+              while time.monotonic() < deadline:
+                  if process.poll() is not None:
+                      raise RuntimeError(f"Sidecar exited: {process.returncode}")
+                  try:
+                      with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=1) as reply:
+                          assert json.load(reply)["status"] == "ok"
+                      print("Frozen sidecar health passed")
+                      break
+                  except OSError:
+                      time.sleep(0.25)
+              else:
+                  raise RuntimeError("Sidecar startup timed out")
+          finally:
+              process.terminate()
+              process.wait(timeout=10)
+
   mcp:
     name: MCP server tests
     runs-on: ubuntu-latest

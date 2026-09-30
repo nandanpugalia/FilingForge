@@ -4,6 +4,16 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.21] — 2026-09-30
+
+### Fixed
+- Restore BSE searches, announcements, annual reports and PDF downloads after BSE began
+  checking TLS/HTTP2 fingerprints. Use pinned curl_cffi browser impersonation (Chrome,
+  then Safari only on 403) on Windows, macOS and Linux; report persistent Akamai 403s as
+  fingerprint blocks. Preserve offline test transports, certificate verification and
+  rate limiting, and retry only 429/5xx responses.
+- Bundle curl_cffi's native libraries in both Windows and macOS desktop sidecars.
+
 ## [0.1.20] — 2026-09-24
 
 ### Fixed
