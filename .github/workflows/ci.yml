@@ -21,6 +21,7 @@ jobs:
       - name: Verify release metadata is internally consistent
         run: |
           python scripts/test_check_release_version.py
+          python scripts/test_release_quiet.py
           python scripts/check_release_version.py
       - name: Install engine + API
         run: |

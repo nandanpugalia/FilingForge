@@ -37,6 +37,21 @@ on:
   push:
     tags: ["v*"]          # CI only runs when we intentionally cut a release (tag v…)
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Version tag to create from this exact workflow commit (e.g. v0.1.21-beta1)'
+        type: string
+        required: true
+      notify_discord:
+        description: 'Send release and notarization notices to Discord'
+        type: boolean
+        default: false
+
+# Manual maintenance releases are quiet unless notifications are explicitly requested.
+# Tag pushes retain the existing notification policy.
+env:
+  RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+  NOTIFY_DISCORD: ${{ github.event_name != 'workflow_dispatch' || inputs.notify_discord }}
 
 jobs:
   build:
@@ -62,11 +77,7 @@ jobs:
       - name: Verify app version matches the release tag
         shell: bash
         run: |
-          if [ "${{ github.ref_type }}" = "tag" ]; then
-            python scripts/check_release_version.py --tag "${{ github.ref_name }}"
-          else
-            python scripts/check_release_version.py
-          fi
+          python scripts/check_release_version.py --tag "$RELEASE_TAG"
 
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
@@ -110,7 +121,8 @@ jobs:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         with:
           projectPath: ui
-          tagName: ${{ github.ref_type == 'tag' && github.ref_name || 'app-v__VERSION__' }}
+          tagName: ${{ env.RELEASE_TAG }}
+          releaseCommitish: ${{ github.sha }}
           releaseName: "FilingForge v__VERSION__"
           releaseBody: "See the assets below to download. Auto-update metadata: latest.json."
           releaseDraft: true
@@ -120,7 +132,7 @@ jobs:
           # later with `gh release edit <tag> --prerelease=false` (no rebuild). A plain tag
           # (v0.1.9) has no hyphen → normal release → stable. Without this, a -beta tag would
           # publish straight to every stable user via releases/latest.
-          prerelease: ${{ contains(github.ref_name, '-') }}
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
           includeUpdaterJson: true
 
       # The website's download buttons point at releases/latest/download/FilingForge.dmg
@@ -133,7 +145,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -e
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           PATHS=$(printf '%s' '${{ steps.tauri.outputs.artifactPaths }}' | tr '\\' '/' | tr ',' '\n' | tr -d '[]" ')
           echo "Built artifacts:"; echo "$PATHS"
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
@@ -195,7 +207,7 @@ jobs:
           New-Item -ItemType Directory -Force old-installer,new-installer | Out-Null
           gh release download --repo $env:GITHUB_REPOSITORY --pattern FilingForge-Setup.exe --dir old-installer
           if ($LASTEXITCODE -ne 0) { throw 'Could not download previous stable installer' }
-          gh release download '${{ github.ref_name }}' --repo $env:GITHUB_REPOSITORY --pattern FilingForge-Setup.exe --dir new-installer
+          gh release download $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY --pattern FilingForge-Setup.exe --dir new-installer
           if ($LASTEXITCODE -ne 0) { throw 'Could not download new installer' }
       - name: Verify installer upgrade and packaged BSE access
         shell: pwsh
@@ -215,17 +227,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY" \
             && echo "Published $TAG" || echo "Release already published or not a draft — nothing to do."
 
       - name: Notify Discord bug-reports — release published
+        if: ${{ env.NOTIFY_DISCORD == 'true' }}
         shell: bash
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_REPORTS }}
         run: |
           [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           # A hyphenated tag (v0.1.9-beta) is a pre-release: it reaches opt-in testers via the
           # beta channel only; the website + stable OTA (releases/latest) keep serving the
           # current stable, so there is NOTHING to flip on the site.
@@ -260,7 +273,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           # Authenticated fetch of the updater feed tauri-action attached to this release.
           gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --pattern latest.json --dir /tmp --clobber
           test -s /tmp/latest.json
@@ -281,13 +294,13 @@ jobs:
       # A beta-feed hiccup must never pass silently: the release is already live, but the
       # pre-release channel would be stale, so ping Discord with a re-run link.
       - name: Notify Discord — beta feed update failed
-        if: ${{ failure() }}
+        if: ${{ failure() && env.NOTIFY_DISCORD == 'true' }}
         shell: bash
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_ERRORS }}
         run: |
           [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MSG="⚠️ **FilingForge ${TAG} — beta feed (latest-beta.json) didn't update.** The release itself is fine and Windows/macOS downloads are unaffected; only the pre-release channel mirror failed. Re-run this job: ${RUN}"
           curl -fsS -H "Content-Type: application/json" \
@@ -315,7 +328,7 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
           set -e
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           ID="$(cat notarization-id.txt | tr -d '[:space:]')"
           if [ -z "$ID" ]; then echo "No submission id (ad-hoc build) — nothing to staple."; exit 0; fi
           mkdir -p dl
@@ -327,12 +340,13 @@ jobs:
           done
 
       - name: Notify Discord bug-reports — macOS stapled & live
+        if: ${{ env.NOTIFY_DISCORD == 'true' }}
         shell: bash
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_REPORTS }}
         run: |
           [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           # The website's macOS button auto-serves releases/latest (stable, excludes pre-releases),
           # so there is no manual "flip" — it just works once a STABLE release notarizes. For a
           # beta this DMG is for testers; the site keeps serving stable.
@@ -345,13 +359,13 @@ jobs:
             -d "$(jq -nc --arg c "$MSG" '{content:$c}')" "$DISCORD_WEBHOOK" >/dev/null && echo "Notified."
 
       - name: Notify Discord errors — macOS notarization needs attention
-        if: ${{ failure() }}
+        if: ${{ failure() && env.NOTIFY_DISCORD == 'true' }}
         shell: bash
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_ERRORS }}
         run: |
           [ -n "${DISCORD_WEBHOOK:-}" ] || { echo "No DISCORD_WEBHOOK secret — skipping."; exit 0; }
-          TAG="${{ github.ref_name }}"
+          TAG="$RELEASE_TAG"
           RUN="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           MSG="⚠️ **FilingForge ${TAG} — macOS notarization didn't finish cleanly** (rejected or timed out). The release is still published & Windows is unaffected. Re-run the staple-mac job: ${RUN}"
           curl -fsS -H "Content-Type: application/json" \
