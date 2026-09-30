@@ -58,7 +58,13 @@ Windows upgrade smoke, Mac notarization/stapling, publishing, and updater-feed p
 - Both website download buttons redirect to the new release and return HTTP 200.
 - All four workflow Discord notification steps were skipped. The repository webhook's
   release event was temporarily suppressed during publishing/promotion and restored
-  afterward; its other event subscriptions were preserved. No Discord posts were made.
+  afterward; its other event subscriptions were preserved. No Discord posts were made
+  during the initial release, following the original instruction.
+- NP subsequently clarified that release/stapling notices were wanted. The combined
+  [release and notarization notice](https://discord.com/channels/1424840803150204940/1513922053718409379/1554719530687795251)
+  was posted to the existing FilingForge reports webhook and read back successfully.
+  Manual releases now notify by default, retaining an explicit quiet option. The updated
+  default guard failed before the workflow correction; all three guards passed afterward.
 - No desk repository or server was changed, and the untracked `docs/audits/` was left alone.
 
 Artifact SHA-256:

@@ -45,10 +45,10 @@ on:
       notify_discord:
         description: 'Send release and notarization notices to Discord'
         type: boolean
-        default: false
+        default: true
 
-# Manual maintenance releases are quiet unless notifications are explicitly requested.
-# Tag pushes retain the existing notification policy.
+# Manual releases notify by default; quiet releases require an explicit opt-out.
+# Tag pushes always retain the existing notification policy.
 env:
   RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
   NOTIFY_DISCORD: ${{ github.event_name != 'workflow_dispatch' || inputs.notify_discord }}

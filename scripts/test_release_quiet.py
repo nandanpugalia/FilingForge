@@ -1,15 +1,15 @@
-"""A manual maintenance release can publish artifacts without sending chat messages."""
+"""Release notifications are on by default, with an explicit quiet option."""
 from pathlib import Path
 import unittest
 
 
 class QuietReleaseTests(unittest.TestCase):
-    def test_workflow_has_an_explicit_release_tag_and_notification_opt_in(self):
+    def test_workflow_has_an_explicit_release_tag_and_notifications_enabled_by_default(self):
         text = Path('.github/workflows/release.yml').read_text()
         dispatch = text.split('  workflow_dispatch:', 1)[1].split('\njobs:', 1)[0]
         self.assertIn('release_tag:', dispatch)
         self.assertIn('notify_discord:', dispatch)
-        self.assertIn('default: false', dispatch)
+        self.assertIn('default: true', dispatch)
         self.assertIn('RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}', text)
 
     def test_every_discord_step_obeys_the_release_notification_switch(self):
