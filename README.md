@@ -11,6 +11,8 @@
 
 *Search any BSE-listed Indian company → pull its official filings → get a clean, AI-ready Markdown library on your own machine.*
 
+*Built by [AlphaForge Integrated Solutions](https://alphaforge.cloud) · works with Claude Desktop and Claude Code through its [MCP server](#-mcp-server--let-your-ai-drive-the-library).*
+
 </div>
 
 ---
@@ -211,4 +213,4 @@ MIT — see **[LICENSE](LICENSE)**. © 2026 Nandan Pugalia.
 
 ## ❤️ Support
 
-FilingForge is free and open-source, built and maintained by one person. If it saves you time, you can support its development via **UPI** from the in-app support screen. Thank you.
+FilingForge is free and open-source, built and maintained by one person at [AlphaForge Integrated Solutions](https://alphaforge.cloud). If it saves you time, you can support its development via **UPI** from the in-app support screen. Thank you.
