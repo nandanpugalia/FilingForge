@@ -202,3 +202,26 @@ def test_rate_delay_applies_to_fallback_and_retry_requests(wire, monkeypatch):
         assert 0.5 in sleeps
     finally:
         client.close()
+
+
+def test_listing_recovers_from_one_timeout_with_same_request(wire):
+    replies, calls, _ = wire
+    replies.extend([curl_requests.exceptions.Timeout("operation timed out", 28), response()])
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        assert client.get_json(ANN_URL, {"pageno": "2"}) == {"ok": True}
+        assert calls == [("chrome", ANN_URL, {"pageno": "2"})] * 2
+    finally:
+        client.close()
+
+
+def test_listing_timeout_is_retried_only_once(wire):
+    replies, calls, _ = wire
+    replies.extend([curl_requests.exceptions.Timeout("operation timed out", 28)] * 2)
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        with pytest.raises(BSEUnavailableError, match="Timeout"):
+            client.get_json(ANN_URL, {})
+        assert len(calls) == 2
+    finally:
+        client.close()

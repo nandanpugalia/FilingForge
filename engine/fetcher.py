@@ -2,7 +2,7 @@
 from __future__ import annotations
 from datetime import date, timedelta
 from .bse_client import BSEClient
-from .errors import DownloadError, FilingForgeError
+from .errors import BSEUnavailableError, DownloadError, FilingForgeError
 from .models import Filing, CategorySpec, CURATED_BY_KEY, slug
 
 ANN_URL = "https://api.bseindia.com/BseIndiaAPI/api/AnnSubCategoryGetData/w"
@@ -69,10 +69,17 @@ def _list_window(scrip_code: str, specs: list[CategorySpec], start: date, end: d
             "strScrip": str(scrip_code),
             "strPrevDate": start.strftime("%Y%m%d"), "strToDate": end.strftime("%Y%m%d")}
     out: list[Filing] = []
+    scanned = 0
+    total = None
     for pageno in range(1, _MAX_PAGES + 1):
-        rows = client.get_json(ANN_URL, {**base, "pageno": str(pageno)}).get("Table") or []
+        payload = client.get_json(ANN_URL, {**base, "pageno": str(pageno)}, require_table=True)
+        rows = payload["Table"] or []
+        reported = _reported_total(payload)
+        if reported is not None:
+            total = reported
         if not rows:
             break
+        scanned += len(rows)
         for row in rows:
             hit = _classify(row, specs, everything)
             if hit is None:
@@ -83,13 +90,38 @@ def _list_window(scrip_code: str, specs: list[CategorySpec], start: date, end: d
             folder, category = hit
             out.append(Filing(
                 news_id=str(row.get("NEWSID") or att),
-                date=(row.get("DissemDT") or "")[:10],
+                date=_announcement_date(row),
                 headline=(row.get("HEADLINE") or row.get("NEWSSUB") or "").strip(),
                 attachment=att, folder=folder, category=category,
             ))
-        if len(rows) < 10:
+        if total is not None:
+            if scanned >= total:
+                break
+        elif len(rows) < 10:
             break
+    if total is not None and scanned < total:
+        raise BSEUnavailableError(f"incomplete BSE listing at {ANN_URL} page {pageno}: "
+                                  f"received {scanned} of {total} rows", endpoint=ANN_URL, page=pageno)
     return out
+
+
+def _reported_total(payload: dict) -> int | None:
+    try:
+        total = int(payload["Table1"][0]["ROWCNT"])
+    except (KeyError, IndexError, TypeError, ValueError):
+        return None
+    return total if total >= 0 else None
+
+
+def _announcement_date(row: dict) -> str:
+    for key in ("DissemDT", "NEWS_DT", "DT_TM"):
+        value = row.get(key)
+        if isinstance(value, str):
+            try:
+                return date.fromisoformat(value[:10]).isoformat()
+            except ValueError:
+                continue
+    return ""
 
 
 def list_annual_reports(scrip_code: str, client: BSEClient, *, years: int | None = None) -> list[Filing]:
@@ -191,10 +223,17 @@ def download_filing(filing: Filing, client: BSEClient) -> bytes:
         if content[:5] == b"%PDF-":
             return content
         raise DownloadError(filing.headline or filing.attachment)
+    unavailable = None
     for base in _PDF_BASES:
-        content = client.get_bytes(base + filing.attachment)
+        try:
+            content = client.get_bytes(base + filing.attachment)
+        except BSEUnavailableError as error:
+            unavailable = error
+            continue
         if content[:5] == b"%PDF-":
             return content
+    if unavailable is not None:
+        raise unavailable
     raise DownloadError(filing.headline or filing.attachment)
 
 

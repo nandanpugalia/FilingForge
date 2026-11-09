@@ -21,7 +21,10 @@ class CompanyNotFoundError(FilingForgeError):
 
 
 class BSEUnavailableError(FilingForgeError):
-    def __init__(self, technical: str):
+    def __init__(self, technical: str, *, endpoint: str | None = None,
+                 page: str | int | None = None):
+        self.endpoint = endpoint
+        self.page = page
         super().__init__(
             technical=technical,
             user_message="BSE isn't responding right now. Please try again in a moment.",

@@ -23,8 +23,15 @@ HEADERS = {
     "sec-fetch-site": "same-site",
 }
 RATE_DELAY = 0.3
-MAX_RETRIES = 2    # 1 initial attempt + this many retries on 429/5xx only
+MAX_RETRIES = 2    # Shared by transient HTTP responses and listing timeouts
 RETRY_BACKOFF = 0.5
+
+
+def _valid_table(payload: object) -> bool:
+    if not isinstance(payload, dict) or "Table" not in payload or payload.get("Error"):
+        return False
+    rows = payload["Table"]
+    return rows is None or (isinstance(rows, list) and all(isinstance(row, dict) for row in rows))
 
 
 class BSEClient:
@@ -60,8 +67,9 @@ class BSEClient:
         if self._rate_delay:
             time.sleep(self._rate_delay)
 
-    def _get(self, url: str, params: Optional[dict] = None) -> httpx.Response | curl_requests.Response:
-        """Start with Chrome; try Safari once on 403. Only 429/5xx spend retries.
+    def _get(self, url: str, params: Optional[dict] = None, *,
+             retry_timeout: bool = False) -> httpx.Response | curl_requests.Response:
+        """Start with Chrome; try Safari once on 403. Retry a first listing timeout once.
 
         Separate sessions prevent Safari from reusing a Chrome TLS connection.
         An injected transport exercises the same policy without any live I/O.
@@ -74,6 +82,13 @@ class BSEClient:
             try:
                 r = client.get(url, params=params) if params is not None else client.get(url)
             except (httpx.HTTPError, curl_requests.exceptions.RequestException) as e:
+                if (retry_timeout and retries == 0 and self._max_retries > 0
+                        and isinstance(e, (httpx.TimeoutException,
+                                           curl_requests.exceptions.Timeout))):
+                    retries += 1
+                    if self._retry_backoff:
+                        time.sleep(self._retry_backoff)
+                    continue
                 raise BSEUnavailableError(f"{type(e).__name__}: {e}") from e
             if r.status_code == 403:
                 if not used_fallback:
@@ -92,14 +107,22 @@ class BSEClient:
                 continue
             return r
 
-    def get_json(self, url: str, params: dict) -> dict:
-        r = self._get(url, params)
-        if not 200 <= r.status_code < 300:
-            raise BSEUnavailableError(f"HTTP {r.status_code} for {url}")
+    def get_json(self, url: str, params: dict, *, require_table: bool = False) -> dict:
         try:
-            return r.json()
-        except Exception as e:
-            raise BSEUnavailableError(f"non-JSON from {url}: {e}") from e
+            r = self._get(url, params, retry_timeout=True)
+            if not 200 <= r.status_code < 300:
+                raise BSEUnavailableError(f"HTTP {r.status_code} for {url}")
+            try:
+                payload = r.json()
+            except ValueError as e:
+                raise BSEUnavailableError(f"non-JSON from {url}: {e}") from e
+            if require_table and not _valid_table(payload):
+                raise BSEUnavailableError(f"invalid BSE table from {url}")
+            return payload
+        except BSEUnavailableError as error:
+            error.endpoint = url
+            error.page = params.get("pageno")
+            raise
 
     def get_text(self, url: str, params: dict) -> str:
         r = self._get(url, params)

@@ -1,6 +1,6 @@
 [project]
 name = "filingforge-engine"
-version = "0.1.21"
+version = "0.1.22"
 description = "FilingForge engine — Indian company filings → clean, AI-ready local library."
 requires-python = ">=3.11"
 license = { text = "MIT" }

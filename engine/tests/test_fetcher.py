@@ -111,3 +111,55 @@ def test_download_raises_download_error_when_no_pdf_anywhere():
     client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
     with pytest.raises(DownloadError):
         download_filing(_f(), client)
+
+
+@pytest.mark.parametrize("payload", [
+    {"Error": "service unavailable"}, {"Table": "unavailable"}, {"Table": [None]},
+    {"Error": "service unavailable", "Table": None}, [],
+])
+def test_error_payload_is_not_treated_as_empty_history(payload):
+    from engine.errors import BSEUnavailableError
+
+    with pytest.raises(BSEUnavailableError, match="invalid BSE table") as caught:
+        list_filings("500495", [], 1, _paged_client([payload]), everything=True)
+    assert caught.value.endpoint == ANN_URL and caught.value.page == "1"
+
+
+def test_reported_total_handles_short_pages_without_an_extra_request():
+    rows = json.loads((FIXTURES / "ann_page1.json").read_text())["Table"]
+    pages = []
+
+    def handler(req):
+        page = int(req.url.params["pageno"])
+        pages.append(page)
+        assert page in (1, 2)
+        return httpx.Response(200, json={"Table": rows[:2] if page == 1 else rows[2:],
+                                         "Table1": [{"ROWCNT": 3}]})
+
+    with_client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    filings = list_filings("500495", [], 1, with_client, everything=True)
+    assert len(filings) == 3
+    assert pages == [1, 2]
+
+
+@pytest.mark.parametrize("page_cap", [1, 50])
+def test_incomplete_announcements_fail_instead_of_returning_partial_history(monkeypatch, page_cap):
+    from engine.errors import BSEUnavailableError
+
+    monkeypatch.setattr("engine.fetcher._MAX_PAGES", page_cap)
+    rows = json.loads((FIXTURES / "ann_page1.json").read_text())["Table"]
+    client = _paged_client([{"Table": rows, "Table1": [{"ROWCNT": 6}]}, {"Table": []}])
+    with pytest.raises(BSEUnavailableError, match="incomplete BSE listing") as caught:
+        list_filings("500495", [], 1, client, everything=True)
+    assert caught.value.endpoint == ANN_URL and caught.value.page == (1 if page_cap == 1 else 2)
+
+
+def test_download_tries_attachlive_if_attachhis_is_blocked():
+    def handler(req):
+        if "AttachHis" in req.url.path:
+            return httpx.Response(403, text="Access Denied")
+        assert "AttachLive" in req.url.path
+        return httpx.Response(200, content=b"%PDF-1.4 live")
+
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    assert download_filing(_f(), client) == b"%PDF-1.4 live"

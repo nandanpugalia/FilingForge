@@ -217,3 +217,23 @@ def test_live_tanla_smoke(tmp_path):
     finally:
         client.close()
     assert res.ok and (tmp_path / "TANLA" / "INDEX.md").exists()
+
+
+def test_announcement_with_missing_dissem_date_keeps_its_pdf_and_other_filings(tmp_path):
+    first, second = _ANN["Table"]
+    rows = [{**first, "DissemDT": None, "NEWS_DT": first["DissemDT"]},
+            {**second, "DissemDT": None}]
+
+    def handler(req):
+        if "AnnSubCategoryGetData" in req.url.path:
+            return httpx.Response(200, json={"Table": rows})
+        if req.url.path.endswith(".pdf"):
+            return httpx.Response(200, content=b"%PDF-1.7 fixture")
+        return httpx.Response(404)
+
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    result = build_library("500495", "ESCORTS", tmp_path, [AR], 1, client)
+    folder = tmp_path / "ESCORTS" / "annual-reports"
+    assert len(result.downloaded) == 2 and not result.failed
+    assert len(list((folder / "2025").glob("*.pdf"))) == 1
+    assert len(list((folder / "undated").glob("*.pdf"))) == 1

@@ -4,6 +4,16 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.22] — 2026-11-09
+
+### Fixed
+- Retry a first BSE listing timeout once. Report invalid or incomplete announcement listings
+  as errors so a failed fetch cannot appear as empty history.
+- Follow BSE's reported announcement count when available. Try the alternate BSE PDF
+  location if the first location is unavailable.
+- Use another exchange timestamp when the dissemination date is missing. Keep undated
+  PDFs in the undated folder so one missing date cannot stop a build.
+
 ## [0.1.21] — 2026-09-30
 
 ### Fixed

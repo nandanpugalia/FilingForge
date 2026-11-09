@@ -55,11 +55,15 @@ def _expected_period(headline: str) -> str | None:
     return value
 
 
-def _document_context(ticker: str, filing) -> DocumentContext:
+def _document_context(ticker: str, filing) -> DocumentContext | None:
+    try:
+        filing_date = date.fromisoformat(filing.date[:10])
+    except ValueError:
+        return None
     return DocumentContext(
         company=ticker,
         folder=filing.folder,
-        filing_date=date.fromisoformat(filing.date[:10]),
+        filing_date=filing_date,
         headline=filing.headline,
         source_url=filing_attachment_url(filing),
     )
@@ -110,7 +114,7 @@ def _process(company, scrip_code, ticker, specs, years, client, on_progress, eve
             try:
                 pdf = download_filing(f, client)
                 context = _document_context(ticker, f)
-                if _is_cover(context, pdf):
+                if context is not None and _is_cover(context, pdf):
                     resolution = resolve_document(
                         context, pdf, fetch=linked_fetch, validate=link_validator,
                     )
