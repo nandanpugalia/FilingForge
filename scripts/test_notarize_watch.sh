@@ -21,5 +21,18 @@ expect "Pending"      wait
 expect ""             wait        # no/empty response (e.g. a network blip) must be 'wait', never fatal
 expect "Weirdness"    unknown     # unexpected -> wait-equivalent (keep polling), not crash
 
+APPLE_ID=$' \tdeveloper@example.com\r\n'
+APPLE_TEAM_ID=$' ABCDE12345\n'
+APPLE_PASSWORD=$'\n abcd-efgh-ijkl-mnop \t'
+if ! normalize_notary_credentials ||
+   [ "$APPLE_ID" != developer@example.com ] ||
+   [ "$APPLE_TEAM_ID" != ABCDE12345 ] ||
+   [ "$APPLE_PASSWORD" != abcd-efgh-ijkl-mnop ]; then
+  echo "FAIL credentials should have surrounding whitespace removed"
+  fails=$((fails+1))
+else
+  echo "ok    credentials have surrounding whitespace removed"
+fi
+
 echo "---"
 if [ "$fails" -eq 0 ]; then echo "ALL PASS"; else echo "$fails FAILED"; exit 1; fi

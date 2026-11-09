@@ -18,6 +18,17 @@
 # Exit codes: 0 = Accepted (+ stapled if DMGs given); 1 = Rejected/Invalid; 2 = timeout/poll error.
 set -uo pipefail
 
+# GitHub secret pastes may include whitespace around an otherwise valid credential.
+normalize_notary_credentials() {
+  local name value
+  for name in APPLE_ID APPLE_TEAM_ID APPLE_PASSWORD; do
+    value="${!name-}"
+    value="${value#"${value%%[![:space:]]*}"}"
+    value="${value%"${value##*[![:space:]]}"}"
+    export "$name=$value"
+  done
+}
+
 # classify_status: pure decision from a notarytool status string -> one of: success | fail | wait | unknown
 # Isolated so it can be unit-tested without hitting Apple (see scripts/test_notarize_watch.sh).
 classify_status() {
@@ -36,6 +47,7 @@ if [ "${BASH_SOURCE[0]}" = "${0}" ] && [ "$#" -ge 1 ]; then
   DMGS=("$@")
   MAX_MINUTES="${NOTARIZE_MAX_MINUTES:-240}"
   POLL_SECONDS="${NOTARIZE_POLL_SECONDS:-60}"
+  normalize_notary_credentials
   : "${APPLE_ID:?APPLE_ID required}"; : "${APPLE_TEAM_ID:?APPLE_TEAM_ID required}"; : "${APPLE_PASSWORD:?APPLE_PASSWORD required}"
 
   deadline=$(( $(date +%s) + MAX_MINUTES * 60 ))

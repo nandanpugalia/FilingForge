@@ -170,6 +170,8 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
         run: |
           set -e
+          source scripts/notarize_watch.sh
+          normalize_notary_credentials
           if [ -z "${APPLE_ID:-}" ]; then echo "No Apple notarization creds; skipping (ad-hoc build)."; echo "" > notarization-id.txt; exit 0; fi
           PATHS=$(printf '%s' '${{ steps.tauri.outputs.artifactPaths }}' | tr '\\' '/' | tr ',' '\n' | tr -d '[]" ')
           DMG=$(echo "$PATHS" | grep -E '\.dmg$' | head -1)
