@@ -1,5 +1,5 @@
 """FilingForge engine — headless, UI-ready library builder for Indian company filings."""
-__version__ = "0.1.22"
+__version__ = "0.1.23"
 
 from .bse_client import BSEClient
 from .resolver import resolve

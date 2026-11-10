@@ -4,6 +4,14 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.23] — 2026-11-10
+
+### Fixed
+- Ask a BSE announcement listing page once more when BSE answers it badly (HTTP 400, a
+  response that is not JSON, or no table). BSE sometimes answers one page badly and the same
+  page properly seconds later; one bad page no longer fails a whole history. Other requests
+  keep their retry rules.
+
 ## [0.1.22] — 2026-11-09
 
 ### Fixed
