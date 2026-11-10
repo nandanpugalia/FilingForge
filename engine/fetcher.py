@@ -133,7 +133,7 @@ def list_annual_reports(scrip_code: str, client: BSEClient, *, years: int | None
 
     `years` caps how far back to read; omit it to take the whole archive.
     """
-    rows = client.get_json(AR_URL, {"scripcode": str(scrip_code)}).get("Table") or []
+    rows = client.get_json(AR_URL, {"scripcode": str(scrip_code)}, require_table=True)["Table"] or []
     latest = max((_ar_year(r) for r in rows), default=0)
     cutoff = latest - years + 1 if years else None
 
