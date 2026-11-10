@@ -225,3 +225,31 @@ def test_listing_timeout_is_retried_only_once(wire):
         assert len(calls) == 2
     finally:
         client.close()
+
+
+# 10 Nov 2026, live from a server: BSE answered one listing page with HTTP 400 (or a body that
+# was not JSON) and the same page a few seconds later with its rows, so one bad page failed a
+# whole company. A listing page (require_table) is asked once more; nothing else changes.
+@pytest.mark.parametrize('bad', [response(400), response(200, b'<html>busy</html>'),
+                                 response(200, b'{"Table1": []}')])
+def test_a_listing_page_is_asked_once_more_after_one_bad_answer(wire, bad):
+    replies, calls, _ = wire
+    replies.extend([bad, response(200, b'{"Table": []}')])
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        assert client.get_json(ANN_URL, {"pageno": "3"}, require_table=True) == {"Table": []}
+        assert calls == [("chrome", ANN_URL, {"pageno": "3"})] * 2
+    finally:
+        client.close()
+
+
+def test_a_listing_page_bad_twice_still_fails_with_its_page(wire):
+    replies, calls, _ = wire
+    replies.extend([response(400), response(400)])
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        with pytest.raises(BSEUnavailableError, match='HTTP 400') as caught:
+            client.get_json(ANN_URL, {"pageno": "3"}, require_table=True)
+        assert len(calls) == 2 and caught.value.page == "3"
+    finally:
+        client.close()

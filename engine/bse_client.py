@@ -108,21 +108,32 @@ class BSEClient:
             return r
 
     def get_json(self, url: str, params: dict, *, require_table: bool = False) -> dict:
-        try:
-            r = self._get(url, params, retry_timeout=True)
-            if not 200 <= r.status_code < 300:
-                raise BSEUnavailableError(f"HTTP {r.status_code} for {url}")
+        # A listing page BSE answers badly once (HTTP 400, not JSON, no table) answers properly
+        # when asked again (10 Nov 2026), so a listing page gets one more try; nothing else does.
+        tries = 2 if require_table else 1
+        for attempt in range(tries):
             try:
-                payload = r.json()
-            except ValueError as e:
-                raise BSEUnavailableError(f"non-JSON from {url}: {e}") from e
-            if require_table and not _valid_table(payload):
-                raise BSEUnavailableError(f"invalid BSE table from {url}")
-            return payload
-        except BSEUnavailableError as error:
-            error.endpoint = url
-            error.page = params.get("pageno")
-            raise
+                return self._get_json_once(url, params, require_table)
+            except BSEUnavailableError as error:
+                if attempt + 1 < tries and not str(error).startswith("HTTP 403"):
+                    if self._retry_backoff:
+                        time.sleep(self._retry_backoff)
+                    continue
+                error.endpoint = url
+                error.page = params.get("pageno")
+                raise
+
+    def _get_json_once(self, url: str, params: dict, require_table: bool) -> dict:
+        r = self._get(url, params, retry_timeout=True)
+        if not 200 <= r.status_code < 300:
+            raise BSEUnavailableError(f"HTTP {r.status_code} for {url}")
+        try:
+            payload = r.json()
+        except ValueError as e:
+            raise BSEUnavailableError(f"non-JSON from {url}: {e}") from e
+        if require_table and not _valid_table(payload):
+            raise BSEUnavailableError(f"invalid BSE table from {url}")
+        return payload
 
     def get_text(self, url: str, params: dict) -> str:
         r = self._get(url, params)
