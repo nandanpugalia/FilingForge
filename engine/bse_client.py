@@ -25,6 +25,7 @@ HEADERS = {
 RATE_DELAY = 0.3
 MAX_RETRIES = 2    # Shared by transient HTTP responses and listing timeouts
 RETRY_BACKOFF = 0.5
+LISTING_WAITS = (2.0, 5.0, 10.0, 30.0)  # Seconds before each extra ask of a refused listing page
 
 
 def _valid_table(payload: object) -> bool:
@@ -108,16 +109,17 @@ class BSEClient:
             return r
 
     def get_json(self, url: str, params: dict, *, require_table: bool = False) -> dict:
-        # A listing page BSE answers badly once (HTTP 400, not JSON, no table) answers properly
-        # when asked again (10 Nov 2026), so a listing page gets one more try; nothing else does.
-        tries = 2 if require_table else 1
-        for attempt in range(tries):
+        # BSE refuses a listing page (HTTP 400, not JSON, no table) in streaks of a few seconds
+        # under steady traffic, then answers it properly (10 Nov 2026), so a listing page is
+        # asked again after growing waits; nothing else is.
+        waits = LISTING_WAITS if require_table else ()
+        for attempt in range(len(waits) + 1):
             try:
                 return self._get_json_once(url, params, require_table)
             except BSEUnavailableError as error:
-                if attempt + 1 < tries and not str(error).startswith("HTTP 403"):
+                if attempt < len(waits) and not str(error).startswith("HTTP 403"):
                     if self._retry_backoff:
-                        time.sleep(self._retry_backoff)
+                        time.sleep(waits[attempt])
                     continue
                 error.endpoint = url
                 error.page = params.get("pageno")

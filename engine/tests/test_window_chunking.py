@@ -29,7 +29,7 @@ def _bse_like_client(windows_seen):
             return httpx.Response(200, json={"Table": []})
         mid = start + (end - start) // 2
         return httpx.Response(200, json={"Table": [_row(f"mid-{mid}", mid), _row(f"edge-{start}", start)]})
-    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
 
 
 def test_a_five_year_ask_becomes_windows_of_at_most_a_year_and_merges_them():
@@ -81,7 +81,7 @@ def test_shared_boundary_is_present_once_and_unsorted_rows_are_sorted():
         start, end = p['strPrevDate'], p['strToDate']
         hits = [r for r in rows if start <= r['DissemDT'][:10].replace('-', '') <= end]
         return httpx.Response(200, json={'Table': hits})
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     out = list_filings('530871', [], 2, client, everything=True)
     assert [f.news_id for f in out] == ['newest', 'edge', 'oldest']
 
@@ -96,7 +96,7 @@ def test_pagination_restarts_in_each_window_and_keeps_later_pages():
         rows = [_row(f"{p['strPrevDate']}-{p['pageno']}-{i}", end) for i in range(count)]
         return httpx.Response(200, json={'Table': rows})
     out = list_filings('530871', [], 3,
-        BSEClient(transport=httpx.MockTransport(handler), rate_delay=0), everything=True)
+        BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0), everything=True)
     assert len(out) == 153
     assert [page for _, page in seen] == [1, 2, 1, 2, 1, 2]
 
@@ -108,7 +108,7 @@ def test_empty_recent_window_does_not_hide_older_filings():
         rows = [] if end == today.strftime('%Y%m%d') else [_row('older', today - timedelta(days=400))]
         return httpx.Response(200, json={'Table': rows})
     out = list_filings('530871', [], 2,
-        BSEClient(transport=httpx.MockTransport(handler), rate_delay=0), everything=True)
+        BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0), everything=True)
     assert [f.news_id for f in out] == ['older']
 
 
@@ -118,6 +118,6 @@ def test_failed_older_window_raises_instead_of_returning_partial_success():
         if req.url.params['strToDate'] != today.strftime('%Y%m%d'):
             return httpx.Response(503)
         return httpx.Response(200, json={'Table': [_row('recent', today)]})
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, max_retries=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, max_retries=0, retry_backoff=0)
     with pytest.raises(BSEUnavailableError):
         list_filings('530871', [], 2, client, everything=True)

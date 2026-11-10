@@ -4,6 +4,14 @@ All notable changes to FilingForge are documented here. The format follows
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and the project aims to
 follow [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.25] — 2026-11-10
+
+### Fixed
+- When BSE refuses an announcement or annual report listing page, FilingForge now asks again up
+  to four more times, waiting 2, 5, 10 and then 30 seconds. BSE can refuse the same page for
+  several seconds at a time during a long history, and the single quick retry in 0.1.23 sometimes asked
+  again before BSE recovered, so the whole history failed.
+
 ## [0.1.24] — 2026-11-10
 
 ### Fixed

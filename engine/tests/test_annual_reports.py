@@ -107,7 +107,7 @@ def test_sends_the_scrip_code_to_the_archive_endpoint():
         seen["params"] = dict(req.url.params)
         return httpx.Response(200, json=_archive())
 
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     list_annual_reports("500495", client)
     assert seen["url"].startswith(AR_URL)
     assert seen["params"]["scripcode"] == "500495"
@@ -128,7 +128,7 @@ def test_downloads_an_absolute_attachment_from_its_own_url():
         seen["url"] = str(req.url)
         return httpx.Response(200, content=b"%PDF-1.4 archived")
 
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     assert download_filing(_absolute(), client).startswith(b"%PDF-")
     assert "AttachHis" not in seen["url"]
     assert seen["url"].endswith("X-500495-MARCH-2000.PDF")
