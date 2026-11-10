@@ -90,7 +90,8 @@ def test_an_empty_archive_yields_no_filings():
 
 
 def test_a_company_bse_does_not_recognise_yields_no_filings():
-    assert list_annual_reports("999999", _client({})) == []
+    # BSE's live reply for an unknown scrip (checked 10 Nov 2026); `{}` is a broken reply, not "none"
+    assert list_annual_reports("999999", _client({"Table": []})) == []
 
 
 def test_years_limits_how_far_back_the_archive_is_read():

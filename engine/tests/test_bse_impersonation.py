@@ -253,3 +253,27 @@ def test_a_listing_page_bad_twice_still_fails_with_its_page(wire):
         assert len(calls) == 2 and caught.value.page == "3"
     finally:
         client.close()
+
+
+def test_annual_report_list_is_asked_once_more_after_one_bad_answer(wire):
+    replies, calls, _ = wire
+    rows = json.dumps({"Table": [{"PDFDownload": "https://www.bseindia.com/bseplus/AnnualReport/500180/a.pdf",
+                                  "Year": "2025"}]}).encode()
+    replies.extend([response(400), response(200, rows)])
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        list_annual_reports("500180", client)
+        assert len(calls) == 2
+    finally:
+        client.close()
+
+
+def test_annual_report_list_reports_a_broken_reply_instead_of_no_reports(wire):
+    replies, _, _ = wire
+    replies.extend([response(200, b'{}')] * 2)
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        with pytest.raises(BSEUnavailableError, match="invalid BSE table"):
+            list_annual_reports("500180", client)
+    finally:
+        client.close()
