@@ -12,7 +12,7 @@ def _paged_client(pages):
         pageno = int(dict(req.url.params)["pageno"])
         body = pages[pageno - 1] if pageno <= len(pages) else {"Table": []}
         return httpx.Response(200, json=body)
-    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
 
 
 def test_filters_to_requested_specs_only():
@@ -75,7 +75,7 @@ def test_sends_confirmed_params_and_stops_on_short_page():
         seen.update(dict(req.url.params))
         page = json.loads((FIXTURES / "ann_page1.json").read_text())
         return httpx.Response(200, json=page)
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     list_filings("532790", [CURATED_BY_KEY["results"]], years=3, client=client)
     assert seen["strScrip"] == "532790" and seen["strCat"] == "-1"
     assert seen["subcategory"] == "-1" and seen["strType"] == "C" and seen["strSearch"] == "P"
@@ -92,7 +92,7 @@ def test_download_prefers_attachhis_pdf_bytes():
         if "AttachHis" in str(req.url):
             return httpx.Response(200, content=b"%PDF-1.7 real")
         return httpx.Response(200, content=b"<html>stale AttachLive</html>")
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     assert download_filing(_f(), client).startswith(b"%PDF-")
 
 
@@ -101,14 +101,14 @@ def test_download_falls_back_to_attachlive_when_his_missing():
         if "AttachHis" in str(req.url):
             return httpx.Response(404, content=b"nope")
         return httpx.Response(200, content=b"%PDF-1.4 fallback")
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     assert download_filing(_f(), client).startswith(b"%PDF-")
 
 
 def test_download_raises_download_error_when_no_pdf_anywhere():
     from engine.errors import DownloadError
     handler = lambda req: httpx.Response(200, content=b"<html>not a pdf</html>")
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     with pytest.raises(DownloadError):
         download_filing(_f(), client)
 
@@ -136,7 +136,7 @@ def test_reported_total_handles_short_pages_without_an_extra_request():
         return httpx.Response(200, json={"Table": rows[:2] if page == 1 else rows[2:],
                                          "Table1": [{"ROWCNT": 3}]})
 
-    with_client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    with_client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     filings = list_filings("500495", [], 1, with_client, everything=True)
     assert len(filings) == 3
     assert pages == [1, 2]
@@ -161,5 +161,5 @@ def test_download_tries_attachlive_if_attachhis_is_blocked():
         assert "AttachLive" in req.url.path
         return httpx.Response(200, content=b"%PDF-1.4 live")
 
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     assert download_filing(_f(), client) == b"%PDF-1.4 live"

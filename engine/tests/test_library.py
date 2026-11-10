@@ -31,7 +31,7 @@ def _full_client(ar2_ok=True):
         if "ar2.pdf" in u:
             return httpx.Response(200, content=b"%PDF-1.7 two" if ar2_ok else b"<html>broken</html>")
         return httpx.Response(404)
-    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
 
 
 def test_build_downloads_converts_and_indexes(tmp_path):
@@ -124,7 +124,7 @@ def test_same_date_headline_different_newsid_both_kept(tmp_path):
         if "b.pdf" in u:
             return httpx.Response(200, content=b"%PDF-1.7 BBB")
         return httpx.Response(404)
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     res = build_library("532790", "TANLA", tmp_path, [AR],
                         years=5, client=client, on_progress=None)
     pdfs = list((tmp_path / "TANLA" / "annual-reports").rglob("*.pdf"))
@@ -231,7 +231,7 @@ def test_announcement_with_missing_dissem_date_keeps_its_pdf_and_other_filings(t
             return httpx.Response(200, content=b"%PDF-1.7 fixture")
         return httpx.Response(404)
 
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     result = build_library("500495", "ESCORTS", tmp_path, [AR], 1, client)
     folder = tmp_path / "ESCORTS" / "annual-reports"
     assert len(result.downloaded) == 2 and not result.failed

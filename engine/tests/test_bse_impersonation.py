@@ -243,14 +243,55 @@ def test_a_listing_page_is_asked_once_more_after_one_bad_answer(wire, bad):
         client.close()
 
 
-def test_a_listing_page_bad_twice_still_fails_with_its_page(wire):
+# 10 Nov 2026, live from a Windows PC: under steady listing traffic BSE refused the same page
+# twice inside a second (HTTP 400, or an HTML page with status 200), so asking again after half a
+# second was not enough; one page stayed refused for over 18 seconds. A refused listing page is
+# asked up to four more times, waiting longer each time.
+def test_a_listing_page_refused_four_times_is_answered_on_the_fifth_ask(wire):
     replies, calls, _ = wire
-    replies.extend([response(400), response(400)])
+    replies.extend([response(400), response(200, b'<html>busy</html>'), response(400),
+                    response(200, b'{"Table1": []}'), response(200, b'{"Table": []}')])
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        assert client.get_json(ANN_URL, {"pageno": "3"}, require_table=True) == {"Table": []}
+        assert calls == [("chrome", ANN_URL, {"pageno": "3"})] * 5
+    finally:
+        client.close()
+
+
+def test_a_refused_listing_page_waits_2_5_10_then_30_seconds(wire, monkeypatch):
+    replies, _, _ = wire
+    replies.extend([response(400)] * 4 + [response(200, b'{"Table": []}')])
+    sleeps = []
+    monkeypatch.setattr('engine.bse_client.time.sleep', sleeps.append)
+    client = BSEClient(rate_delay=0)
+    try:
+        client.get_json(ANN_URL, {"pageno": "1"}, require_table=True)
+        assert sleeps == [2.0, 5.0, 10.0, 30.0]
+    finally:
+        client.close()
+
+
+def test_a_listing_page_refused_five_times_still_fails_with_its_page(wire):
+    replies, calls, _ = wire
+    replies.extend([response(400)] * 5)
     client = BSEClient(rate_delay=0, retry_backoff=0)
     try:
         with pytest.raises(BSEUnavailableError, match='HTTP 400') as caught:
             client.get_json(ANN_URL, {"pageno": "3"}, require_table=True)
-        assert len(calls) == 2 and caught.value.page == "3"
+        assert len(calls) == 5 and caught.value.page == "3"
+    finally:
+        client.close()
+
+
+def test_a_page_that_is_not_a_listing_is_still_asked_only_once(wire):
+    replies, calls, _ = wire
+    replies.append(response(400))
+    client = BSEClient(rate_delay=0, retry_backoff=0)
+    try:
+        with pytest.raises(BSEUnavailableError, match='HTTP 400'):
+            client.get_json(ANN_URL, {"pageno": "1"})
+        assert len(calls) == 1
     finally:
         client.close()
 
@@ -270,7 +311,7 @@ def test_annual_report_list_is_asked_once_more_after_one_bad_answer(wire):
 
 def test_annual_report_list_reports_a_broken_reply_instead_of_no_reports(wire):
     replies, _, _ = wire
-    replies.extend([response(200, b'{}')] * 2)
+    replies.extend([response(200, b'{}')] * 5)
     client = BSEClient(rate_delay=0, retry_backoff=0)
     try:
         with pytest.raises(BSEUnavailableError, match="invalid BSE table"):

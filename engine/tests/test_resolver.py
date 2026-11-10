@@ -44,7 +44,7 @@ def test_renamed_company_resolves_via_alias():
         text = req.url.params.get("text", "")
         return httpx.Response(200, text=eternal if text.lower() == "eternal" else "<li>no match</li>")
 
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     out = resolve("Zomato", client)
     assert out[0].scrip_code == "543320"
     assert out[0].company == "Eternal Ltd"

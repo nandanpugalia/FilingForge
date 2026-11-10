@@ -36,7 +36,7 @@ def _client(ann=ANN_ROWS, archive=AR_ROWS, archive_status=200):
         if "AnnualReport_New" in str(req.url):
             return httpx.Response(archive_status, json=archive)
         return httpx.Response(200, json=ann if int(dict(req.url.params)["pageno"]) == 1 else {"Table": []})
-    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    return BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
 
 
 def test_keeps_the_announcement_filings():
@@ -72,7 +72,7 @@ def test_does_not_touch_the_archive_when_annual_reports_are_not_selected():
             return httpx.Response(200, json=AR_ROWS)
         return httpx.Response(200, json=ANN_ROWS if int(dict(req.url.params)["pageno"]) == 1 else {"Table": []})
 
-    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0)
+    client = BSEClient(transport=httpx.MockTransport(handler), rate_delay=0, retry_backoff=0)
     list_all_filings("500495", [RESULTS_SPEC], 5, client)
     assert not any("AnnualReport_New" in u for u in seen)
 
